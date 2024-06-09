@@ -9,13 +9,21 @@
 #define MapRenderer_hpp
 
 #include <MetalKit/MetalKit.h>
+#include "RenderCore/RenderDevice.h"
 
-// Our platform independent render class
-@interface AAPLRenderer : NSObject
-
-- (nonnull instancetype)initWithMetalLayer:(nonnull CAMetalLayer *)mtkLayer library:(nonnull id<MTLLibrary>)library;
-- (void)drawFrame;
-
-@end
+class MapRenderer
+{
+public:
+    MapRenderer(CAMetalLayer *mtkLayer);
+    
+    ~MapRenderer()
+    {
+    }
+    
+    void DrawFrame();
+    
+private:
+    RenderCore::RenderDevicePtr mRenderdevice;
+};
 
 #endif /* MapRenderer_hpp */

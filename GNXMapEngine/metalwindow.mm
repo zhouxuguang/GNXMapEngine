@@ -16,7 +16,7 @@ class MetalWindowPrivate
 {
 public:
     id<MTLDevice> m_metalDevice;
-    AAPLRenderer *m_renderer;
+    MapRenderer *m_renderer;
 };
 
 MetalWindow::MetalWindow()
@@ -34,14 +34,14 @@ void MetalWindow::exposeEvent(QExposeEvent *)
 {
     initMetal();
 
-    [d->m_renderer drawFrame];
+    d->m_renderer->DrawFrame();
 
     requestUpdate(); // request new animation frame
 }
 
 void MetalWindow::updateEvent()
 {
-    [d->m_renderer drawFrame];
+    d->m_renderer->DrawFrame();
 }
 
 bool MetalWindow::event(QEvent *ev)
@@ -69,5 +69,5 @@ void MetalWindow::initMetal()
 
     // Create Renderer
     metalLayer.device = d->m_metalDevice;
-    d->m_renderer = [[AAPLRenderer alloc] initWithMetalLayer:metalLayer library:nil];
+    d->m_renderer = new MapRenderer(metalLayer);
 }

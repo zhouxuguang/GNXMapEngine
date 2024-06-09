@@ -9,7 +9,7 @@
 #include <MetalKit/MetalKit.h>
 #include <QtCore>
 
-#include "RenderCore/RenderDevice.h"
+
 #include "RenderSystem/SceneManager.h"
 #include "RenderSystem/SceneNode.h"
 #include "RenderSystem/ArcballManipulate.h"
@@ -19,25 +19,14 @@
 #include "RenderSystem/RenderEngine.h"
 #include "BaseLib/DateTime.h"
 
-// Main class performing the rendering
-@implementation AAPLRenderer
+MapRenderer::MapRenderer(CAMetalLayer *metalLayer)
 {
-    RenderDevicePtr mRenderdevice;
+    mRenderdevice = createRenderDevice(RenderDeviceType::METAL, (__bridge void*)metalLayer);
+    //mRenderdevice->resize(600, 400);
 }
 
-- (nonnull instancetype)initWithMetalLayer:(nonnull CAMetalLayer *)metalLayer library:(nonnull id<MTLLibrary>)library
-{
-    self = [super init];
-    if(self)
-    {
-        mRenderdevice = createRenderDevice(RenderDeviceType::METAL, (__bridge void*)metalLayer);
-        //mRenderdevice->resize(600, 400);
-    }
 
-    return self;
-}
-/// Called whenever the view needs to render a frame
-- (void)drawFrame
+void MapRenderer::DrawFrame()
 {
     CommandBufferPtr commandBuffer = mRenderdevice->createCommandBuffer();
     RenderEncoderPtr renderEncoder = commandBuffer->createDefaultRenderEncoder();
@@ -46,4 +35,3 @@
     commandBuffer->presentFrameBuffer();
 }
 
-@end
