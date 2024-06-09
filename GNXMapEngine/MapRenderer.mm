@@ -23,6 +23,7 @@ MapRenderer::MapRenderer(CAMetalLayer *metalLayer)
 {
     mRenderdevice = createRenderDevice(RenderDeviceType::METAL, (__bridge void*)metalLayer);
     //mRenderdevice->resize(600, 400);
+    mProjection = Matrix4x4f::CreateOrthographic(-20037508, 20037508, -20037508, 20037508, -100.0f, 100.0f);
 }
 
 
