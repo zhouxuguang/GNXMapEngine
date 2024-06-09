@@ -7,8 +7,8 @@
 
 #include "metalwindow.h"
 #include <QtCore>
-//#include <hellotriangle/AAPLRenderer.h>
 #include <MetalKit/MetalKit.h>
+#include "MapRenderer.h"
 
 // Simple private class for the purpose of moving the Objective-C
 // bits out of the header.
@@ -16,7 +16,7 @@ class MetalWindowPrivate
 {
 public:
     id<MTLDevice> m_metalDevice;
-    //AAPLRenderer *m_renderer;
+    AAPLRenderer *m_renderer;
 };
 
 MetalWindow::MetalWindow()
@@ -34,14 +34,14 @@ void MetalWindow::exposeEvent(QExposeEvent *)
 {
     initMetal();
 
-    //[d->m_renderer drawFrame];
+    [d->m_renderer drawFrame];
 
     requestUpdate(); // request new animation frame
 }
 
 void MetalWindow::updateEvent()
 {
-    //[d->m_renderer drawFrame];
+    [d->m_renderer drawFrame];
 }
 
 bool MetalWindow::event(QEvent *ev)
@@ -69,5 +69,5 @@ void MetalWindow::initMetal()
 
     // Create Renderer
     metalLayer.device = d->m_metalDevice;
-    //d->m_renderer = [[AAPLRenderer alloc] initWithMetalLayer:metalLayer library:library];
+    d->m_renderer = [[AAPLRenderer alloc] initWithMetalLayer:metalLayer library:nil];
 }
