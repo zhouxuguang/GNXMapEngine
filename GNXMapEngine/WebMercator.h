@@ -95,10 +95,10 @@ public:
         return 180.0 / M_PI * atan(0.5 * (exp(n) - exp(-n)));
     }
 
-    static  Vector2d tileToWorld(Vector2<int> id, int z)
+    static  Vector2d tileToWorld(Vector2i tileID, int z)
     {
-        double  dLong   =   tilex2long(id.x,z);
-        double  dLat    =   tiley2lat(id.y,z);
+        double  dLong   =   tilex2long(tileID.x, z);
+        double  dLat    =   tiley2lat(tileID.y, z);
 
         return  lonLatToMeters(dLong,dLat);
     }
@@ -106,22 +106,22 @@ public:
     /**
     *
     */
-    static Vector2<int> getKey(unsigned level, double rLong, double rLat)
+    static Vector2i getKey(unsigned level, double rLong, double rLat)
     {
         int     xTile   =    long2tilex(rLong,level);
         int     yTile   =    lat2tiley(rLat,level);
-        return  Vector2<int>(xTile, yTile);
+        return  Vector2i(xTile, yTile);
     }
 
     /**
     *
     */
-    static Vector2<int> getKeyByMeter(unsigned level, double x, double y)
+    static Vector2i getKeyByMeter(unsigned level, double x, double y)
     {
         Vector2d lonLat  =   metersToLontLat(x,y);
         int     xTile   =   long2tilex(lonLat.x, level);
         int     yTile   =   lat2tiley(lonLat.y,level);
-        return  Vector2<int>(xTile, yTile);
+        return  Vector2i(xTile, yTile);
     }
 };
 

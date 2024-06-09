@@ -89,4 +89,6 @@ void MetalWindow::initMetal()
     metalLayer.device = d->m_metalDevice;
     d->m_renderer = new MapRenderer(metalLayer);
     d->m_renderer->SetWindowSize(mWidth, mHeight);
+    d->m_renderer->SetOrth(-20037508, 20037508, 20037508, -20037508);
+    d->m_renderer->RequestTiles();
 }

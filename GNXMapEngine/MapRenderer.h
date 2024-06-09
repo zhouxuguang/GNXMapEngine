@@ -15,6 +15,18 @@
 
 using namespace RenderCore;
 
+class TileData
+{
+public:
+    Vector2i key;       //xy方向编号
+    Vector2d     start;  //起始点
+    Vector2d     end;    //结束点
+    Texture2DPtr texture;
+    VertexBufferPtr vertexBuffer;
+};
+
+typedef std::vector<TileData> TileDataArray;
+
 class MapRenderer
 {
 public:
@@ -25,6 +37,8 @@ public:
     }
     
     void DrawFrame();
+    
+    void DrawTile(RenderEncoderPtr renderEncoder, const TileData& tileData);
     
     // 获得当前地图对应的级别
     int GetLevel();
@@ -57,6 +71,9 @@ public:
         mBottom =   cY - w * 0.5;
     }
     
+    // 请求瓦片
+    void RequestTiles();
+    
 private:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     
@@ -65,6 +82,8 @@ private:
     double mRight = 20037508;
     double mBottom = -20037508;
     double mTop = 20037508;
+    
+    TileDataArray mTileDatas;
     
     double mWidth;
     double mHeight;
