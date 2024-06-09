@@ -15,6 +15,8 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        metalwindow.h
+        metalwindow.mm
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -47,8 +49,8 @@ set_property(TARGET GNXMapEngine PROPERTY AUTORCC ON)
 if(APPLE)
     target_link_libraries(GNXMapEngine PRIVATE "-framework CoreGraphics" "-framework CoreVideo" "-framework QuartzCore"
         "-framework GameController" "-framework Metal" "-framework ImageIO" "-framework OpenGL" "-framework AppKit")
-    target_compile_options(GNXMapEngine PRIVATE "-fobjc-arc")
-    set_target_properties(GNXMapEngine PROPERTIES LINK_FLAGS "-fobjc-arc")
+    #target_compile_options(GNXMapEngine PRIVATE "-fobjc-arc")
+    #set_target_properties(GNXMapEngine PROPERTIES LINK_FLAGS "-fobjc-arc")
 endif()
 
 target_link_libraries(GNXMapEngine PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
