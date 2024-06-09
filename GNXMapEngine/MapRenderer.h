@@ -11,6 +11,7 @@
 #include "RenderCore/RenderDevice.h"
 #include "MathUtil/Matrix4x4.h"
 #include "BaseLib/LruCache.h"
+#include "BaseLib/ThreadPool.h"
 #include "WebMercator.h"
 
 using namespace RenderCore;
@@ -54,6 +55,25 @@ namespace std
 }
 
 typedef std::vector<TileDataPtr> TileDataArray;
+
+class MapRenderer;
+
+class TileLoadTask : public baselib::TaskRunner
+{
+public:
+    TileLoadTask()
+    {
+    }
+    
+    ~TileLoadTask()
+    {
+    }
+    
+    virtual void Run();
+    
+    MapRenderer* mRender;
+    TileKey tileKey;
+};
 
 class MapRenderer
 {
@@ -118,7 +138,7 @@ public:
     // 请求瓦片
     void RequestTiles();
     
-private:
+public:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     
     // 当前地图显示的范围
@@ -130,6 +150,8 @@ private:
     TileDataArray mTileDatas;
     
     baselib::LruCache<TileKey, TileDataPtr> mTileCache;
+    
+    baselib::ThreadPool mTileLoadPool;
     
     double mWidth;
     double mHeight;
