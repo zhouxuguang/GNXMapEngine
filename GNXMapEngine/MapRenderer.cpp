@@ -40,6 +40,31 @@ void TileLoadTask::Run()
     int y = tileKey.y;
     int level = tileKey.level;
     
+    // 当前级别的瓦片个数
+    int  nTileCount = 1 << level;
+    
+    // 瓦片重复的逻辑
+    int  tmpX = x;
+    int  tmpY = y;
+    {
+        if (x < 0)
+        {
+            tmpX  =   (x % nTileCount + nTileCount) % nTileCount;
+        }
+        else
+        {
+            tmpX  %=  nTileCount;
+        }
+        if (y < 0)
+        {
+            tmpY  =   (y % nTileCount + nTileCount) % nTileCount;
+        }
+        else
+        {
+            tmpY  %=  nTileCount;
+        }
+    }
+    
     TileDataPtr tileData = std::make_shared<TileData>();
     tileData->key = Vector2i(x, y);
     
@@ -47,7 +72,7 @@ void TileLoadTask::Run()
     tileData->end = WebMercator::tileToWorld(Vector2i(x + 1, y + 1), level);
     
     char filePath[1024] = {0};
-    snprintf(filePath, 1024, "/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/data/L%02d/%06d-%06d.jpg", level, y, x);
+    snprintf(filePath, 1024, "/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/data/L%02d/%06d-%06d.jpg", level, tmpY, tmpX);
     
     // 文件缓存存在
     if (fs::exists(filePath))
@@ -69,7 +94,7 @@ void TileLoadTask::Run()
     {
         // 下载图像并创建纹理
         char imagePath[1024] = {0};
-        snprintf(imagePath, 1024, "https://gac-geo.googlecnapps.club/maps/vt?lyrs=s&x=%d&y=%d&z=%d", x, y, level);
+        snprintf(imagePath, 1024, "https://gac-geo.googlecnapps.club/maps/vt?lyrs=s&x=%d&y=%d&z=%d", tmpX, tmpY, level);
         
         std::vector<uint8_t> body;
         body.reserve(4096);
@@ -176,6 +201,8 @@ void MapRenderer::DrawFrame()
     mTileDataLock.lock();
     TileDataArray tileSet = mTileDatas;
     mTileDataLock.unlock();
+    
+    printf("current draw tile count = %d\n", (int)tileSet.size());
     
     for (const auto &iter : tileSet)
     {
