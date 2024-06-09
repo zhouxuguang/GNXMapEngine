@@ -26,6 +26,9 @@ private:
     
     uint32_t mWidth;
     uint32_t mHeight;
+    
+    QPoint mMouseDown;
+    bool mIsDown = false;
 };
 
 #endif /* metalwindow_hpp */

@@ -8,6 +8,7 @@
 #include "metalwindow.h"
 #include <QtCore>
 #include <QResizeEvent>
+#include <QMouseEvent>
 #include <MetalKit/MetalKit.h>
 #include "MapRenderer.h"
 
@@ -66,7 +67,39 @@ bool MetalWindow::event(QEvent *ev)
         updateEvent();
         return false;
     }
-    else 
+    
+    // 鼠标按下
+    else if (ev->type() == QEvent::MouseButtonPress)
+    {
+        QMouseEvent* mouseEvent = (QMouseEvent*)ev;
+        
+        mMouseDown = mouseEvent->pos();
+        mIsDown = true;
+        
+        return false;
+    }
+    
+    // 鼠标释放
+    else if (ev->type() == QEvent::MouseButtonRelease)
+    {
+        QMouseEvent* mouseEvent = (QMouseEvent*)ev;
+        
+        mIsDown = false;
+        QPoint pt = mouseEvent->pos();
+        
+        if (pt != mMouseDown)
+        {
+            int xOffset = pt.x() - mMouseDown.x();
+            int yOffset = pt.y() - mMouseDown.y();
+            
+            d->m_renderer->Offset(xOffset, yOffset);
+            d->m_renderer->RequestTiles();
+
+        }
+        
+        return false;
+    }
+    else
     {
         return QWindow::event(ev);
     }

@@ -1,5 +1,5 @@
 //
-//  MapRenderer.hpp
+//  MapRenderer.h
 //  GNXMapEngine
 //
 //  Created by zhouxuguang on 2024/6/9.
@@ -8,7 +8,6 @@
 #ifndef MapRenderer_hpp
 #define MapRenderer_hpp
 
-#include <MetalKit/MetalKit.h>
 #include "RenderCore/RenderDevice.h"
 #include "MathUtil/Matrix4x4.h"
 #include "WebMercator.h"
@@ -30,7 +29,7 @@ typedef std::vector<TileData> TileDataArray;
 class MapRenderer
 {
 public:
-    MapRenderer(CAMetalLayer *mtkLayer);
+    MapRenderer(void *mtkLayer);
     
     ~MapRenderer()
     {
@@ -69,6 +68,22 @@ public:
         mRight  =   cX + w * 0.5;
         mTop    =   cY + w * 0.5;
         mBottom =   cY - w * 0.5;
+        
+        mProjection = Matrix4x4f::CreateOrthographic(mLeft, mRight, mBottom, mTop, -100.0f, 100.0f);
+    }
+    
+    void Offset(int xOffset, int yOffset)
+    {
+        double xRes = (mRight - mLeft) / mWidth;
+        double yRes = (mTop - mBottom) / mHeight;
+
+        mLeft    -=  xOffset * xRes;
+        mRight   -=  xOffset * xRes;
+
+        mTop     +=  yOffset * xRes;
+        mBottom  +=  yOffset * xRes;
+        
+        mProjection = Matrix4x4f::CreateOrthographic(mLeft, mRight, mBottom, mTop, -100.0f, 100.0f);
     }
     
     // 请求瓦片
@@ -88,14 +103,11 @@ private:
     double mWidth;
     double mHeight;
     
-    mathutil::Matrix4x4f mProjection;
+    Matrix4x4f mProjection;
     
     GraphicsPipelinePtr mPipeline = nullptr;
-    VertexBufferPtr mVertexBuffer = nullptr;
     TextureSamplerPtr mTexSampler = nullptr;
     UniformBufferPtr mUBO = nullptr;
-    
-    Texture2DPtr mTexture = nullptr;
 };
 
 #endif /* MapRenderer_hpp */
