@@ -44,6 +44,13 @@ set_property(TARGET GNXMapEngine PROPERTY AUTOUIC ON)
 set_property(TARGET GNXMapEngine PROPERTY AUTOMOC ON)
 set_property(TARGET GNXMapEngine PROPERTY AUTORCC ON)
 
+if(APPLE)
+    target_link_libraries(GNXMapEngine PRIVATE "-framework CoreGraphics" "-framework CoreVideo" "-framework QuartzCore"
+        "-framework GameController" "-framework Metal" "-framework ImageIO" "-framework OpenGL" "-framework AppKit")
+    target_compile_options(GNXMapEngine PRIVATE "-fobjc-arc")
+    set_target_properties(GNXMapEngine PROPERTIES LINK_FLAGS "-fobjc-arc")
+endif()
+
 target_link_libraries(GNXMapEngine PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
     baselib imagecodec mathutil rendercore rendersystem shadercompiler spirv_reflect)
 
