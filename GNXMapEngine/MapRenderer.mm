@@ -21,6 +21,10 @@
 #include "WebMercator.h"
 #include "httplib.h"
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
 using namespace RenderCore;
 using namespace RenderSystem;
 
@@ -156,37 +160,67 @@ void MapRenderer::RequestTiles()
         for (int y = startY; y <= endY; ++ y)
         {
             TileData tileData;
-            tileData.key = Vector2i(x,y);
-            tileData.start = WebMercator::tileToWorld(Vector2i(x,y), level);
+            tileData.key = Vector2i(x, y);
+            tileData.start = WebMercator::tileToWorld(Vector2i(x, y), level);
             tileData.end = WebMercator::tileToWorld(Vector2i(x + 1, y + 1), level);
             
+            char filePath[1024] = {0};
+            snprintf(filePath, 1024, "/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/data/L%02d/%06d-%06d.jpg", level, y, x);
             
-            // 下载图像并创建纹理
-            char imagePath[1024] = {0};
-            snprintf(imagePath, 1024, "https://gac-geo.googlecnapps.club/maps/vt?lyrs=s&x=%d&y=%d&z=%d", x, y, level);
-            
-            std::vector<uint8_t> body;
-            body.reserve(4096);
-            httplib::Client client("gac-geo.googlecnapps.club");
-            auto res = client.Get(imagePath,
-              [&](const char *data, size_t dataLength)
+            // 文件缓存存在
+            if (fs::exists(filePath))
             {
-                body.insert(body.end(), data, data + dataLength);
-                return true;
-            });
-            
-            VImage image;
-            bool bRet = ImageDecoder::DecodeMemory(body.data(), body.size(), &image);
-            if (bRet)
-            {
-                TextureDescriptor texDes = ImageTextureUtil::getTextureDescriptor(image);
-                tileData.texture = mRenderdevice->createTextureWithDescriptor(texDes);
-                tileData.texture->setTextureData(image.GetPixels());
+                VImage image;
+                bool bRet = ImageDecoder::DecodeFile(filePath, &image);
+                if (bRet)
+                {
+                    TextureDescriptor texDes = ImageTextureUtil::getTextureDescriptor(image);
+                    tileData.texture = mRenderdevice->createTextureWithDescriptor(texDes);
+                    tileData.texture->setTextureData(image.GetPixels());
+                }
+                else
+                {
+                    tileData.texture = nullptr;
+                }
             }
             else
             {
-                tileData.texture = nullptr;
+                // 下载图像并创建纹理
+                char imagePath[1024] = {0};
+                snprintf(imagePath, 1024, "https://gac-geo.googlecnapps.club/maps/vt?lyrs=s&x=%d&y=%d&z=%d", x, y, level);
+                
+                std::vector<uint8_t> body;
+                body.reserve(4096);
+                httplib::Client client("gac-geo.googlecnapps.club");
+                auto res = client.Get(imagePath,
+                  [&](const char *data, size_t dataLength)
+                {
+                    body.insert(body.end(), data, data + dataLength);
+                    return true;
+                });
+                
+                VImage image;
+                bool bRet = ImageDecoder::DecodeMemory(body.data(), body.size(), &image);
+                if (bRet)
+                {
+                    TextureDescriptor texDes = ImageTextureUtil::getTextureDescriptor(image);
+                    tileData.texture = mRenderdevice->createTextureWithDescriptor(texDes);
+                    tileData.texture->setTextureData(image.GetPixels());
+                    
+                    char fileDirPath[1024] = {0};
+                    snprintf(fileDirPath, 1024, "/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/data/L%02d", level);
+                    fs::create_directories(fileDirPath);
+                    
+                    FILE* fp = fopen(filePath, "wb");
+                    fwrite(body.data(), 1, body.size(), fp);
+                    fclose(fp);
+                }
+                else
+                {
+                    tileData.texture = nullptr;
+                }
             }
+            
             
             //创建顶点缓冲区
             struct Vertex
