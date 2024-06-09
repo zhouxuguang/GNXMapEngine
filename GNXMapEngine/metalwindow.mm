@@ -42,6 +42,7 @@ void MetalWindow::exposeEvent(QExposeEvent *)
 void MetalWindow::updateEvent()
 {
     d->m_renderer->DrawFrame();
+    requestUpdate();
 }
 
 bool MetalWindow::event(QEvent *ev)

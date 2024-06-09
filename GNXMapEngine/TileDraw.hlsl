@@ -28,7 +28,7 @@ VertexOut VS(VertexIn vin)
     vertexOut.PosH = mul(float4(vin.position, 0.0, 1.0), MATRIX_MVP);
     vertexOut.tex = vin.tex;
     
-    return vout;
+    return vertexOut;
 }
 
 Texture2D gColorMap : register(t0, space1);
