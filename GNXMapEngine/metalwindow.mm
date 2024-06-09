@@ -7,6 +7,7 @@
 
 #include "metalwindow.h"
 #include <QtCore>
+#include <QResizeEvent>
 #include <MetalKit/MetalKit.h>
 #include "MapRenderer.h"
 
@@ -16,7 +17,7 @@ class MetalWindowPrivate
 {
 public:
     id<MTLDevice> m_metalDevice;
-    MapRenderer *m_renderer;
+    MapRenderer *m_renderer = nullptr;
 };
 
 MetalWindow::MetalWindow()
@@ -41,16 +42,32 @@ void MetalWindow::exposeEvent(QExposeEvent *)
 
 void MetalWindow::updateEvent()
 {
+    if (!d || !d->m_renderer)
+    {
+        return;
+    }
     d->m_renderer->DrawFrame();
     requestUpdate();
 }
 
 bool MetalWindow::event(QEvent *ev)
 {
-    if (ev->type() == QEvent::UpdateRequest) {
+    if (ev->type() == QEvent::UpdateRequest)
+    {
         updateEvent();
         return false;
-    } else {
+    } 
+    else if (ev->type() == QEvent::Resize)
+    {
+        QResizeEvent* resizeEvent = (QResizeEvent*)ev;
+        printf("resize = width = %d, height = %d\n", resizeEvent->size().width(), resizeEvent->size().height());
+        mWidth = resizeEvent->size().width();
+        mHeight = resizeEvent->size().height();
+        updateEvent();
+        return false;
+    }
+    else 
+    {
         return QWindow::event(ev);
     }
 }
@@ -71,4 +88,5 @@ void MetalWindow::initMetal()
     // Create Renderer
     metalLayer.device = d->m_metalDevice;
     d->m_renderer = new MapRenderer(metalLayer);
+    d->m_renderer->SetWindowSize(mWidth, mHeight);
 }

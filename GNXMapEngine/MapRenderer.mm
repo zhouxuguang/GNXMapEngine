@@ -18,6 +18,8 @@
 #include "RenderSystem/ImageTextureUtil.h"
 #include "BaseLib/DateTime.h"
 
+#include "WebMercator.h"
+
 using namespace RenderCore;
 using namespace RenderSystem;
 
@@ -84,6 +86,11 @@ MapRenderer::MapRenderer(CAMetalLayer *metalLayer)
 
 void MapRenderer::DrawFrame()
 {
+    if (!mRenderdevice)
+    {
+        return;
+    }
+    
     CommandBufferPtr commandBuffer = mRenderdevice->createCommandBuffer();
     RenderEncoderPtr renderEncoder = commandBuffer->createDefaultRenderEncoder();
     
@@ -96,5 +103,20 @@ void MapRenderer::DrawFrame()
     
     renderEncoder->EndEncode();
     commandBuffer->presentFrameBuffer();
+}
+
+int MapRenderer::GetLevel()
+{
+    int  wRes = (mRight - mLeft) / mWidth;
+    for (int i = 0; i < 22; ++i)
+    {
+        int res = (int)WebMercator::resolution(i);
+        if (wRes > res)
+        {
+            return  i;
+        }
+    }
+    
+    return 22;
 }
 

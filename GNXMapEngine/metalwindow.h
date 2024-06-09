@@ -23,6 +23,9 @@ public:
     void initMetal();
 private:
     MetalWindowPrivate *d;
+    
+    uint32_t mWidth;
+    uint32_t mHeight;
 };
 
 #endif /* metalwindow_hpp */
