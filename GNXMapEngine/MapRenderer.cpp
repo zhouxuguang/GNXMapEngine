@@ -29,10 +29,10 @@ using namespace RenderSystem;
 
 void TileLoadTask::Run()
 {
-    TileDataPtr cachedPtr = nullptr;
-    if ((cachedPtr = mRender->mTileCache.Get(tileKey)))
+    TileDataPtr cachedPtr = mRender->GetTileDataFromCache(tileKey);
+    if (cachedPtr)
     {
-        mRender->mTileDatas.push_back(cachedPtr);
+        mRender->PushTileData(cachedPtr);
         return;
     }
     
@@ -102,7 +102,7 @@ void TileLoadTask::Run()
             tileData->texture = nullptr;
         }
     }
-    mRender->mTileCache.Put(tileKey, tileData);
+    mRender->PutTileDataToCache(tileKey, tileData);
     
     
     //创建顶点缓冲区
@@ -126,12 +126,11 @@ void TileLoadTask::Run()
     
     tileData->vertexBuffer = getRenderDevice()->createVertexBufferWithBytes(&vertex, sizeof(vertex), StorageModePrivate);
     
-    mRender->mTileDatas.push_back(tileData);
+    mRender->PushTileData(tileData);
 }
 
 MapRenderer::MapRenderer(void *metalLayer) : mTileCache(200), mTileLoadPool(4)
 {
-    mTileLoadPool.Start();
     mRenderdevice = createRenderDevice(RenderDeviceType::METAL, metalLayer);
     mProjection = Matrix4x4f::CreateOrthographic(-20037508, 20037508, -20037508, 20037508, -100.0f, 100.0f);
     
@@ -154,6 +153,9 @@ MapRenderer::MapRenderer(void *metalLayer) : mTileCache(200), mTileLoadPool(4)
     // 创建纹理和采样器
     SamplerDescriptor sampleDes;
     mTexSampler = mRenderdevice->createSamplerWithDescriptor(sampleDes);
+    
+    // 开启异步加载数据的线程池
+    mTileLoadPool.Start();
 }
 
 
@@ -171,7 +173,11 @@ void MapRenderer::DrawFrame()
     
     renderEncoder->setGraphicsPipeline(mPipeline);
     
-    for (const auto &iter : mTileDatas)
+    mTileDataLock.lock();
+    TileDataArray tileSet = mTileDatas;
+    mTileDataLock.unlock();
+    
+    for (const auto &iter : tileSet)
     {
         if (!iter)
         {
@@ -225,7 +231,9 @@ void MapRenderer::RequestTiles()
     int startY  =  std::min(key1.y, key2.y);
     int endY    =  std::max(key1.y, key2.y);
     
+    mTileDataLock.lock();
     mTileDatas.clear();
+    mTileDataLock.unlock();
 
     // 循环请求各个瓦片
     for (int x = startX; x <= endX; ++ x)

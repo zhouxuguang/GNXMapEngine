@@ -138,7 +138,31 @@ public:
     // 请求瓦片
     void RequestTiles();
     
-public:
+    TileDataPtr GetTileDataFromCache(const TileKey &tileKey)
+    {
+        TileDataPtr dataPtr = nullptr;
+        mTileCacheLock.lock();
+        dataPtr = mTileCache.Get(tileKey);
+        mTileCacheLock.unlock();
+        
+        return dataPtr;
+    }
+    
+    void PutTileDataToCache(const TileKey &tileKey, TileDataPtr tileData)
+    {
+        mTileCacheLock.lock();
+        mTileCache.Put(tileKey, tileData);
+        mTileCacheLock.unlock();
+    }
+    
+    void PushTileData(TileDataPtr tileData)
+    {
+        mTileDataLock.lock();
+        mTileDatas.push_back(tileData);
+        mTileDataLock.unlock();
+    }
+    
+private:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     
     // 当前地图显示的范围
@@ -147,8 +171,10 @@ public:
     double mBottom = -20037508;
     double mTop = 20037508;
     
+    std::mutex mTileDataLock;
     TileDataArray mTileDatas;
     
+    std::mutex mTileCacheLock;
     baselib::LruCache<TileKey, TileDataPtr> mTileCache;
     
     baselib::ThreadPool mTileLoadPool;
