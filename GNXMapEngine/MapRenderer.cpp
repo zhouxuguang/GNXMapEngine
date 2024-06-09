@@ -27,7 +27,7 @@ namespace fs = std::filesystem;
 using namespace RenderCore;
 using namespace RenderSystem;
 
-MapRenderer::MapRenderer(void *metalLayer)
+MapRenderer::MapRenderer(void *metalLayer) : mTileCache(200)
 {
     mRenderdevice = createRenderDevice(RenderDeviceType::METAL, metalLayer);
     //mRenderdevice->resize(600, 400);
@@ -71,7 +71,7 @@ void MapRenderer::DrawFrame()
     
     for (const auto &iter : mTileDatas)
     {
-        DrawTile(renderEncoder, iter);
+        DrawTile(renderEncoder, *iter);
     }
     
     renderEncoder->EndEncode();
@@ -80,6 +80,10 @@ void MapRenderer::DrawFrame()
 
 void MapRenderer::DrawTile(RenderEncoderPtr renderEncoder, const TileData& tileData)
 {
+    if (!tileData.texture)
+    {
+        return;
+    }
     renderEncoder->setVertexBuffer(tileData.vertexBuffer, 0, 0);
     renderEncoder->setVertexBuffer(tileData.vertexBuffer, 32, 1);
     renderEncoder->setVertexUniformBuffer(mUBO, 0);
@@ -114,16 +118,31 @@ void MapRenderer::RequestTiles()
 
     int startY  =  std::min(key1.y, key2.y);
     int endY    =  std::max(key1.y, key2.y);
+    
+    mTileDatas.clear();
 
     // 循环请求各个瓦片
     for (int x = startX; x <= endX; ++ x)
     {
         for (int y = startY; y <= endY; ++ y)
         {
-            TileData tileData;
-            tileData.key = Vector2i(x, y);
-            tileData.start = WebMercator::tileToWorld(Vector2i(x, y), level);
-            tileData.end = WebMercator::tileToWorld(Vector2i(x + 1, y + 1), level);
+            TileKey tileKey;
+            tileKey.level = level;
+            tileKey.x = x;
+            tileKey.y = y;
+            
+            TileDataPtr cachedPtr = nullptr;
+            if ((cachedPtr = mTileCache.Get(tileKey)))
+            {
+                mTileDatas.push_back(cachedPtr);
+                continue;
+            }
+            
+            TileDataPtr tileData = std::make_shared<TileData>();
+            tileData->key = Vector2i(x, y);
+            
+            tileData->start = WebMercator::tileToWorld(Vector2i(x, y), level);
+            tileData->end = WebMercator::tileToWorld(Vector2i(x + 1, y + 1), level);
             
             char filePath[1024] = {0};
             snprintf(filePath, 1024, "/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/data/L%02d/%06d-%06d.jpg", level, y, x);
@@ -136,12 +155,12 @@ void MapRenderer::RequestTiles()
                 if (bRet)
                 {
                     TextureDescriptor texDes = ImageTextureUtil::getTextureDescriptor(image);
-                    tileData.texture = mRenderdevice->createTextureWithDescriptor(texDes);
-                    tileData.texture->setTextureData(image.GetPixels());
+                    tileData->texture = mRenderdevice->createTextureWithDescriptor(texDes);
+                    tileData->texture->setTextureData(image.GetPixels());
                 }
                 else
                 {
-                    tileData.texture = nullptr;
+                    tileData->texture = nullptr;
                 }
             }
             else
@@ -165,8 +184,8 @@ void MapRenderer::RequestTiles()
                 if (bRet)
                 {
                     TextureDescriptor texDes = ImageTextureUtil::getTextureDescriptor(image);
-                    tileData.texture = mRenderdevice->createTextureWithDescriptor(texDes);
-                    tileData.texture->setTextureData(image.GetPixels());
+                    tileData->texture = mRenderdevice->createTextureWithDescriptor(texDes);
+                    tileData->texture->setTextureData(image.GetPixels());
                     
                     char fileDirPath[1024] = {0};
                     snprintf(fileDirPath, 1024, "/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/data/L%02d", level);
@@ -178,9 +197,10 @@ void MapRenderer::RequestTiles()
                 }
                 else
                 {
-                    tileData.texture = nullptr;
+                    tileData->texture = nullptr;
                 }
             }
+            mTileCache.Put(tileKey, tileData);
             
             
             //创建顶点缓冲区
@@ -191,10 +211,10 @@ void MapRenderer::RequestTiles()
             };
             
             Vertex  vertex;
-            vertex.pos[0] = Vector2f(tileData.start.x, tileData.start.y);
-            vertex.pos[1] = Vector2f(tileData.end.x, tileData.start.y);
-            vertex.pos[2] = Vector2f(tileData.start.x, tileData.end.y);
-            vertex.pos[3] = Vector2f(tileData.end.x, tileData.end.y);
+            vertex.pos[0] = Vector2f(tileData->start.x, tileData->start.y);
+            vertex.pos[1] = Vector2f(tileData->end.x, tileData->start.y);
+            vertex.pos[2] = Vector2f(tileData->start.x, tileData->end.y);
+            vertex.pos[3] = Vector2f(tileData->end.x, tileData->end.y);
             
             vertex.tex[0] = Vector2f(0,0);
             vertex.tex[1] = Vector2f(1,0);
@@ -202,7 +222,7 @@ void MapRenderer::RequestTiles()
             vertex.tex[3] = Vector2f(1,1);
             
             
-            tileData.vertexBuffer = mRenderdevice->createVertexBufferWithBytes(&vertex, sizeof(vertex), StorageModePrivate);
+            tileData->vertexBuffer = mRenderdevice->createVertexBufferWithBytes(&vertex, sizeof(vertex), StorageModePrivate);
             
             mTileDatas.push_back(tileData);
         }

@@ -10,6 +10,7 @@
 
 #include "RenderCore/RenderDevice.h"
 #include "MathUtil/Matrix4x4.h"
+#include "BaseLib/LruCache.h"
 #include "WebMercator.h"
 
 using namespace RenderCore;
@@ -24,7 +25,35 @@ public:
     VertexBufferPtr vertexBuffer;
 };
 
-typedef std::vector<TileData> TileDataArray;
+typedef std::shared_ptr<TileData> TileDataPtr;
+
+struct TileKey
+{
+    int x;
+    int y;
+    int level;
+    
+    bool operator == (const TileKey& other) const
+    {
+        return x == other.x && y == other.y && level == other.level;
+    }
+};
+
+namespace std 
+{
+    template <> struct hash<TileKey>
+    {
+        size_t operator()(const TileKey& p) const
+        {
+            auto hash1 = std::hash<int>{}(p.x);
+            auto hash2 = std::hash<int>{}(p.y);
+            auto hash3 = std::hash<int>{}(p.level);
+            return hash1 ^ (hash2 << 1) ^ (hash3 << 2);
+        }
+    };
+}
+
+typedef std::vector<TileDataPtr> TileDataArray;
 
 class MapRenderer
 {
@@ -99,6 +128,8 @@ private:
     double mTop = 20037508;
     
     TileDataArray mTileDatas;
+    
+    baselib::LruCache<TileKey, TileDataPtr> mTileCache;
     
     double mWidth;
     double mHeight;
