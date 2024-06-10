@@ -17,6 +17,10 @@ set(PROJECT_SOURCES
         mainwindow.ui
         metalwindow.h
         metalwindow.mm
+        MapRenderer.cpp
+        MapRenderer.h
+        WebMercator.cpp
+        WebMercator.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
