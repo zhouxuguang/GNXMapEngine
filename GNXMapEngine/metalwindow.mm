@@ -9,6 +9,8 @@
 #include <QtCore>
 #include <QResizeEvent>
 #include <QMouseEvent>
+#include <QScreen>
+#include <QGuiApplication>
 #include <QWheelEvent>
 #include <MetalKit/MetalKit.h>
 #include "MapRenderer.h"
@@ -63,9 +65,23 @@ bool MetalWindow::event(QEvent *ev)
     {
         QResizeEvent* resizeEvent = (QResizeEvent*)ev;
         printf("resize = width = %d, height = %d\n", resizeEvent->size().width(), resizeEvent->size().height());
-        mWidth = resizeEvent->size().width();
-        mHeight = resizeEvent->size().height();
+        
+        QScreen* screen = QGuiApplication::primaryScreen();
+        qreal devicePixelRatio = screen->devicePixelRatio();
+        devicePixelRatio = 1;   //还需要适配高分屏幕
+        
+        mWidth = resizeEvent->size().width() * devicePixelRatio;
+        mHeight = resizeEvent->size().height() * devicePixelRatio;
         updateEvent();
+        
+        if (d->m_renderer)
+        {
+            d->m_renderer->SetWindowSize(mWidth, mHeight);
+            d->m_renderer->SetOrth(d->m_renderer->mLeft, d->m_renderer->mRight,
+                                   d->m_renderer->mTop, d->m_renderer->mBottom);
+            d->m_renderer->RequestTiles();
+        }
+        
         return false;
     }
     
@@ -73,10 +89,8 @@ bool MetalWindow::event(QEvent *ev)
     else if (ev->type() == QEvent::MouseButtonPress)
     {
         QMouseEvent* mouseEvent = (QMouseEvent*)ev;
-        
         mMouseDown = mouseEvent->pos();
         mIsDown = true;
-        
         return false;
     }
     
@@ -84,7 +98,6 @@ bool MetalWindow::event(QEvent *ev)
     else if (ev->type() == QEvent::MouseButtonRelease)
     {
         QMouseEvent* mouseEvent = (QMouseEvent*)ev;
-        
         mIsDown = false;
         QPoint pt = mouseEvent->pos();
         
@@ -95,7 +108,6 @@ bool MetalWindow::event(QEvent *ev)
             
             d->m_renderer->Offset(xOffset, yOffset);
             d->m_renderer->RequestTiles();
-
         }
         
         return false;
@@ -107,7 +119,6 @@ bool MetalWindow::event(QEvent *ev)
         if (mIsDown)
         {
             QMouseEvent* mouseEvent = (QMouseEvent*)ev;
-            
             QPoint pt = mouseEvent->pos();
             
             if (pt != mMouseDown)
@@ -117,7 +128,6 @@ bool MetalWindow::event(QEvent *ev)
                 
                 d->m_renderer->Offset(xOffset, yOffset);
                 d->m_renderer->RequestTiles();
-                
                 mMouseDown = pt;
             }
         }

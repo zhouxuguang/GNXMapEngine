@@ -95,6 +95,8 @@ public:
     {
         mWidth = width;
         mHeight = height;
+        
+        mRenderdevice->resize(width * 2, height * 2);
     }
     
     void SetOrth(double left, double right, double top, double bottom)
@@ -234,7 +236,7 @@ public:
         mTileDataLock.unlock();
     }
     
-private:
+public:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     
     // 当前地图显示的范围
