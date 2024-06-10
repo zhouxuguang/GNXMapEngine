@@ -258,9 +258,14 @@ void MapRenderer::RequestTiles()
     int startY  =  std::min(key1.y, key2.y);
     int endY    =  std::max(key1.y, key2.y);
     
+    TileDataArray tempTileDatas;
+    
     mTileDataLock.lock();
+    tempTileDatas = mTileDatas;
     mTileDatas.clear();
     mTileDataLock.unlock();
+    
+    TileDataArray inScreenTiles;
     
     // 取消还没有执行的任务
     mTileLoadPool.CancelAllTasks();
@@ -275,110 +280,38 @@ void MapRenderer::RequestTiles()
             tileKey.x = x;
             tileKey.y = y;
             
+            bool isScreen = false;
+            
+            // 如果当前瓦片已经在上次显示的屏幕中，那么就跳过了，不需要重复加载
+            for (int i = 0; i < tempTileDatas.size(); i ++)
+            {
+                TileKey key;
+                key.level = level;
+                key.x = tempTileDatas[i]->key.x;
+                key.y = tempTileDatas[i]->key.y;
+                if (key == tileKey)
+                {
+                    inScreenTiles.push_back(tempTileDatas[i]);
+                    isScreen = true;
+                    break;
+                }
+            }
+            
+            if (isScreen)
+            {
+                continue;
+            }
+            
             std::shared_ptr<TileLoadTask> tileLoadTask = std::make_shared<TileLoadTask>();
             tileLoadTask->mRender = this;
             tileLoadTask->tileKey = tileKey;
             
             mTileLoadPool.Execute(tileLoadTask);
-            
-#if 0
-            
-            TileDataPtr cachedPtr = nullptr;
-            if ((cachedPtr = mTileCache.Get(tileKey)))
-            {
-                mTileDatas.push_back(cachedPtr);
-                continue;
-            }
-            
-            TileDataPtr tileData = std::make_shared<TileData>();
-            tileData->key = Vector2i(x, y);
-            
-            tileData->start = WebMercator::tileToWorld(Vector2i(x, y), level);
-            tileData->end = WebMercator::tileToWorld(Vector2i(x + 1, y + 1), level);
-            
-            char filePath[1024] = {0};
-            snprintf(filePath, 1024, "/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/data/L%02d/%06d-%06d.jpg", level, y, x);
-            
-            // 文件缓存存在
-            if (fs::exists(filePath))
-            {
-                VImage image;
-                bool bRet = ImageDecoder::DecodeFile(filePath, &image);
-                if (bRet)
-                {
-                    TextureDescriptor texDes = ImageTextureUtil::getTextureDescriptor(image);
-                    tileData->texture = mRenderdevice->createTextureWithDescriptor(texDes);
-                    tileData->texture->setTextureData(image.GetPixels());
-                }
-                else
-                {
-                    tileData->texture = nullptr;
-                }
-            }
-            else
-            {
-                // 下载图像并创建纹理
-                char imagePath[1024] = {0};
-                snprintf(imagePath, 1024, "https://gac-geo.googlecnapps.club/maps/vt?lyrs=s&x=%d&y=%d&z=%d", x, y, level);
-                
-                std::vector<uint8_t> body;
-                body.reserve(4096);
-                httplib::Client client("gac-geo.googlecnapps.club");
-                auto res = client.Get(imagePath,
-                  [&](const char *data, size_t dataLength)
-                {
-                    body.insert(body.end(), data, data + dataLength);
-                    return true;
-                });
-                
-                VImage image;
-                bool bRet = ImageDecoder::DecodeMemory(body.data(), body.size(), &image);
-                if (bRet)
-                {
-                    TextureDescriptor texDes = ImageTextureUtil::getTextureDescriptor(image);
-                    tileData->texture = mRenderdevice->createTextureWithDescriptor(texDes);
-                    tileData->texture->setTextureData(image.GetPixels());
-                    
-                    char fileDirPath[1024] = {0};
-                    snprintf(fileDirPath, 1024, "/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/data/L%02d", level);
-                    fs::create_directories(fileDirPath);
-                    
-                    FILE* fp = fopen(filePath, "wb");
-                    fwrite(body.data(), 1, body.size(), fp);
-                    fclose(fp);
-                }
-                else
-                {
-                    tileData->texture = nullptr;
-                }
-            }
-            mTileCache.Put(tileKey, tileData);
-            
-            
-            //创建顶点缓冲区
-            struct Vertex
-            {
-                Vector2f pos[4];
-                Vector2f tex[4];
-            };
-            
-            Vertex  vertex;
-            vertex.pos[0] = Vector2f(tileData->start.x, tileData->start.y);
-            vertex.pos[1] = Vector2f(tileData->end.x, tileData->start.y);
-            vertex.pos[2] = Vector2f(tileData->start.x, tileData->end.y);
-            vertex.pos[3] = Vector2f(tileData->end.x, tileData->end.y);
-            
-            vertex.tex[0] = Vector2f(0,0);
-            vertex.tex[1] = Vector2f(1,0);
-            vertex.tex[2] = Vector2f(0,1);
-            vertex.tex[3] = Vector2f(1,1);
-            
-            
-            tileData->vertexBuffer = mRenderdevice->createVertexBufferWithBytes(&vertex, sizeof(vertex), StorageModePrivate);
-            
-            mTileDatas.push_back(tileData);
-#endif
         }
     }
+    
+    mTileDataLock.lock();
+    mTileDatas = inScreenTiles;
+    mTileDataLock.unlock();
 }
 
