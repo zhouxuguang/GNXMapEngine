@@ -261,6 +261,9 @@ void MapRenderer::RequestTiles()
     mTileDataLock.lock();
     mTileDatas.clear();
     mTileDataLock.unlock();
+    
+    // 取消还没有执行的任务
+    mTileLoadPool.CancelAllTasks();
 
     // 循环请求各个瓦片
     for (int x = startX; x <= endX; ++ x)
