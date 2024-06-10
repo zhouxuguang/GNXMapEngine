@@ -163,6 +163,48 @@ public:
         mProjection = Matrix4x4f::CreateOrthographic(mLeft, mRight, mBottom, mTop, -100.0f, 100.0f);
     }
     
+    Vector2f ScreenToWorld(const Vector2f& screenPoint)
+    {
+        double w = (mRight - mLeft) / mWidth;
+        double h = (mTop - mBottom) / mHeight;
+
+        double x = w * screenPoint.x + mLeft;
+        double y = mTop - h * screenPoint.y;
+
+        return  Vector2f(x, y);
+    }
+    
+    // 鼠标定点缩放
+    void ZoomByPoint(bool zoomIn, const Vector2f& screenPoint)
+    {
+        int level = GetLevel();
+        if (zoomIn)
+        {
+            level += 1;
+        }
+        else
+        {
+            level -= 1;
+        }
+        
+        Vector2f worldPos = ScreenToWorld(screenPoint);
+        
+        // 重新计算当前的地理范围
+        double  res =  WebMercator::resolution(level);
+        double  w = res * mWidth;
+        double  h = res * mHeight;
+        
+        double  px  = double(screenPoint.x) / mWidth;
+        double  py  = double(screenPoint.y) / mHeight;
+        
+        mLeft = worldPos.x - px * w;
+        mRight = worldPos.x + (1 - px) * w;
+        mTop =  worldPos.y + py * h;
+        mBottom = worldPos.y - (1 - py) * h;
+        
+        mProjection = Matrix4x4f::CreateOrthographic(mLeft, mRight, mBottom, mTop, -100.0f, 100.0f);
+    }
+    
     // 请求瓦片
     void RequestTiles();
     

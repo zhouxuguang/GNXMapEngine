@@ -109,7 +109,9 @@ bool MetalWindow::event(QEvent *ev)
         int delta = wheelEvent->angleDelta().y();
         bool zoomIn = delta > 0;
         
-        d->m_renderer->Zoom(zoomIn);
+        QPointF point = wheelEvent->position();
+        
+        d->m_renderer->ZoomByPoint(zoomIn, Vector2f(point.x(), point.y()));
         d->m_renderer->RequestTiles();
         
         return false;
