@@ -236,7 +236,7 @@ int MapRenderer::GetLevel()
     for (int i = 0; i < 22; ++i)
     {
         int res = (int)WebMercator::resolution(i);
-        if (wRes > res)
+        if (wRes >= res)
         {
             return  i;
         }

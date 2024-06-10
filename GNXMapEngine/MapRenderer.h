@@ -187,6 +187,8 @@ public:
             level -= 1;
         }
         
+        level = std::max(0, level);
+        
         Vector2f worldPos = ScreenToWorld(screenPoint);
         
         // 重新计算当前的地理范围
