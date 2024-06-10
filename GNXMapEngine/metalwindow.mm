@@ -9,6 +9,7 @@
 #include <QtCore>
 #include <QResizeEvent>
 #include <QMouseEvent>
+#include <QWheelEvent>
 #include <MetalKit/MetalKit.h>
 #include "MapRenderer.h"
 
@@ -99,6 +100,21 @@ bool MetalWindow::event(QEvent *ev)
         
         return false;
     }
+    
+    // 鼠标滚轮
+    else if (ev->type() == QEvent::Wheel)
+    {
+        QWheelEvent* wheelEvent = (QWheelEvent*)ev;
+        
+        int delta = wheelEvent->angleDelta().y();
+        bool zoomIn = delta > 0;
+        
+        d->m_renderer->Zoom(zoomIn);
+        d->m_renderer->RequestTiles();
+        
+        return false;
+    }
+    
     else
     {
         return QWindow::event(ev);

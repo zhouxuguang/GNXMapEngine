@@ -115,8 +115,8 @@ public:
 
         mLeft   =   cX - w * 0.5;
         mRight  =   cX + w * 0.5;
-        mTop    =   cY + w * 0.5;
-        mBottom =   cY - w * 0.5;
+        mTop    =   cY + h * 0.5;
+        mBottom =   cY - h * 0.5;
         
         mProjection = Matrix4x4f::CreateOrthographic(mLeft, mRight, mBottom, mTop, -100.0f, 100.0f);
     }
@@ -131,6 +131,34 @@ public:
 
         mTop     +=  yOffset * xRes;
         mBottom  +=  yOffset * xRes;
+        
+        mProjection = Matrix4x4f::CreateOrthographic(mLeft, mRight, mBottom, mTop, -100.0f, 100.0f);
+    }
+    
+    void Zoom(bool zoomIn)
+    {
+        int level = GetLevel();
+        if (zoomIn)
+        {
+            level += 1;
+        }
+        else
+        {
+            level -= 1;
+        }
+        
+        // 重新计算当前的地理范围
+        double  res =  WebMercator::resolution(level);
+        double  w = res * mWidth;
+        double  h = res * mHeight;
+
+        double  cX  =  (mLeft + mRight) * 0.5;
+        double  cY  =  (mBottom + mTop) * 0.5;
+
+        mLeft   =   cX - w * 0.5;
+        mRight  =   cX + w * 0.5;
+        mTop    =   cY + h * 0.5;
+        mBottom =   cY - h * 0.5;
         
         mProjection = Matrix4x4f::CreateOrthographic(mLeft, mRight, mBottom, mTop, -100.0f, 100.0f);
     }
