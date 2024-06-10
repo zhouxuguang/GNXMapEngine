@@ -101,6 +101,30 @@ bool MetalWindow::event(QEvent *ev)
         return false;
     }
     
+    // 鼠标移动
+    else if (ev->type() == QEvent::MouseMove)
+    {
+        if (mIsDown)
+        {
+            QMouseEvent* mouseEvent = (QMouseEvent*)ev;
+            
+            QPoint pt = mouseEvent->pos();
+            
+            if (pt != mMouseDown)
+            {
+                int xOffset = pt.x() - mMouseDown.x();
+                int yOffset = pt.y() - mMouseDown.y();
+                
+                d->m_renderer->Offset(xOffset, yOffset);
+                d->m_renderer->RequestTiles();
+                
+                mMouseDown = pt;
+            }
+        }
+        
+        return false;
+    }
+    
     // 鼠标滚轮
     else if (ev->type() == QEvent::Wheel)
     {
@@ -141,5 +165,6 @@ void MetalWindow::initMetal()
     d->m_renderer = new MapRenderer(metalLayer);
     d->m_renderer->SetWindowSize(mWidth, mHeight);
     d->m_renderer->SetOrth(-20037508, 20037508, 20037508, -20037508);
+    //d->m_renderer->SetOrth(12000000, 12037508, 2037508, 2047508);
     d->m_renderer->RequestTiles();
 }
