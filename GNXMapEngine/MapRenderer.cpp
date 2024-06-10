@@ -311,7 +311,9 @@ void MapRenderer::RequestTiles()
     }
     
     mTileDataLock.lock();
-    mTileDatas = inScreenTiles;
+    // 注意：这里可能有一些数据已经加载进来了，直接mTileDatas = inScreenTiles;会导致已经加载的数据不会显示，所以需要insert进去才可以
+    mTileDatas.insert(mTileDatas.end(), inScreenTiles.begin(), inScreenTiles.end());
+    //mTileDatas = inScreenTiles;
     mTileDataLock.unlock();
 }
 
