@@ -14,42 +14,44 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
+
+// 弧度表示的地理坐标，经纬度
 class Geodetic3D
 {
 public:
     Geodetic3D(double longitude, double latitude, double height)
     {
-        _longitude = longitude;
-        _latitude = latitude;
-        _height = height;
+        this->longitude = longitude;
+        this->latitude = latitude;
+        this->height = height;
     }
     
     Geodetic3D(double longitude, double latitude)
     {
-        _longitude = longitude;
-        _latitude = latitude;
-        _height = 0;
+        this->longitude = longitude;
+        this->latitude = latitude;
+        this->height = 0;
     }
     
     double Longitude() const
     {
-        return _longitude;
+        return longitude;
     }
     
     double Latitude() const
     {
-        return _latitude;
+        return latitude;
     }
     
     double Height() const
     {
-        return _height;
+        return height;
     }
     
-private:
-    double _longitude;
-    double _latitude;
-    double _height;
+public:
+    double longitude;
+    double latitude;
+    double height;
 };
 
 
