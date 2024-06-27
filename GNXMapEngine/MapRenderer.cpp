@@ -19,6 +19,7 @@
 
 #include "WebMercator.h"
 #include "httplib.h"
+#include "earthCore/Ellipsoid.h"
 
 #include <filesystem>
 
@@ -156,6 +157,13 @@ void TileLoadTask::Run()
 
 MapRenderer::MapRenderer(void *metalLayer) : mTileCache(200), mTileLoadPool(4)
 {
+    {
+        earthcore::Ellipsoid wgs84 = earthcore::Ellipsoid::WGS84;
+        earthcore::Geodetic3D geodetic3D(0, 0, 0);
+        Vector3d position = wgs84.CartographicToCartesian(geodetic3D);
+        earthcore::Geodetic3D geodetic3D1 = wgs84.CartesianToCartographic(position);
+        printf("");
+    }
     mRenderdevice = createRenderDevice(RenderDeviceType::METAL, metalLayer);
     mProjection = Matrix4x4f::CreateOrthographic(-20037508, 20037508, -20037508, 20037508, -100.0f, 100.0f);
     

@@ -10,6 +10,7 @@
 #define EARTH_ENGINE_ELLIPSOID_INCLUDE_H
 
 #include "EarthEngineDefine.h"
+#include "Geodetic3D.h"
 
 //大地椭球体
 
