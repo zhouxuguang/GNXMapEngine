@@ -21,6 +21,19 @@ set(PROJECT_SOURCES
         MapRenderer.h
         WebMercator.cpp
         WebMercator.h
+        earthCore/EarthEngineDefine.h
+        earthCore/Ellipsoid.h
+        earthCore/Ellipsoid.cpp
+        earthCore/Geodetic3D.h
+        earthCore/Geodetic3D.cpp
+        earthCore/GeoGridTessellator.h
+        earthCore/GeoGridTessellator.cpp
+        earthCore/GeoMath.h
+        earthCore/GeoMath.cpp
+        earthCore/GeoTransform.h
+        earthCore/GeoTransform.cpp
+        earthCore/SubdivisionUtility.h
+        earthCore/SubdivisionUtility.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
