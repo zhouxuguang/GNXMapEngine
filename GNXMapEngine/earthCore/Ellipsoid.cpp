@@ -7,7 +7,6 @@
 //
 
 #include "Ellipsoid.h"
-#include "Geodetic3D.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 

@@ -16,8 +16,6 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-class Geodetic3D;
-
 class Ellipsoid
 {
 public:

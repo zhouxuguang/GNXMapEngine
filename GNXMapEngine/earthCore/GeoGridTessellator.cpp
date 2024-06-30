@@ -9,10 +9,6 @@
 #include "GeoGridTessellator.h"
 #include "SubdivisionUtility.h"
 
-#if 0
-#include "GeoEllipsoid.h"
-#include "GeoCentric.h"
-
 EARTH_CORE_NAMESPACE_BEGIN
 
 static int NumberOfTriangles(int numberOfSlicePartitions, int numberOfStackPartitions)
@@ -32,8 +28,8 @@ void GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
                                  int numberOfStackPartitions,
                                  GeoGridVertexAttributes vertexAttributes,
                                  std::vector<Vector3d>& vecPosition,
-                                 std::vector<Vector3d>& vecNormal,
-                                 std::vector<math3d::Vector2> &vecTexturePoint,
+                                 std::vector<Vector3f>& vecNormal,
+                                 std::vector<Vector2f> &vecTexturePoint,
                                  std::vector<unsigned int> &vecVertexIndice)
 {
     //经度划分网格数
@@ -51,20 +47,15 @@ void GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
     //
     // 创建查找表
     //
-    std::vector<double> cosTheta(numberOfSlicePartitions);
-    std::vector<double> sinTheta(numberOfSlicePartitions);
-    
-    for (int j = 0; j < numberOfSlicePartitions; ++j)
-    {
-        double theta = (M_PI * 2.0) * (((double)j) / numberOfSlicePartitions);
-        cosTheta[j] = cos(theta);
-        sinTheta[j] = sin(theta);
-    }
-    
-    GeocentricInfo info;
-    Set_Geocentric_Parameters( &info,
-                              ellipsoid.GetAxis().x,
-                              ellipsoid.GetAxis().z);
+//    std::vector<double> cosTheta(numberOfSlicePartitions);
+//    std::vector<double> sinTheta(numberOfSlicePartitions);
+//    
+//    for (int j = 0; j < numberOfSlicePartitions; ++j)
+//    {
+//        double theta = (M_PI * 2.0) * (((double)j) / numberOfSlicePartitions);
+//        cosTheta[j] = cos(theta);
+//        sinTheta[j] = sin(theta);
+//    }
     
     //
     // 创建顶点
@@ -72,53 +63,28 @@ void GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
     
     int numberOfVertices = NumberOfVertices(numberOfSlicePartitions, numberOfStackPartitions);
     vecPosition.reserve(numberOfVertices);
-    vecPosition.emplace_back(0, 0, ellipsoid.GetAxis().z);
+    
+    Vector3d axis = ellipsoid.GetAxis();
+    
+    // 北极点
+    vecPosition.emplace_back(0, 0, axis.z);
     
     for (int i = 1; i < numberOfStackPartitions; ++i)
     {
         double phi = M_PI * (((double)i) / numberOfStackPartitions);
         double sinPhi = sin(phi);
-        
-        double xSinPhi = ellipsoid.GetAxis().x * sinPhi;
-        double ySinPhi = ellipsoid.GetAxis().y * sinPhi;
-        double zCosPhi = ellipsoid.GetAxis().z * cos(phi);
+        double cosPhi = cos(phi);
         
         for (int j = 0; j < numberOfSlicePartitions; ++j)
         {
-            double x = cosTheta[j] * xSinPhi;
-            double y = sinTheta[j] * ySinPhi;
-            double z = zCosPhi;
-            
             double theta = (M_PI * 2.0) * (((double)j) / numberOfSlicePartitions);
+            double cosTheta = cos(theta);
+            double sinTheta = sin(theta);
             
-            //经度
-            if (theta > M_PI)
-            {
-                theta -= (M_PI * 2.0);
-            }
-            
-            //纬度
-            double phi = M_PI * (((double)i) / numberOfStackPartitions);
-            phi = -(phi - M_PI_2);
-            
-            //第三种方法
-            double x3,y3,z3;
-            Convert_Geodetic_To_Geocentric(&info, phi, theta, 0, &x3, &y3, &z3);
-            
-            theta *= RAD_TO_DEG;
-            phi *= RAD_TO_DEG;
-            
-            GeoEllipsoid elli = GeoEllipsoid(ellipsoid.GetAxis().x, ellipsoid.GetAxis().z);
-            
-            double x1 = 0;
-            double y1= 0;
-            double z1 = 0;
-            elli.LatLonHeightToXYZ(phi, theta, 0, x1, y1, z1);
-            
-            vecPosition.emplace_back(cosTheta[j] * xSinPhi, sinTheta[j] * ySinPhi, zCosPhi);
+            vecPosition.emplace_back(axis.x * cosTheta * sinPhi, axis.y * sinTheta * sinPhi, axis.z * cosPhi);
         }
     }
-    vecPosition.emplace_back(0, 0, -ellipsoid.GetAxis().z);
+    vecPosition.emplace_back(0, 0, -axis.z);
     
     //计算法向量和纹理坐标
     if ((vertexAttributes & GeoGridVertexAttributes::Normal) == GeoGridVertexAttributes::Normal ||
@@ -129,9 +95,7 @@ void GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
         for (int i = 0; i < vecPosition.size(); ++i)
         {
             Vector3d deticSurfaceNormal = ellipsoid.GeodeticSurfaceNormal(vecPosition[i]);
-            
-            //需要转换为halffloat吗？
-            vecNormal.push_back(deticSurfaceNormal);
+            vecNormal.emplace_back(deticSurfaceNormal.x, deticSurfaceNormal.y, deticSurfaceNormal.z);
             
             vecTexturePoint.push_back(SubdivisionUtility::ComputeTextureCoordinate(deticSurfaceNormal));
         }
@@ -198,5 +162,3 @@ void GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
 }
 
 EARTH_CORE_NAMESPACE_END
-
-#endif
