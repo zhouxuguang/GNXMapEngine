@@ -89,11 +89,11 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     mRenderdevice->resize(width, height);
     
     CameraPtr cameraPtr = mSceneManager->createCamera("MainCamera");
-//    cameraPtr->LookAt(mathutil::Vector3f(0, 0, 6378137.0 * 100), mathutil::Vector3f(0, 0, 0), mathutil::Vector3f(0, 1, 0));
-//    cameraPtr->SetLens(60, float(width) / height, 100.0f, 6378137.0 * 300);
+    cameraPtr->LookAt(Vector3f(0, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
+    cameraPtr->SetLens(60, float(width) / height, 10.0f, 6378137.0 * 2);
     
-    cameraPtr->LookAt(Vector3f(0, 0, 2.5), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
-    cameraPtr->SetLens(60, float(width) / height, 0.1f, 100);
+//    cameraPtr->LookAt(Vector3f(0, 0, 2.5), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
+//    cameraPtr->SetLens(60, float(width) / height, 0.1f, 100);
     
     //初始化灯光信息
     Light * pointLight = mSceneManager->createLight("mainLight", Light::LightType::PointLight);
@@ -130,7 +130,7 @@ void MapRenderer::DrawFrame()
 
 void MapRenderer::BuildEarthNode()
 {
-    earthcore::Ellipsoid wgs84 = earthcore::Ellipsoid::UnitSphere;
+    earthcore::Ellipsoid wgs84 = earthcore::Ellipsoid::WGS84;
     earthcore::Geodetic3D geodetic3D(0, 0, 0);
     Vector3d position = wgs84.CartographicToCartesian(geodetic3D);
     earthcore::Geodetic3D geodetic3D1 = wgs84.CartesianToCartographic(position);
@@ -152,6 +152,6 @@ void MapRenderer::BuildEarthNode()
     Quaternionf rotate;
     rotate.FromRotateMatrix(modelMat.GetMatrix3());
     
-    mSceneManager->getRootNode()->AddSceneNode(pNode, Vector3f::ZERO, rotate);
+    mSceneManager->getRootNode()->AddSceneNode(pNode, Vector3f(0, 0, -6378137 * 2), rotate);
     
 }
