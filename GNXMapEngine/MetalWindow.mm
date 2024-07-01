@@ -68,7 +68,7 @@ bool MetalWindow::event(QEvent *ev)
         
         QScreen* screen = QGuiApplication::primaryScreen();
         qreal devicePixelRatio = screen->devicePixelRatio();
-        devicePixelRatio = 1;   //还需要适配高分屏幕
+        //devicePixelRatio = 1;   //还需要适配高分屏幕
         
         mWidth = resizeEvent->size().width() * devicePixelRatio;
         mHeight = resizeEvent->size().height() * devicePixelRatio;

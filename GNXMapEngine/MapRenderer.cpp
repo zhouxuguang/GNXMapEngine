@@ -86,11 +86,14 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     mWidth = width;
     mHeight = height;
     
-    mRenderdevice->resize(width * 2, height * 2);
+    mRenderdevice->resize(width, height);
     
     CameraPtr cameraPtr = mSceneManager->createCamera("MainCamera");
-    cameraPtr->LookAt(mathutil::Vector3f(0, 0, 5), mathutil::Vector3f(0, 0, 0), mathutil::Vector3f(0, 1, 0));
-    cameraPtr->SetLens(60, float(width) / height, 0.1f, 100.f);
+//    cameraPtr->LookAt(mathutil::Vector3f(0, 0, 6378137.0 * 100), mathutil::Vector3f(0, 0, 0), mathutil::Vector3f(0, 1, 0));
+//    cameraPtr->SetLens(60, float(width) / height, 100.0f, 6378137.0 * 300);
+    
+    cameraPtr->LookAt(mathutil::Vector3f(0, 0, 3), mathutil::Vector3f(0, 0, 0), mathutil::Vector3f(0, 1, 0));
+    cameraPtr->SetLens(60, float(width) / height, 0.1f, 100);
     
     //初始化灯光信息
     Light * pointLight = mSceneManager->createLight("mainLight", Light::LightType::PointLight);
@@ -132,7 +135,7 @@ void MapRenderer::BuildEarthNode()
     Vector3d position = wgs84.CartographicToCartesian(geodetic3D);
     earthcore::Geodetic3D geodetic3D1 = wgs84.CartesianToCartographic(position);
     
-    MeshPtr mesh = earthcore::GeoGridTessellator::Compute(wgs84, 36, 18, earthcore::GeoGridTessellator::GeoGridVertexAttributes::All);
+    MeshPtr mesh = earthcore::GeoGridTessellator::Compute(wgs84, 360, 180, earthcore::GeoGridTessellator::GeoGridVertexAttributes::All);
     
     MeshRenderer* meshRender = new(std::nothrow) MeshRenderer();
     meshRender->SetSharedMesh(mesh);
