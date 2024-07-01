@@ -36,17 +36,17 @@ int SubdivisionUtility::NumberOfVertices(int numberOfSubdivisions)
 
 Vector2f SubdivisionUtility::ComputeTextureCoordinate(Vector3d position)
 {
-    return Vector2f((atan2(position.y, position.x) / (M_PI * 2.0)) + 0.5,
-                   (asin(position.z) / M_PI) + 0.5);
+//    return Vector2f((atan2(position.y, position.x) / (M_PI * 2.0)) + 0.5,
+//                   (asin(position.z) / M_PI) + 0.5);
     
-//    double x = atan2(position.y, position.x) / (M_PI * 2.0) + 0.5;
-//    double y = asin(position.z) / M_PI + 0.5;
-//    
-//    math3d::Vector2 vecResult;
-//    vecResult.x = x;
-//    vecResult.y = y;
-//    
-//    return vecResult;
+    double x = atan2(position.y, position.x) / (M_PI * 2.0) + 0.5;
+    double y = asin(position.z) / M_PI + 0.5;
+    
+    Vector2f vecResult;
+    vecResult.x = x;
+    vecResult.y = y;
+    
+    return vecResult;
 }
 
 EARTH_CORE_NAMESPACE_END

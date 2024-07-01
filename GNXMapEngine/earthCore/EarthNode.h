@@ -14,7 +14,7 @@
 EARTH_CORE_NAMESPACE_BEGIN
 
 // 地球的场景节点
-class EarthNode : SceneNode
+class EarthNode : public SceneNode
 {
 public:
     EarthNode(const Ellipsoid& ellipsoid);

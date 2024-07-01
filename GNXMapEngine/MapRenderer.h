@@ -89,7 +89,7 @@ public:
     
     void SetWindowSize(uint32_t width, uint32_t height);
     
-public:
+private:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     SceneManager* mSceneManager;
     
@@ -99,6 +99,8 @@ public:
     double mHeight;
     
     uint64_t mLastTime = 0;
+    
+    void BuildEarthNode();
 };
 
 #endif /* MapRenderer_hpp */

@@ -9,6 +9,7 @@
 #include <QtCore>
 #include "RenderSystem/SceneManager.h"
 #include "RenderSystem/SceneNode.h"
+#include "RenderSystem/mesh/MeshRenderer.h"
 #include "RenderSystem/ArcballManipulate.h"
 #include "MathUtil/Vector3.h"
 #include "RenderSystem/SkyBoxNode.h"
@@ -21,6 +22,7 @@
 #include "httplib.h"
 #include "earthCore/Ellipsoid.h"
 #include "earthCore/GeoGridTessellator.h"
+#include "earthCore/EarthNode.h"
 
 #include <filesystem>
 
@@ -29,21 +31,34 @@ namespace fs = std::filesystem;
 using namespace RenderCore;
 using namespace RenderSystem;
 
+static Texture2DPtr TextureFromFile(const char *filename)
+{
+    if (filename == nullptr)
+    {
+        return nullptr;
+    }
+    
+    imagecodec::VImagePtr image = std::make_shared<imagecodec::VImage>();
+    if (!imagecodec::ImageDecoder::DecodeFile(filename, image.get()))
+    {
+        return nullptr;
+    }
+    
+    TextureDescriptor textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(*image);
+    textureDescriptor.mipmaped = true;
+    
+    Texture2DPtr texture = getRenderDevice()->createTextureWithDescriptor(textureDescriptor);
+    Rect2D rect(0, 0, image->GetWidth(), image->GetHeight());
+    texture->replaceRegion(rect, image->GetPixels());
+    return texture;
+}
+
 MapRenderer::MapRenderer(void *metalLayer) : mTileLoadPool(4)
 {
     mRenderdevice = createRenderDevice(RenderDeviceType::METAL, metalLayer);
     mSceneManager = SceneManager::GetInstance();
     
-    {
-        earthcore::Ellipsoid wgs84 = earthcore::Ellipsoid::WGS84;
-        earthcore::Geodetic3D geodetic3D(0, 0, 0);
-        Vector3d position = wgs84.CartographicToCartesian(geodetic3D);
-        earthcore::Geodetic3D geodetic3D1 = wgs84.CartesianToCartographic(position);
-        
-        MeshPtr mesh = earthcore::GeoGridTessellator::Compute(wgs84, 360, 180, earthcore::GeoGridTessellator::GeoGridVertexAttributes::All);
-        
-        printf("");
-    }
+    BuildEarthNode();
     
     ShaderAssetString shaderAssetString = LoadCustomShaderAsset("/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/TileDraw.hlsl");
     
@@ -106,7 +121,30 @@ void MapRenderer::DrawFrame()
     
     mSceneManager->Render(renderEncoder);
     
-    
     renderEncoder->EndEncode();
     commandBuffer->presentFrameBuffer();
+}
+
+void MapRenderer::BuildEarthNode()
+{
+    earthcore::Ellipsoid wgs84 = earthcore::Ellipsoid::UnitSphere;
+    earthcore::Geodetic3D geodetic3D(0, 0, 0);
+    Vector3d position = wgs84.CartographicToCartesian(geodetic3D);
+    earthcore::Geodetic3D geodetic3D1 = wgs84.CartesianToCartographic(position);
+    
+    MeshPtr mesh = earthcore::GeoGridTessellator::Compute(wgs84, 36, 18, earthcore::GeoGridTessellator::GeoGridVertexAttributes::All);
+    
+    MeshRenderer* meshRender = new(std::nothrow) MeshRenderer();
+    meshRender->SetSharedMesh(mesh);
+    
+    MaterialPtr material = Material::GetDefaultDiffuseMaterial();
+    Texture2DPtr texture = TextureFromFile("/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/asset/NaturalEarth/NE2_50M_SR_W.jpg");
+    material->SetTexture("diffuseTexture", texture);
+    meshRender->AddMaterial(material);
+    
+    earthcore::EarthNode *pNode = new earthcore::EarthNode(wgs84);
+    pNode->AddComponent(meshRender);
+    
+    mSceneManager->getRootNode()->AddSceneNode(pNode);
+    
 }

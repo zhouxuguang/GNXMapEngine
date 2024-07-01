@@ -212,11 +212,18 @@ MeshPtr GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
     tempNormal.reserve(vecNormal.size());
     for (auto & iter : vecNormal)
     {
-        tempNormal.emplace_back(iter.x, iter.y, iter.z, 0.0);
+        tempNormal.emplace_back(iter.x, iter.y, iter.z, 1.0);
     }
     mesh->SetNormals(tempNormal.data(), tempNormal.size());
     mesh->SetUv(0, vecTexturePoint.data(), vecTexturePoint.size());
     mesh->SetIndices(vecVertexIndice.data(), vecVertexIndice.size());
+    
+    SubMeshInfo subInfo;
+    subInfo.firstIndex = 0;
+    subInfo.indexCount = (uint32_t)vecVertexIndice.size();
+    subInfo.vertexCount = (uint32_t)tempPos.size();
+    subInfo.topology = PrimitiveMode_TRIANGLES;
+    mesh->AddSubMeshInfo(subInfo);
     
     //构建gpu资源
     mesh->SetUpBuffer();
