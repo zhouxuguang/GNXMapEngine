@@ -92,7 +92,7 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
 //    cameraPtr->LookAt(mathutil::Vector3f(0, 0, 6378137.0 * 100), mathutil::Vector3f(0, 0, 0), mathutil::Vector3f(0, 1, 0));
 //    cameraPtr->SetLens(60, float(width) / height, 100.0f, 6378137.0 * 300);
     
-    cameraPtr->LookAt(mathutil::Vector3f(0, 0, 3), mathutil::Vector3f(0, 0, 0), mathutil::Vector3f(0, 1, 0));
+    cameraPtr->LookAt(Vector3f(0, 0, 2.5), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
     cameraPtr->SetLens(60, float(width) / height, 0.1f, 100);
     
     //初始化灯光信息
@@ -148,6 +148,10 @@ void MapRenderer::BuildEarthNode()
     earthcore::EarthNode *pNode = new earthcore::EarthNode(wgs84);
     pNode->AddComponent(meshRender);
     
-    mSceneManager->getRootNode()->AddSceneNode(pNode);
+    Matrix4x4f modelMat = Matrix4x4f::CreateRotation(1, 0, 0, 90) * Matrix4x4f::CreateRotation(0, 0, 1, 90);
+    Quaternionf rotate;
+    rotate.FromRotateMatrix(modelMat.GetMatrix3());
+    
+    mSceneManager->getRootNode()->AddSceneNode(pNode, Vector3f::ZERO, rotate);
     
 }
