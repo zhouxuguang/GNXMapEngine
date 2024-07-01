@@ -23,15 +23,17 @@ static int NumberOfVertices(int numberOfSlicePartitions, int numberOfStackPartit
     return 2 + ((numberOfStackPartitions - 1) * numberOfSlicePartitions);
 }
 
-void GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
+MeshPtr GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
                                  int numberOfSlicePartitions,
                                  int numberOfStackPartitions,
-                                 GeoGridVertexAttributes vertexAttributes,
-                                 std::vector<Vector3d>& vecPosition,
-                                 std::vector<Vector3f>& vecNormal,
-                                 std::vector<Vector2f> &vecTexturePoint,
-                                 std::vector<unsigned int> &vecVertexIndice)
+                                 GeoGridVertexAttributes vertexAttributes
+                                 )
 {
+    std::vector<Vector3d> vecPosition;
+    std::vector<Vector3f> vecNormal;
+    std::vector<Vector2f> vecTexturePoint;
+    std::vector<uint32_t> vecVertexIndice;
+    
     //经度划分网格数
     if (numberOfSlicePartitions < 3)
     {
@@ -84,7 +86,7 @@ void GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
             vecPosition.emplace_back(axis.x * cosTheta * sinPhi, axis.y * sinTheta * sinPhi, axis.z * cosPhi);
         }
     }
-    vecPosition.emplace_back(0, 0, -axis.z);
+    vecPosition.emplace_back(0, 0, -axis.z);  //南极点
     
     //计算法向量和纹理坐标
     if ((vertexAttributes & GeoGridVertexAttributes::Normal) == GeoGridVertexAttributes::Normal ||
@@ -159,6 +161,67 @@ void GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
     vecVertexIndice.push_back(lastPosition);
     vecVertexIndice.push_back(lastPosition - numberOfSlicePartitions);
     vecVertexIndice.push_back(lastPosition - 1);
+    
+    MeshPtr mesh = std::make_shared<Mesh>();
+    
+    // 设置顶点布局
+    VertexData & vertexData = mesh->GetVertexData();
+    ChannelInfo* channels = vertexData.GetChannels();
+    uint32_t offset = 0;
+    uint32_t vertexSize = 0;
+    if (!vecPosition.empty())
+    {
+        channels[kShaderChannelPosition].offset = offset;
+        channels[kShaderChannelPosition].format = VertexFormatFloat4;
+        vertexSize += 16;
+        offset += vecPosition.size() * sizeof(Vector4f);
+    }
+    if (!vecNormal.empty())
+    {
+        channels[kShaderChannelNormal].offset = offset;
+        channels[kShaderChannelNormal].format = VertexFormatFloat4;
+        vertexSize += 16;
+        offset += vecNormal.size() * sizeof(Vector4f);
+    }
+    if (!vecTexturePoint.empty())
+    {
+        channels[kShaderChannelTexCoord0].offset = offset;
+        channels[kShaderChannelTexCoord0].format = VertexFormatFloat2;
+        vertexSize += 8;
+        offset += vecTexturePoint.size() * sizeof(Vector2f);
+    }
+    
+    channels[kShaderChannelPosition].stride = sizeof(Vector4f);
+    channels[kShaderChannelNormal].stride = sizeof(Vector4f);
+    channels[kShaderChannelColor].stride = 0;
+    channels[kShaderChannelTexCoord0].stride = sizeof(Vector2f);
+    channels[kShaderChannelTexCoord1].stride = 0;
+    channels[kShaderChannelTangent].stride = 0;
+    
+    mesh->GetVertexData().Resize((uint32_t)vecPosition.size(), vertexSize);
+    
+    std::vector<Vector4f> tempPos;
+    tempPos.reserve(vecPosition.size());
+    for (auto & iter : vecPosition)
+    {
+        tempPos.emplace_back(iter.x, iter.y, iter.z, 1.0);
+    }
+    mesh->SetPositions(tempPos.data(), tempPos.size());
+    
+    std::vector<Vector4f> tempNormal;
+    tempNormal.reserve(vecNormal.size());
+    for (auto & iter : vecNormal)
+    {
+        tempNormal.emplace_back(iter.x, iter.y, iter.z, 0.0);
+    }
+    mesh->SetNormals(tempNormal.data(), tempNormal.size());
+    mesh->SetUv(0, vecTexturePoint.data(), vecTexturePoint.size());
+    mesh->SetIndices(vecVertexIndice.data(), vecVertexIndice.size());
+    
+    //构建gpu资源
+    mesh->SetUpBuffer();
+    
+    return mesh;
 }
 
 EARTH_CORE_NAMESPACE_END

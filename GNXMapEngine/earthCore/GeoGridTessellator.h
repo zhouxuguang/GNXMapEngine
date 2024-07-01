@@ -29,14 +29,10 @@ public:
 public:
     
     //计算地球网格
-    static void Compute(const Ellipsoid& ellipsoid,
+    static MeshPtr Compute(const Ellipsoid& ellipsoid,
                         int numberOfSlicePartitions,
                         int numberOfStackPartitions,
-                        GeoGridVertexAttributes vertexAttributes,
-                        std::vector<Vector3d>& vecPosition,
-                        std::vector<Vector3f>& vecNormal,
-                        std::vector<Vector2f> &vecTexturePoint,
-                        std::vector<unsigned int> &vecVertexIndice);
+                        GeoGridVertexAttributes vertexAttributes);
 };
 
 

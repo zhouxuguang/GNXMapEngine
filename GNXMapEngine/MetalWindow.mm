@@ -5,7 +5,7 @@
 //  Created by zhouxuguang on 2024/6/9.
 //
 
-#include "metalwindow.h"
+#include "MetalWindow.h"
 #include <QtCore>
 #include <QResizeEvent>
 #include <QMouseEvent>
@@ -77,9 +77,6 @@ bool MetalWindow::event(QEvent *ev)
         if (d->m_renderer)
         {
             d->m_renderer->SetWindowSize(mWidth, mHeight);
-            d->m_renderer->SetOrth(d->m_renderer->mLeft, d->m_renderer->mRight,
-                                   d->m_renderer->mTop, d->m_renderer->mBottom);
-            d->m_renderer->RequestTiles();
         }
         
         return false;
@@ -105,9 +102,6 @@ bool MetalWindow::event(QEvent *ev)
         {
             int xOffset = pt.x() - mMouseDown.x();
             int yOffset = pt.y() - mMouseDown.y();
-            
-            d->m_renderer->Offset(xOffset, yOffset);
-            d->m_renderer->RequestTiles();
         }
         
         return false;
@@ -126,8 +120,6 @@ bool MetalWindow::event(QEvent *ev)
                 int xOffset = pt.x() - mMouseDown.x();
                 int yOffset = pt.y() - mMouseDown.y();
                 
-                d->m_renderer->Offset(xOffset, yOffset);
-                d->m_renderer->RequestTiles();
                 mMouseDown = pt;
             }
         }
@@ -144,9 +136,6 @@ bool MetalWindow::event(QEvent *ev)
         bool zoomIn = delta > 0;
         
         QPointF point = wheelEvent->position();
-        
-        d->m_renderer->ZoomByPoint(zoomIn, Vector2f(point.x(), point.y()));
-        d->m_renderer->RequestTiles();
         
         return false;
     }
@@ -174,7 +163,4 @@ void MetalWindow::initMetal()
     metalLayer.device = d->m_metalDevice;
     d->m_renderer = new MapRenderer(metalLayer);
     d->m_renderer->SetWindowSize(mWidth, mHeight);
-    d->m_renderer->SetOrth(-20037508, 20037508, 20037508, -20037508);
-    //d->m_renderer->SetOrth(12000000, 12037508, 2037508, 2047508);
-    d->m_renderer->RequestTiles();
 }

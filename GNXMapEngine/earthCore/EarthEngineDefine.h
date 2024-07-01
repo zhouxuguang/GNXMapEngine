@@ -13,8 +13,11 @@
 #include <math.h>
 #include "MathUtil/Vector3.h"
 #include "MathUtil/Vector2.h"
+#include "RenderSystem/SceneManager.h"
+#include "RenderSystem/mesh/Mesh.h"
 
 USING_NS_MATHUTIL
+USING_NS_RENDERSYSTEM
 
 static const double WGS_84_RADIUS_EQUATOR = 6378140;
 

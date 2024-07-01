@@ -15,8 +15,8 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
-        metalwindow.h
-        metalwindow.mm
+        MetalWindow.h
+        MetalWindow.mm
         MapRenderer.cpp
         MapRenderer.h
         WebMercator.cpp
@@ -34,6 +34,8 @@ set(PROJECT_SOURCES
         earthCore/GeoTransform.cpp
         earthCore/SubdivisionUtility.h
         earthCore/SubdivisionUtility.cpp
+        earthCore/EarthNode.h
+        earthCore/EarthNode.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
