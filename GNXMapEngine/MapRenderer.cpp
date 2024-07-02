@@ -60,23 +60,6 @@ MapRenderer::MapRenderer(void *metalLayer) : mTileLoadPool(4)
     
     BuildEarthNode();
     
-    ShaderAssetString shaderAssetString = LoadCustomShaderAsset("/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/TileDraw.hlsl");
-    
-    ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
-    ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
-    ShaderFunctionPtr vertShader = mRenderdevice->createShaderFunction(*vertexShader, ShaderStage_Vertex);
-    ShaderFunctionPtr fragShader = mRenderdevice->createShaderFunction(*fragmentShader, ShaderStage_Fragment);
-    GraphicsPipelineDescriptor graphicsPipelineDescriptor;
-    graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
-    
-//    mPipeline = mRenderdevice->createGraphicsPipeline(graphicsPipelineDescriptor);
-//    mPipeline->attachVertexShader(vertShader);
-//    mPipeline->attachFragmentShader(fragShader);
-//    
-//    // 创建纹理和采样器
-//    SamplerDescriptor sampleDes;
-//    mTexSampler = mRenderdevice->createSamplerWithDescriptor(sampleDes);
-    
     // 开启异步加载数据的线程池
     mTileLoadPool.Start();
 }
@@ -89,7 +72,7 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     mRenderdevice->resize(width, height);
     
     CameraPtr cameraPtr = mSceneManager->createCamera("MainCamera");
-    cameraPtr->LookAt(Vector3f(0, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
+    cameraPtr->LookAt(Vector3f(0, 0, 100), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
     cameraPtr->SetLens(60, float(width) / height, 10.0f, 6378137.0 * 2);
     
 //    cameraPtr->LookAt(Vector3f(0, 0, 2.5), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
