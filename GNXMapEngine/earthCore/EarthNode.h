@@ -21,6 +21,11 @@ public:
     
     ~EarthNode();
     
+    const Ellipsoid& GetEllipsoid() const
+    {
+        return mEllipsoid;
+    }
+    
 private:
     const Ellipsoid& mEllipsoid;
 };

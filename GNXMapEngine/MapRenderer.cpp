@@ -23,6 +23,7 @@
 #include "earthCore/Ellipsoid.h"
 #include "earthCore/GeoGridTessellator.h"
 #include "earthCore/EarthNode.h"
+#include "earthCore/EarthCamera.h"
 
 #include <filesystem>
 
@@ -71,8 +72,10 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     
     mRenderdevice->resize(width, height);
     
-    CameraPtr cameraPtr = mSceneManager->createCamera("MainCamera");
-    cameraPtr->LookAt(Vector3f(6378137 * 2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));
+    earthcore::Ellipsoid wgs84 = earthcore::Ellipsoid::WGS84;
+    CameraPtr cameraPtr = std::make_shared<earthcore::EarthCamera>(wgs84, "MainCamera");
+    mSceneManager->AddCamara(cameraPtr);
+    //cameraPtr->LookAt(Vector3f(6378137 * 2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));
     cameraPtr->SetLens(60, float(width) / height, 10, 6378137.0 * 100);
     
 //    cameraPtr->LookAt(Vector3f(2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));

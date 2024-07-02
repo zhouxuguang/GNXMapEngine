@@ -11,10 +11,12 @@
 
 #include <stdio.h>
 #include <math.h>
+#include "MathUtil/Math3DCommon.h"
 #include "MathUtil/Vector3.h"
 #include "MathUtil/Vector2.h"
 #include "RenderSystem/SceneManager.h"
 #include "RenderSystem/mesh/Mesh.h"
+#include "RenderSystem/Camera.h"
 
 USING_NS_MATHUTIL
 USING_NS_RENDERSYSTEM

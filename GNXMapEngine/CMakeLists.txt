@@ -36,6 +36,8 @@ set(PROJECT_SOURCES
         earthCore/SubdivisionUtility.cpp
         earthCore/EarthNode.h
         earthCore/EarthNode.cpp
+        earthCore/EarthCamera.h
+        earthCore/EarthCamera.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
