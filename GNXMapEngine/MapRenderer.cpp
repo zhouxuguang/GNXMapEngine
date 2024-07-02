@@ -72,10 +72,10 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     mRenderdevice->resize(width, height);
     
     CameraPtr cameraPtr = mSceneManager->createCamera("MainCamera");
-    cameraPtr->LookAt(Vector3f(0, 0, 100), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
-    cameraPtr->SetLens(60, float(width) / height, 10.0f, 6378137.0 * 2);
+    cameraPtr->LookAt(Vector3f(6378137 * 2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));
+    cameraPtr->SetLens(60, float(width) / height, 10, 6378137.0 * 100);
     
-//    cameraPtr->LookAt(Vector3f(0, 0, 2.5), Vector3f(0, 0, 0), Vector3f(0, 1, 0));
+//    cameraPtr->LookAt(Vector3f(2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));
 //    cameraPtr->SetLens(60, float(width) / height, 0.1f, 100);
     
     //初始化灯光信息
@@ -135,6 +135,6 @@ void MapRenderer::BuildEarthNode()
     Quaternionf rotate;
     rotate.FromRotateMatrix(modelMat.GetMatrix3());
     
-    mSceneManager->getRootNode()->AddSceneNode(pNode, Vector3f(0, 0, -6378137 * 2), rotate);
+    mSceneManager->getRootNode()->AddSceneNode(pNode, Vector3f(0, 0, 0));
     
 }

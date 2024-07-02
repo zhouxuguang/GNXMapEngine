@@ -43,8 +43,8 @@ Vector2f SubdivisionUtility::ComputeTextureCoordinate(Vector3d position)
     double y = asin(position.z) / M_PI + 0.5;
     
     Vector2f vecResult;
-    vecResult.x = 1.0 - x;
-    vecResult.y = y;
+    vecResult.x = x;
+    vecResult.y = 1.0 - y;
     
     return vecResult;
 }
