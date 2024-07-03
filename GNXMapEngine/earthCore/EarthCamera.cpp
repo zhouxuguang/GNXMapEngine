@@ -59,10 +59,19 @@ EarthCamera::~EarthCamera()
 void EarthCamera::Zoom(double deltaDistance)
 {
     double dist = (mEyePos - mTargetPos).Length();
-    if (dist <= 15 && deltaDistance < 0)
+    printf("view point lont = %lf, lat = %lf, height = %lf, dsit = %lf, deltaDistance = %lf\n",
+           radToDeg(mEyeGeodetic.longitude), radToDeg(mEyeGeodetic.latitude), mEyeGeodetic.height, dist, deltaDistance);
+    
+    // 当前距离加上增量小于最小距离，那么就停止缩放了
+    if (dist + deltaDistance <= 10 && deltaDistance < 0)
     {
         return;
     }
+    
+//    if (dist <= 10 && deltaDistance < 0)
+//    {
+//        return;
+//    }
     dist += deltaDistance;
     //计算视线方向
     Vector3d viewDir = (mEyePos - mTargetPos).Normalize();
