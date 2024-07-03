@@ -15,26 +15,28 @@ EarthCamera::EarthCamera(const Ellipsoid& ellipsoid, const std::string& name) :
     mEyeGeodetic(degToRad(110), degToRad(23), 6398140),
     mEyeGeodeticCenter(degToRad(110), degToRad(23), 0)
 {
-    Vector3d eyePos = ellipsoid.CartographicToCartesian(mEyeGeodetic);
-    Vector3d targetPos = ellipsoid.CartographicToCartesian(mEyeGeodeticCenter);
+    mEyePos = ellipsoid.CartographicToCartesian(mEyeGeodetic);
+    mTargetPos = ellipsoid.CartographicToCartesian(mEyeGeodeticCenter);
     
-    // 计算视坐标系的坐标轴的朝向
-    double latitude = radToDeg(mEyeGeodetic.latitude);
-    double longitude = radToDeg(mEyeGeodetic.longitude);
-//    Matrix4x4d viewMatrix = Matrix4x4d::CreateRotation(1, 0, 0, 90 - radToDeg(mEyeGeodetic.latitude)) *
-//                            Matrix4x4d::CreateRotation(0, 0, 1, 90 + radToDeg(mEyeGeodetic.longitude));
-    Matrix4x4d viewMatrix = Matrix4x4d::CreateRotation(0, 0, 1, -90 - radToDeg(mEyeGeodetic.longitude)) *
-                        Matrix4x4d::CreateRotation(1, 0, 0, -90 + radToDeg(mEyeGeodetic.latitude));
+    // 用于计算椭球空间到视空间的坐标转换，对应于博士论文中5. 3. 1. 2 椭球空间变换到眼空间
+    mEllipsoidToEye = Matrix4x4d::CreateRotation(1, 0, 0, -90 + radToDeg(mEyeGeodetic.latitude)) *
+                            Matrix4x4d::CreateRotation(0, 0, 1, -90 - radToDeg(mEyeGeodetic.longitude)) *
+                            Matrix4x4d::CreateTranslate(-mEyePos);
     
-    Vector3f zAxis = Vector3f(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+    // 用于计算视空间到椭球空间的坐标转换，对应于博士论文中5. 3. 1. 1 眼空间变换到椭球空间
+    mEyeToEllipsoid = Matrix4x4d::CreateRotation(0, 0, 1, 90 + radToDeg(mEyeGeodetic.longitude)) *
+                        Matrix4x4d::CreateRotation(1, 0, 0, 90 - radToDeg(mEyeGeodetic.latitude)) *
+                        Matrix4x4d::CreateTranslate(mEyePos);
+    
+    Vector3f zAxis = Vector3f(mEyeToEllipsoid[0][1], mEyeToEllipsoid[1][1], mEyeToEllipsoid[2][1]);
     
     // 计算局部的东北天的坐标轴向
     Vector3d up = ellipsoid.GeodeticSurfaceNormal(mEyeGeodetic);
-    Vector3d east = Vector3d(-eyePos.y, eyePos.x, 0.0).Normalize();
+    Vector3d east = Vector3d(-mEyePos.y, mEyePos.x, 0.0).Normalize();
     Vector3d north = Vector3d::CrossProduct(up, east);
     
-    LookAt(Vector3f(eyePos.x, eyePos.y, eyePos.z),
-           Vector3f(targetPos.x, targetPos.y, targetPos.z),
+    LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
+           Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
            Vector3f(north.x, north.y, north.z));
 }
 
@@ -53,5 +55,30 @@ EarthCamera::~EarthCamera()
 //{
 //    return mView;
 //}
+
+void EarthCamera::Zoom(double deltaDistance)
+{
+    double dist = (mEyePos - mTargetPos).Length();
+    if (dist <= 15 && deltaDistance < 0)
+    {
+        return;
+    }
+    dist += deltaDistance;
+    //计算视线方向
+    Vector3d viewDir = (mEyePos - mTargetPos).Normalize();
+    mEyePos = mTargetPos + viewDir * dist;
+    
+    // 计算新的视点的地理坐标
+    mEyeGeodetic = mEllipsoid.CartesianToCartographic(mEyePos);
+    
+    // 计算局部的东北天的坐标轴向
+    Vector3d up = mEllipsoid.GeodeticSurfaceNormal(mEyeGeodetic);
+    Vector3d east = Vector3d(-mEyePos.y, mEyePos.x, 0.0).Normalize();
+    Vector3d north = Vector3d::CrossProduct(up, east);
+    
+    LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
+           Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
+           Vector3f(north.x, north.y, north.z));
+}
 
 EARTH_CORE_NAMESPACE_END

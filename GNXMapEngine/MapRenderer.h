@@ -10,6 +10,7 @@
 
 #include "RenderCore/RenderDevice.h"
 #include "earthCore/EarthEngineDefine.h"
+#include "earthCore/EarthCamera.h"
 #include "MathUtil/Matrix4x4.h"
 #include "BaseLib/LruCache.h"
 #include "BaseLib/ThreadPool.h"
@@ -89,6 +90,8 @@ public:
     
     void SetWindowSize(uint32_t width, uint32_t height);
     
+    void Zoom(double deltaDistance);
+    
 private:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     SceneManager* mSceneManager;
@@ -99,6 +102,8 @@ private:
     double mHeight;
     
     uint64_t mLastTime = 0;
+    
+    earthcore::EarthCameraPtr mCameraPtr = nullptr;
     
     void BuildEarthNode();
 };

@@ -37,10 +37,19 @@ public:
 //    //获得视图矩阵
 //    virtual Matrix4x4f GetViewMatrix() const;
     
+    // 缩放地球
+    void Zoom(double deltaDistance);
+    
 private:
-    const Ellipsoid& mEllipsoid;  // 椭球体
+    Ellipsoid mEllipsoid;  // 椭球体
     Geodetic3D mEyeGeodetic;  //视点的大地坐标
     Geodetic3D mEyeGeodeticCenter;   // 视坐标系的注视点
+    
+    Vector3d mEyePos;    //视点的空间直角坐标
+    Vector3d mTargetPos;  // 注释点的空间直角坐标
+    
+    Matrix4x4d mEllipsoidToEye;  // 椭球空间到视空间的变换矩阵
+    Matrix4x4d mEyeToEllipsoid;  // 视空间到椭球空间的变换矩阵
 };
 
 using EarthCameraPtr = std::shared_ptr<EarthCamera>;

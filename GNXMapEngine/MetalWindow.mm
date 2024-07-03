@@ -135,6 +135,12 @@ bool MetalWindow::event(QEvent *ev)
         int delta = wheelEvent->angleDelta().y();
         bool zoomIn = delta > 0;
         
+        if (d->m_renderer)
+        {
+            double deltaDistance = delta * 1000;
+            d->m_renderer->Zoom(deltaDistance);
+        }
+        
         QPointF point = wheelEvent->position();
         
         return false;

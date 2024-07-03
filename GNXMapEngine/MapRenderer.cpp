@@ -73,10 +73,9 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     mRenderdevice->resize(width, height);
     
     earthcore::Ellipsoid wgs84 = earthcore::Ellipsoid::WGS84;
-    CameraPtr cameraPtr = std::make_shared<earthcore::EarthCamera>(wgs84, "MainCamera");
-    mSceneManager->AddCamara(cameraPtr);
-    //cameraPtr->LookAt(Vector3f(6378137 * 2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));
-    cameraPtr->SetLens(60, float(width) / height, 10, 6378137.0 * 100);
+    mCameraPtr = std::make_shared<earthcore::EarthCamera>(wgs84, "MainCamera");
+    mSceneManager->AddCamara(mCameraPtr);
+    mCameraPtr->SetLens(60, float(width) / height, 10, 6378137.0 * 4);
     
 //    cameraPtr->LookAt(Vector3f(2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));
 //    cameraPtr->SetLens(60, float(width) / height, 0.1f, 100);
@@ -89,6 +88,11 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     pointLight->setFalloffStart(5);
     pointLight->setFalloffEnd(300);
     pointLight->setStrength(Vector3f(8.0, 8.0, 8.0));
+}
+
+void MapRenderer::Zoom(double deltaDistance)
+{
+    mCameraPtr->Zoom(deltaDistance);
 }
 
 void MapRenderer::DrawFrame()
@@ -134,10 +138,10 @@ void MapRenderer::BuildEarthNode()
     earthcore::EarthNode *pNode = new earthcore::EarthNode(wgs84);
     pNode->AddComponent(meshRender);
     
-    Matrix4x4f modelMat = Matrix4x4f::CreateRotation(1, 0, 0, 90) * Matrix4x4f::CreateRotation(0, 0, 1, 90);
-    Quaternionf rotate;
-    rotate.FromRotateMatrix(modelMat.GetMatrix3());
+//    Matrix4x4f modelMat = Matrix4x4f::CreateRotation(1, 0, 0, 90) * Matrix4x4f::CreateRotation(0, 0, 1, 90);
+//    Quaternionf rotate;
+//    rotate.FromRotateMatrix(modelMat.GetMatrix3());
     
-    mSceneManager->getRootNode()->AddSceneNode(pNode, Vector3f(0, 0, 0));
+    mSceneManager->getRootNode()->AddSceneNode(pNode);
     
 }
