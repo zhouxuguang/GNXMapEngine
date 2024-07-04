@@ -21,7 +21,7 @@ Ellipsoid::Ellipsoid(const Vector3d& radii)
 {
     mAxisLength = radii;
     
-    mRadii = radii;
+    //mRadii = radii;
     mRadiiSquared = Vector3d(radii.x * radii.x, radii.y * radii.y, radii.z * radii.z);
     mOneOverRadii = Vector3d(1.0 / radii.x, 1.0 / radii.y, 1.0 / radii.z);
     mOneOverRadiiSquared = Vector3d(
@@ -33,6 +33,11 @@ Ellipsoid::Ellipsoid(const Vector3d& radii)
 Vector3d Ellipsoid::GetAxis() const
 {
     return mAxisLength;
+}
+
+Vector3d Ellipsoid::GetOneOverRadii() const
+{
+    return mOneOverRadii;
 }
 
 Vector3d Ellipsoid::GetOneOverRadiiSquared() const

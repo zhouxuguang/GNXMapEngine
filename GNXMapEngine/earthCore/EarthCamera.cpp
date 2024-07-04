@@ -6,6 +6,7 @@
 //
 
 #include "EarthCamera.h"
+#include "IntersectionTests.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -68,10 +69,6 @@ void EarthCamera::Zoom(double deltaDistance)
         return;
     }
     
-//    if (dist <= 10 && deltaDistance < 0)
-//    {
-//        return;
-//    }
     dist += deltaDistance;
     //计算视线方向
     Vector3d viewDir = (mEyePos - mTargetPos).Normalize();
@@ -88,6 +85,20 @@ void EarthCamera::Zoom(double deltaDistance)
     LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
            Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
            Vector3f(north.x, north.y, north.z));
+    
+    // for test
+    Vector3f origin = Vector3f(mEyePos.x, mEyePos.y, mEyePos.z);
+    Vector3f direction = Vector3f(-viewDir.x, -viewDir.y, -viewDir.z);
+    Ray ray(origin, direction);
+    
+    Vector3d intersectPoint;
+    bool isIntersect = IntersectionTests::RayEllipsoid(ray, mEllipsoid, intersectPoint);
+    
+    Geodetic3D geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
+    
+    double lont = radToDeg(geodeticPoint.longitude);
+    double lat = radToDeg(geodeticPoint.latitude);
+    printf("inter point lont = %lf, lat = %lf\n", lont, lat);
 }
 
 EARTH_CORE_NAMESPACE_END

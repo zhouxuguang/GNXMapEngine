@@ -26,6 +26,8 @@ public:
     // 获得三个轴的长度
     Vector3d GetAxis() const;
     
+    Vector3d GetOneOverRadii() const;
+    
     //获得三个轴的平方倒数
     Vector3d GetOneOverRadiiSquared() const;
     
@@ -46,7 +48,7 @@ public:
     
 private:
     Vector3d mAxisLength;  //三轴的长度
-    Vector3d mRadii;
+    //Vector3d mRadii;
     Vector3d mRadiiSquared;
     Vector3d mOneOverRadii;
     Vector3d mOneOverRadiiSquared;   // 1/a2

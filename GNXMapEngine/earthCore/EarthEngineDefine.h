@@ -17,6 +17,7 @@
 #include "RenderSystem/SceneManager.h"
 #include "RenderSystem/mesh/Mesh.h"
 #include "RenderSystem/Camera.h"
+#include "RenderSystem/Ray.h"
 
 USING_NS_MATHUTIL
 USING_NS_RENDERSYSTEM
