@@ -96,6 +96,11 @@ void MapRenderer::Zoom(double deltaDistance)
     mCameraPtr->Zoom(deltaDistance);
 }
 
+void MapRenderer::Pan(float screenX, float screenY)
+{
+    mCameraPtr->Pan(screenX, screenY);
+}
+
 void MapRenderer::DrawFrame()
 {
     if (!mRenderdevice)

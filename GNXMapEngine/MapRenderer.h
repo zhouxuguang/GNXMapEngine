@@ -92,6 +92,8 @@ public:
     
     void Zoom(double deltaDistance);
     
+    void Pan(float screenX, float screenY);
+    
 private:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     SceneManager* mSceneManager;

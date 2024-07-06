@@ -28,6 +28,9 @@ MetalWindow::MetalWindow()
 :d(new MetalWindowPrivate())
 {
     setSurfaceType(QSurface::MetalSurface);
+    
+    QScreen* screen = QGuiApplication::primaryScreen();
+    mDevicePixelRatio = screen->devicePixelRatio();
 }
 
 MetalWindow::~MetalWindow()
@@ -66,12 +69,8 @@ bool MetalWindow::event(QEvent *ev)
         QResizeEvent* resizeEvent = (QResizeEvent*)ev;
         printf("resize = width = %d, height = %d\n", resizeEvent->size().width(), resizeEvent->size().height());
         
-        QScreen* screen = QGuiApplication::primaryScreen();
-        qreal devicePixelRatio = screen->devicePixelRatio();
-        //devicePixelRatio = 1;   //还需要适配高分屏幕
-        
-        mWidth = resizeEvent->size().width() * devicePixelRatio;
-        mHeight = resizeEvent->size().height() * devicePixelRatio;
+        mWidth = resizeEvent->size().width() * mDevicePixelRatio;
+        mHeight = resizeEvent->size().height() * mDevicePixelRatio;
         updateEvent();
         
         if (d->m_renderer)
@@ -98,11 +97,14 @@ bool MetalWindow::event(QEvent *ev)
         mIsDown = false;
         QPoint pt = mouseEvent->pos();
         
-        if (pt != mMouseDown)
+        if (d->m_renderer)
         {
-            int xOffset = pt.x() - mMouseDown.x();
-            int yOffset = pt.y() - mMouseDown.y();
+            QPointF offset = QPointF(pt - mMouseDown) * mPanRatio;
+            QPointF targetPoint = QPointF(mMouseDown) - offset;
+            
+            d->m_renderer->Pan(targetPoint.x() * mDevicePixelRatio, targetPoint.y() * mDevicePixelRatio);
         }
+        mMouseDown = QPoint(0, 0);
         
         return false;
     }
@@ -115,13 +117,16 @@ bool MetalWindow::event(QEvent *ev)
             QMouseEvent* mouseEvent = (QMouseEvent*)ev;
             QPoint pt = mouseEvent->pos();
             
-            if (pt != mMouseDown)
+            if (d->m_renderer)
             {
-                int xOffset = pt.x() - mMouseDown.x();
-                int yOffset = pt.y() - mMouseDown.y();
+                QPointF offset = QPointF(pt - mMouseDown) * mPanRatio;
+                printf("pan offset x = %f, y = %f\n", offset.x(), offset.y());
+                QPointF targetPoint = QPointF(mMouseDown) - offset;
                 
-                mMouseDown = pt;
+                d->m_renderer->Pan(targetPoint.x() * mDevicePixelRatio, targetPoint.y() * mDevicePixelRatio);
             }
+            
+            //mMouseDown = pt;
         }
         
         return false;

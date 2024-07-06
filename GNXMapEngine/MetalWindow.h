@@ -27,8 +27,13 @@ private:
     uint32_t mWidth;
     uint32_t mHeight;
     
-    QPoint mMouseDown;
+    QPoint mMouseDown;    //记录鼠标按下去时候的点，以及按下鼠标时，实时移动的点
     bool mIsDown = false;
+    
+    // 屏幕的像素比例
+    qreal mDevicePixelRatio = 1.0;
+    
+    qreal mPanRatio = 1.0;
 };
 
 #endif /* metalwindow_hpp */

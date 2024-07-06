@@ -28,7 +28,7 @@ public:
     
     void SetEyeGeodeticCenter(const Geodetic3D& eyeGeodeticCenter)
     {
-        mEyeGeodeticCenter = eyeGeodeticCenter;
+        mEyeGeodeticTarget = eyeGeodeticCenter;
     }
     
 //    //获得相机的世界坐标位置
@@ -40,10 +40,13 @@ public:
     // 缩放地球
     void Zoom(double deltaDistance);
     
+    // 平移地球
+    void Pan(float screenX, float screenY);
+    
 private:
     Ellipsoid mEllipsoid;  // 椭球体
     Geodetic3D mEyeGeodetic;  //视点的大地坐标
-    Geodetic3D mEyeGeodeticCenter;   // 视坐标系的注视点
+    Geodetic3D mEyeGeodeticTarget;   // 视坐标系的注视点
     
     Vector3d mEyePos;    //视点的空间直角坐标
     Vector3d mTargetPos;  // 注释点的空间直角坐标
