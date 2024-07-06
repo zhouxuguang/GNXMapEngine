@@ -99,6 +99,16 @@ void EarthCamera::Zoom(double deltaDistance)
     double lont = radToDeg(geodeticPoint.longitude);
     double lat = radToDeg(geodeticPoint.latitude);
     printf("inter point lont = %lf, lat = %lf\n", lont, lat);
+    
+    Ray ray1 = GenerateRay(800, 400);
+    
+    isIntersect = IntersectionTests::RayEllipsoid(ray1, mEllipsoid, intersectPoint);
+    
+    geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
+    
+    lont = radToDeg(geodeticPoint.longitude);
+    lat = radToDeg(geodeticPoint.latitude);
+    printf("zoom inter point lont = %lf, lat = %lf\n", lont, lat);
 }
 
 EARTH_CORE_NAMESPACE_END

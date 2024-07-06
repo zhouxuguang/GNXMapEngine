@@ -76,6 +76,7 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     mCameraPtr = std::make_shared<earthcore::EarthCamera>(wgs84, "MainCamera");
     mSceneManager->AddCamara(mCameraPtr);
     mCameraPtr->SetLens(60, float(width) / height, 10, 6378137.0 * 4);
+    mCameraPtr->SetViewSize(width, height);
     
 //    cameraPtr->LookAt(Vector3f(2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));
 //    cameraPtr->SetLens(60, float(width) / height, 0.1f, 100);
