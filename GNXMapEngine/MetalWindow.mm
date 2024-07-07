@@ -99,10 +99,10 @@ bool MetalWindow::event(QEvent *ev)
         
         if (d->m_renderer)
         {
-            QPointF offset = QPointF(pt - mMouseDown) * mPanRatio;
-            QPointF targetPoint = QPointF(mMouseDown) - offset;
+            QPointF offset = QPointF(mMouseDown - pt);
+            printf("pan offset x = %f, y = %f\n", offset.x(), offset.y());
             
-            d->m_renderer->Pan(targetPoint.x() * mDevicePixelRatio, targetPoint.y() * mDevicePixelRatio);
+            d->m_renderer->Pan(offset.x() * mDevicePixelRatio, offset.y() * mDevicePixelRatio);
         }
         mMouseDown = QPoint(0, 0);
         
@@ -119,14 +119,13 @@ bool MetalWindow::event(QEvent *ev)
             
             if (d->m_renderer)
             {
-                QPointF offset = QPointF(pt - mMouseDown) * mPanRatio;
+                QPointF offset = QPointF(mMouseDown - pt);
                 printf("pan offset x = %f, y = %f\n", offset.x(), offset.y());
-                QPointF targetPoint = QPointF(mMouseDown) - offset;
                 
-                d->m_renderer->Pan(targetPoint.x() * mDevicePixelRatio, targetPoint.y() * mDevicePixelRatio);
+                d->m_renderer->Pan(offset.x() * mDevicePixelRatio, offset.y() * mDevicePixelRatio);
             }
             
-            //mMouseDown = pt;
+            mMouseDown = pt;
         }
         
         return false;

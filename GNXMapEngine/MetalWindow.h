@@ -32,8 +32,6 @@ private:
     
     // 屏幕的像素比例
     qreal mDevicePixelRatio = 1.0;
-    
-    qreal mPanRatio = 1.0;
 };
 
 #endif /* metalwindow_hpp */

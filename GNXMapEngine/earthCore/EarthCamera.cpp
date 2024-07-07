@@ -111,9 +111,13 @@ void EarthCamera::Zoom(double deltaDistance)
     printf("zoom inter point lont = %lf, lat = %lf\n", lont, lat);
 }
 
-void EarthCamera::Pan(float screenX, float screenY)
+void EarthCamera::Pan(float offsetX, float offsetY)
 {
-    Ray ray = GenerateRay(screenX, screenY);
+    float centerX = mWidth / 2.0;
+    float centerY = mHeight / 2.0;
+    
+    // 添加偏移后的屏幕坐标
+    Ray ray = GenerateRay(centerX + offsetX, centerY + offsetY);
     
     // 计算当前鼠标点的空间直角坐标
     Vector3d intersectPoint;

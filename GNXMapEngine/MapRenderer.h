@@ -92,7 +92,7 @@ public:
     
     void Zoom(double deltaDistance);
     
-    void Pan(float screenX, float screenY);
+    void Pan(float offsetX, float offsetY);
     
 private:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;

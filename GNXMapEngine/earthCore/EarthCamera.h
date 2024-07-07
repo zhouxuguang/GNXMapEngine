@@ -40,8 +40,8 @@ public:
     // 缩放地球
     void Zoom(double deltaDistance);
     
-    // 平移地球
-    void Pan(float screenX, float screenY);
+    // 平移地球offsetX, offsetY 平移的参数，屏幕坐标增量
+    void Pan(float offsetX, float offsetY);
     
 private:
     Ellipsoid mEllipsoid;  // 椭球体
