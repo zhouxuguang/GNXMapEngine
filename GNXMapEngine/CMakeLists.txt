@@ -38,6 +38,8 @@ set(PROJECT_SOURCES
         earthCore/EarthNode.cpp
         earthCore/EarthCamera.h
         earthCore/EarthCamera.cpp
+        earthCore/IntersectionTests.h
+        earthCore/IntersectionTests.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
