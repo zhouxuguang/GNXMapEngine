@@ -1,3 +1,3 @@
 [submodule "GNXEngine"]
 	path = GNXEngine
-	url = git@github.com:zhouxuguang/GNXEngine.git
+	url = https://github.com/zhouxuguang/GNXEngine.git
