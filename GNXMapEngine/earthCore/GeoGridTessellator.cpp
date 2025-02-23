@@ -37,13 +37,13 @@ MeshPtr GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
     //经度划分网格数
     if (numberOfSlicePartitions < 3)
     {
-        return;
+        return nullptr;
     }
     
     //纬度划分数
     if (numberOfStackPartitions < 2)
     {
-        return;
+        return nullptr;
     }
     
     //

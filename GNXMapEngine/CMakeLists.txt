@@ -15,8 +15,6 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
-        MetalWindow.h
-        MetalWindow.mm
         MapRenderer.cpp
         MapRenderer.h
         WebMercator.cpp
@@ -42,10 +40,22 @@ set(PROJECT_SOURCES
         earthCore/IntersectionTests.cpp
 )
 
+if(APPLE)
+    set(PROJECT_SOURCES_APPLE
+            MetalWindow.h
+            MetalWindow.mm)
+    list(APPEND PROJECT_SOURCES PROJECT_SOURCES_APPLE)
+elseif(WIN32)
+    set(PROJECT_SOURCES_WIN32
+            VulkanWindow.h
+            VulkanWindow.cpp)
+    set(APPEND PROJECT_SOURCES PROJECT_SOURCES_WIN32)
+endif()
+
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(GNXMapEngine
         MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
+        ${PROJECT_SOURCES} ${PROJECT_SOURCES_WIN32}
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET GNXMapEngine APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

@@ -19,7 +19,7 @@
 #include "BaseLib/DateTime.h"
 
 #include "WebMercator.h"
-#include "httplib.h"
+//#include "httplib.h"
 #include "earthCore/Ellipsoid.h"
 #include "earthCore/GeoGridTessellator.h"
 #include "earthCore/EarthNode.h"
@@ -56,7 +56,13 @@ static Texture2DPtr TextureFromFile(const char *filename)
 
 MapRenderer::MapRenderer(void *metalLayer) : mTileLoadPool(4)
 {
+#ifdef _WIN32
+    mRenderdevice = createRenderDevice(RenderDeviceType::VULKAN, metalLayer);
+#elif __APPLE__
     mRenderdevice = createRenderDevice(RenderDeviceType::METAL, metalLayer);
+#endif // _WIN
+
+    
     mSceneManager = SceneManager::GetInstance();
     
     BuildEarthNode();

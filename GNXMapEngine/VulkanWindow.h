@@ -1,17 +1,17 @@
 //
-//  metalwindow.h
+//  VulkanWindow.h
 //  GNXMapEngine
 //
 //  Created by zhouxuguang on 2024/6/9.
 //
 
-#ifndef metalwindow_hpp
-#define metalwindow_hpp
+#ifndef GNX_MAP_ENGINE_VULKAN_WINDOWS_SGJDFGJ
+#define GNX_MAP_ENGINE_VULKAN_WINDOWS_SGJDFGJ
 
 #include <QWindow>
 #include <memory>
 
-class MetalWindowPrivate;
+class VulkanWindowPrivate;
 class VulkanWindow : public QWindow
 {
 public:
@@ -20,10 +20,9 @@ public:
     void exposeEvent(QExposeEvent *) override;
     void updateEvent();
     bool event(QEvent *ev) override;
-    void initMetal();
+    void initVulkan();
 private:
-    MetalWindowPrivate *d;
-    
+    VulkanWindowPrivate* d;
     uint32_t mWidth;
     uint32_t mHeight;
     

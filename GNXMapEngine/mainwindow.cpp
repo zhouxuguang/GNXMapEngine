@@ -8,7 +8,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     
-    QWidget *wrapper = QWidget::createWindowContainer(new MetalWindow(), this);
+    QWidget *wrapper = QWidget::createWindowContainer(new VulkanWindow(), this);
     setCentralWidget(wrapper);
     wrapper->show();
 }
