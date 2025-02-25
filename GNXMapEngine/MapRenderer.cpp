@@ -17,6 +17,7 @@
 #include "RenderSystem/RenderEngine.h"
 #include "RenderSystem/ImageTextureUtil.h"
 #include "BaseLib/DateTime.h"
+#include "imagecodec/ColorConverter.h"
 
 #include "WebMercator.h"
 //#include "httplib.h"
@@ -24,6 +25,7 @@
 #include "earthCore/GeoGridTessellator.h"
 #include "earthCore/EarthNode.h"
 #include "earthCore/EarthCamera.h"
+#include "earthCore/QuadTree.h"
 
 #include <filesystem>
 
@@ -43,6 +45,15 @@ static Texture2DPtr TextureFromFile(const char *filename)
     if (!imagecodec::ImageDecoder::DecodeFile(filename, image.get()))
     {
         return nullptr;
+    }
+
+    if (image->GetFormat() == imagecodec::FORMAT_SRGB8)
+    {
+        imagecodec::VImagePtr dstImage = std::make_shared<imagecodec::VImage>();
+        dstImage->SetImageInfo(imagecodec::FORMAT_SRGB8_ALPHA8, image->GetWidth(), image->GetHeight());
+        dstImage->AllocPixels();
+        imagecodec::ColorConverter::convert_RGB24toRGBA32(image, dstImage);
+        image = dstImage;
     }
     
     TextureDescriptor textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(*image);
@@ -66,6 +77,21 @@ MapRenderer::MapRenderer(void *metalLayer) : mTileLoadPool(4)
     mSceneManager = SceneManager::GetInstance();
     
     BuildEarthNode();
+
+	auto    root0 = new earthcore::QuadNode(
+		 nullptr
+		, Vector2d(-M_PI, -M_PI_2)
+		, Vector2d(0, M_PI_2)
+		, 0
+		, earthcore::QuadNode::CHILD_LT
+	);
+	auto    root1 = new earthcore::QuadNode(
+        nullptr
+		, Vector2d(0, -M_PI_2)
+		, Vector2d(M_PI, M_PI_2)
+		, 0
+		, earthcore::QuadNode::CHILD_LT
+	);
     
     // 开启异步加载数据的线程池
     mTileLoadPool.Start();
@@ -143,7 +169,7 @@ void MapRenderer::BuildEarthNode()
     meshRender->SetSharedMesh(mesh);
     
     MaterialPtr material = Material::GetDefaultDiffuseMaterial();
-    Texture2DPtr texture = TextureFromFile("/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/asset/NaturalEarth/NE2_50M_SR_W.jpg");
+    Texture2DPtr texture = TextureFromFile(R"(D:\source\graphics\engine\GNXMapEngine\GNXMapEngine\asset\NaturalEarth\NE2_50M_SR_W.jpg)");
     material->SetTexture("diffuseTexture", texture);
     meshRender->AddMaterial(material);
     

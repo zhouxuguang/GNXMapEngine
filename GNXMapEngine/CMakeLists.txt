@@ -38,6 +38,10 @@ set(PROJECT_SOURCES
         earthCore/EarthCamera.cpp
         earthCore/IntersectionTests.h
         earthCore/IntersectionTests.cpp
+        earthCore/QuadTree.h
+        earthCore/QuadTree.cpp
+        earthCore/QuadTileID.h
+        earthCore/QuadTileID.cpp
 )
 
 if(APPLE)
