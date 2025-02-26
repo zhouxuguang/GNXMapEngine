@@ -10,6 +10,7 @@
 
 #include "EarthEngineDefine.h"
 #include "Ellipsoid.h"
+#include "QuadTree.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -17,7 +18,7 @@ EARTH_CORE_NAMESPACE_BEGIN
 class EarthNode : public SceneNode
 {
 public:
-    EarthNode(const Ellipsoid& ellipsoid);
+    EarthNode(const Ellipsoid& ellipsoid, EarthCameraPtr cameraPtr);
     
     ~EarthNode();
     
@@ -25,9 +26,13 @@ public:
     {
         return mEllipsoid;
     }
+
+    virtual void Update(float deltaTime) override;
     
 private:
     const Ellipsoid& mEllipsoid;
+    std::vector<QuadTreePtr> mQuadNodes;   //四叉树根节点，wgs84的话就有两个
+    EarthCameraPtr mCameraPtr = nullptr;
 };
 
 EARTH_CORE_NAMESPACE_END

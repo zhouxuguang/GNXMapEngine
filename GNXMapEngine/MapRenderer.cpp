@@ -77,21 +77,6 @@ MapRenderer::MapRenderer(void *metalLayer) : mTileLoadPool(4)
     mSceneManager = SceneManager::GetInstance();
     
     BuildEarthNode();
-
-	auto    root0 = new earthcore::QuadNode(
-		 nullptr
-		, Vector2d(-M_PI, -M_PI_2)
-		, Vector2d(0, M_PI_2)
-		, 0
-		, earthcore::QuadNode::CHILD_LT
-	);
-	auto    root1 = new earthcore::QuadNode(
-        nullptr
-		, Vector2d(0, -M_PI_2)
-		, Vector2d(M_PI, M_PI_2)
-		, 0
-		, earthcore::QuadNode::CHILD_LT
-	);
     
     // 开启异步加载数据的线程池
     mTileLoadPool.Start();
@@ -104,8 +89,6 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     
     mRenderdevice->resize(width, height);
     
-    earthcore::Ellipsoid wgs84 = earthcore::Ellipsoid::WGS84;
-    mCameraPtr = std::make_shared<earthcore::EarthCamera>(wgs84, "MainCamera");
     mSceneManager->AddCamara(mCameraPtr);
     mCameraPtr->SetLens(60, float(width) / height, 10, 6378137.0 * 4);
     mCameraPtr->SetViewSize(width, height);
@@ -172,8 +155,11 @@ void MapRenderer::BuildEarthNode()
     Texture2DPtr texture = TextureFromFile(R"(D:\source\graphics\engine\GNXMapEngine\GNXMapEngine\asset\NaturalEarth\NE2_50M_SR_W.jpg)");
     material->SetTexture("diffuseTexture", texture);
     meshRender->AddMaterial(material);
+
+    // 创建相机
+	mCameraPtr = std::make_shared<earthcore::EarthCamera>(wgs84, "MainCamera");
     
-    earthcore::EarthNode *pNode = new earthcore::EarthNode(wgs84);
+    earthcore::EarthNode *pNode = new earthcore::EarthNode(wgs84, mCameraPtr);
     pNode->AddComponent(meshRender);
     
 //    Matrix4x4f modelMat = Matrix4x4f::CreateRotation(1, 0, 0, 90) * Matrix4x4f::CreateRotation(0, 0, 1, 90);

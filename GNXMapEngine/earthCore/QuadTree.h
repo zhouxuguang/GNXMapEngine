@@ -1,6 +1,5 @@
 #ifndef GNX_MAP_ENGINE_QUADTREE_INCLUDE_GJGJDF
 #define GNX_MAP_ENGINE_QUADTREE_INCLUDE_GJGJDF
-#endif // !GNX_MAP_ENGINE_QUADTREE_INCLUDE_GJGJDF
 
 #include "EarthEngineDefine.h"
 #include "Vector3.h"
@@ -51,7 +50,7 @@ public:
 		CHILD_RB,
 	};
 
-	using   QuadNodePtr = std::shared_ptr<QuadNode>;
+	using QuadNodePtr = std::shared_ptr<QuadNode>;
 
 	// 经纬度起始和结束点
 	Vector2d  mLLStart;
@@ -94,7 +93,8 @@ public:
 	void Update(const EarthCameraPtr& camera);
 };
 
-using QuadTreePtr = std::shared_ptr<QuadNode>;
-
+using QuadTreePtr = QuadNode::QuadNodePtr;
 
 EARTH_CORE_NAMESPACE_END
+
+#endif // !GNX_MAP_ENGINE_QUADTREE_INCLUDE_GJGJDF
