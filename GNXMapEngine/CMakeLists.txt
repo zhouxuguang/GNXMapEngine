@@ -48,7 +48,10 @@ if(APPLE)
     set(PROJECT_SOURCES_APPLE
             MetalWindow.h
             MetalWindow.mm)
-    list(APPEND PROJECT_SOURCES PROJECT_SOURCES_APPLE)
+    #set(APPEND ${PROJECT_SOURCES} PROJECT_SOURCES_APPLE)
+    #list(APPEND PROJECT_SOURCES PROJECT_SOURCES_APPLE)
+    set(PROJECT_SOURCES ${PROJECT_SOURCES} ${PROJECT_SOURCES_APPLE})   # apple下只能这么拼接
+    #message(STATUS "Sources: ${PROJECT_SOURCES}")
 elseif(WIN32)
     set(PROJECT_SOURCES_WIN32
             VulkanWindow.h

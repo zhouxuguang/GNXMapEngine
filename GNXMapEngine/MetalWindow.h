@@ -12,11 +12,11 @@
 #include <memory>
 
 class MetalWindowPrivate;
-class VulkanWindow : public QWindow
+class MetalWindow : public QWindow
 {
 public:
-    VulkanWindow();
-    ~VulkanWindow();
+    MetalWindow();
+    ~MetalWindow();
     void exposeEvent(QExposeEvent *) override;
     void updateEvent();
     bool event(QEvent *ev) override;
