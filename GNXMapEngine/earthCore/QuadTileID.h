@@ -5,12 +5,12 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-// ÍßÆ¬IDµÄÀà
+// ç“¦ç‰‡IDçš„ç±»
 class QuadTileID
 {
 public:
 	/**
-	* @brief ´´½¨Ò»¸öĞÂÊµÀı
+	* @brief åˆ›å»ºä¸€ä¸ªæ–°å®ä¾‹
 	*
 	*/
 	constexpr QuadTileID() noexcept
@@ -19,11 +19,11 @@ public:
 	}
 
     /**
-    * @brief ´´½¨Ò»¸öĞÂÊµÀı
+    * @brief åˆ›å»ºä¸€ä¸ªæ–°å®ä¾‹
     *
-    * @param level_ ½ÚµãµÄ²ã¼¶£¬0ÊÇ¸ù½Úµã
-    * @param x_ ÍßÆ¬µÄx×ø±ê
-    * @param y_ ÍßÆ¬µÄy×ø±ê
+    * @param level_ èŠ‚ç‚¹çš„å±‚çº§ï¼Œ0æ˜¯æ ¹èŠ‚ç‚¹
+    * @param x_ ç“¦ç‰‡çš„xåæ ‡
+    * @param y_ ç“¦ç‰‡çš„yåæ ‡
     */
     constexpr QuadTileID(uint32_t level_, uint32_t x_, uint32_t y_) noexcept
         : level(level_), x(x_), y(y_) 
@@ -31,7 +31,7 @@ public:
     }
 
     /**
-     * @brief ÅĞ¶ÏÁ½¸öÍßÆ¬IDÊÇ·ñÏàµÈ
+     * @brief åˆ¤æ–­ä¸¤ä¸ªç“¦ç‰‡IDæ˜¯å¦ç›¸ç­‰
      */
     constexpr bool operator==(const QuadTileID& other) const noexcept 
     {
@@ -40,7 +40,7 @@ public:
     }
 
     /**
-     * @brief ÅĞ¶ÏÁ½¸öÍßÆ¬IDÊÇ·ñ²»ÏàµÈ
+     * @brief åˆ¤æ–­ä¸¤ä¸ªç“¦ç‰‡IDæ˜¯å¦ä¸ç›¸ç­‰
      */
     constexpr bool operator!=(const QuadTileID& other) const noexcept 
     {
@@ -48,11 +48,11 @@ public:
     }
 
     /**
-     * @brief ·µ»Ø¸¸½ÚµãµÄÍßÆ¬ID
+     * @brief è¿”å›çˆ¶èŠ‚ç‚¹çš„ç“¦ç‰‡ID
      *
-     * Èç¹ûÊÇ0¼¶½Úµã£¬·µ»Ø×ÔÉí
+     * å¦‚æœæ˜¯0çº§èŠ‚ç‚¹ï¼Œè¿”å›è‡ªèº«
      *
-     * @return ¸¸½ÚµãÍßÆ¬ID
+     * @return çˆ¶èŠ‚ç‚¹ç“¦ç‰‡ID
      */
     constexpr QuadTileID GetParent() const noexcept 
     {
@@ -64,21 +64,23 @@ public:
     }
 
     /**
-     * @brief ÍßÆ¬²ã¼¶£¬0ÊÇ¸ù½Úµã
+     * @brief ç“¦ç‰‡å±‚çº§ï¼Œ0æ˜¯æ ¹èŠ‚ç‚¹
      */
     uint32_t level;
 
     /**
-     * @brief ÍßÆ¬IDµÄx×ø±ê
+     * @brief ç“¦ç‰‡IDçš„xåæ ‡
      */
     uint32_t x;
 
     /**
-     * @brief ÍßÆ¬IDµÄy×ø±ê
+     * @brief ç“¦ç‰‡IDçš„yåæ ‡
      */
     uint32_t y;
 };
 
+
+// æ ¹æ®ç»çº¬åº¦å’Œçº§åˆ«åˆ›å»ºç“¦ç‰‡ID
 QuadTileID GetTileID(uint32_t level, double rLong, double rLat);
 
 EARTH_CORE_NAMESPACE_END

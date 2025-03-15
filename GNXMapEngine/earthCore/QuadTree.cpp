@@ -1,4 +1,5 @@
 #include "QuadTree.h"
+#include "rendersystem/AABB.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -12,6 +13,21 @@ QuadNode::QuadNode(QuadNode* parent, const Vector2d& vStart, const Vector2d& vEn
 	Vector2d xLLCenter = GetLonLatCenter();
 	// 计算瓦片ID，并赋值
 	mTileID = GetTileID(level, xLLCenter.x, xLLCenter.y);
+
+	// 计算瓦片的世界坐标范围
+	Ellipsoid wgs84 = Ellipsoid::WGS84;
+
+	Geodetic3D llPoint1 = Geodetic3D(mLLStart.x, mLLStart.y);
+	Vector3d point1 = wgs84.CartographicToCartesian(llPoint1);
+
+	Geodetic3D llPoint2 = Geodetic3D(mLLEnd.x, mLLEnd.y);
+	Vector3d point2 = wgs84.CartographicToCartesian(llPoint2);
+	std::vector<Vector3d> points;
+	points.reserve(2);
+	points.push_back(point1);
+	points.push_back(point2);
+
+	mBoundingBox = AxisAlignedBoxd::FromPositions(points);
 
 	mChildNodes[0] = nullptr;
 	mChildNodes[1] = nullptr;
@@ -76,14 +92,14 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 	Vector3f eyePosition = camera->GetPosition();
 
 	// 瓦片中心点
-	Vector3f vWCenter = mBoundingBox.getCenter();
-	Vector3f min = mBoundingBox.mMin;
-	Vector3f max = mBoundingBox.mMax;
+	Vector3d vWCenter = mBoundingBox.center;
+	Vector3d min = mBoundingBox.minimum;
+	Vector3d max = mBoundingBox.maximum;
 
-	Vector3f vWSize = max - min;
+	Vector3d vWSize = max - min;
 
 	double fSize = vWSize.Length() * 0.5;
-	double distance = (vWCenter - eyePosition).Length();
+	double distance = (vWCenter - Vector3d(eyePosition.x, eyePosition.y, eyePosition.z)).Length();
 
 	if (distance / fSize < 3 && HasNoFlag(mStatusFlag, FLAG_HAS_CULL))
 	{

@@ -4,22 +4,22 @@ EARTH_CORE_NAMESPACE_BEGIN
 
 QuadTileID GetTileID(uint32_t level, double rLong, double rLat)
 {
-	// 计算该级别x和y方向总共有多少张瓦片
+	// 璁＄畻璇ョ骇鍒玿鍜寉鏂瑰悜鎬诲叡鏈夊灏戝紶鐡︾墖
 	uint32_t    xTiles = 2 << level;
 	uint32_t    yTiles = 1 << level;
 
-	// 计算每张瓦片占据的经纬度范围
+	// 璁＄畻姣忓紶鐡︾墖鍗犳嵁鐨勭粡绾害鑼冨洿
 	double      xWidth = M_PI * 2.0 / xTiles;
 	double      yHeight = M_PI / yTiles;
 
-	// 计算经纬方向的ID
+	// 璁＄畻缁忕含鏂瑰悜鐨処D
 	double      xCoord = (rLong + M_PI) / xWidth;
 	if (xCoord >= xTiles)
 	{
 		xCoord = xTiles - 1;
 	}
 
-	// 计算纬度方向的ID
+	// 璁＄畻绾害鏂瑰悜鐨処D
 	double      yCoord = (M_PI_2 - rLat) / yHeight;
 	if (yCoord >= yTiles)
 	{

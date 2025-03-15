@@ -57,7 +57,7 @@ public:
 	Vector2d  mLLEnd;
 
 	// 瓦片的世界坐标的包围盒
-	AABB mBoundingBox;
+	AxisAlignedBoxd mBoundingBox;
 
 	/// 位置区域
 	ChildRegion  mRegion;

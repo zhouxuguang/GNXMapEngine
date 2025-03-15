@@ -19,6 +19,10 @@ set(PROJECT_SOURCES
         MapRenderer.h
         WebMercator.cpp
         WebMercator.h
+        earthCore/BoundingRegion.h
+        earthCore/BoundingRegion.cpp
+        earthCore/GlobeRectangle.h
+        earthCore/GlobeRectangle.cpp
         earthCore/EarthEngineDefine.h
         earthCore/Ellipsoid.h
         earthCore/Ellipsoid.cpp
@@ -48,8 +52,6 @@ if(APPLE)
     set(PROJECT_SOURCES_APPLE
             MetalWindow.h
             MetalWindow.mm)
-    #set(APPEND ${PROJECT_SOURCES} PROJECT_SOURCES_APPLE)
-    #list(APPEND PROJECT_SOURCES PROJECT_SOURCES_APPLE)
     set(PROJECT_SOURCES ${PROJECT_SOURCES} ${PROJECT_SOURCES_APPLE})   # apple下只能这么拼接
     #message(STATUS "Sources: ${PROJECT_SOURCES}")
 elseif(WIN32)
