@@ -18,6 +18,8 @@
 #include "RenderSystem/mesh/Mesh.h"
 #include "RenderSystem/Camera.h"
 #include "RenderSystem/Ray.h"
+#include "RenderSystem/Plane.h"
+#include "RenderSystem/AABB.h"
 
 USING_NS_MATHUTIL
 USING_NS_RENDERSYSTEM

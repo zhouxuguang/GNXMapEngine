@@ -13,8 +13,8 @@ bool IntersectionTests::RayEllipsoid(const Ray& ray, const Ellipsoid& ellipsoid,
 {
     Vector3d inverseRadii = ellipsoid.GetOneOverRadii();
 
-    Vector3d origin = Vector3d(ray.getOrigin().x, ray.getOrigin().y, ray.getOrigin().z);
-    Vector3d direction = Vector3d(ray.getDirection().x, ray.getDirection().y, ray.getDirection().z);
+    Vector3d origin = Vector3d(ray.GetOrigin().x, ray.GetOrigin().y, ray.GetOrigin().z);
+    Vector3d direction = Vector3d(ray.GetDirection().x, ray.GetDirection().y, ray.GetDirection().z);
 
     Vector3d q = inverseRadii * origin;
     Vector3d w = inverseRadii * direction;
