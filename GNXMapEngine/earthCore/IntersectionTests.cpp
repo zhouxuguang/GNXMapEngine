@@ -9,7 +9,7 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-bool IntersectionTests::RayEllipsoid(const Ray& ray, const Ellipsoid& ellipsoid, Vector3d& intersectPoint) noexcept
+bool IntersectionTests::RayEllipsoid(const Rayd& ray, const Ellipsoid& ellipsoid, Vector3d& intersectPoint) noexcept
 {
     Vector3d inverseRadii = ellipsoid.GetOneOverRadii();
 

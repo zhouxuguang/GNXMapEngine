@@ -17,7 +17,7 @@ class IntersectionTests
 public:
     
     // 计算射线与椭球的交点
-    static bool RayEllipsoid(const Ray& ray, const Ellipsoid& ellipsoid, Vector3d& intersectPoint) noexcept;
+    static bool RayEllipsoid(const Rayd& ray, const Ellipsoid& ellipsoid, Vector3d& intersectPoint) noexcept;
 };
 
 EARTH_CORE_NAMESPACE_END

@@ -87,9 +87,9 @@ void EarthCamera::Zoom(double deltaDistance)
            Vector3f(north.x, north.y, north.z));
     
     // for test
-    Vector3f origin = Vector3f(mEyePos.x, mEyePos.y, mEyePos.z);
-    Vector3f direction = Vector3f(-viewDir.x, -viewDir.y, -viewDir.z);
-    Ray ray(origin, direction);
+    Vector3d origin = Vector3d(mEyePos.x, mEyePos.y, mEyePos.z);
+    Vector3d direction = Vector3d(-viewDir.x, -viewDir.y, -viewDir.z);
+    Rayd ray(mEyePos, direction);
     
     Vector3d intersectPoint;
     bool isIntersect = IntersectionTests::RayEllipsoid(ray, mEllipsoid, intersectPoint);
@@ -100,9 +100,9 @@ void EarthCamera::Zoom(double deltaDistance)
     double lat = radToDeg(geodeticPoint.latitude);
     printf("inter point lont = %lf, lat = %lf\n", lont, lat);
     
-    Ray ray1 = GenerateRay(800, 400);
+    /*Ray ray1 = GenerateRay(800, 400);
     
-    isIntersect = IntersectionTests::RayEllipsoid(ray1, mEllipsoid, intersectPoint);
+    isIntersect = IntersectionTests::RayEllipsoid(ray1, mEllipsoid, intersectPoint);*/
     
     geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
     
@@ -117,11 +117,14 @@ void EarthCamera::Pan(float offsetX, float offsetY)
     float centerY = mHeight / 2.0;
     
     // 添加偏移后的屏幕坐标
-    Ray ray = GenerateRay(centerX + offsetX, centerY + offsetY);
+    Rayf ray = GenerateRay(centerX + offsetX, centerY + offsetY);
+    Vector3f origin = ray.GetOrigin();
+    Vector3f direction = ray.GetDirection();
+    Rayd ray1 = Rayd(Vector3d(origin.x, origin.y, origin.z), Vector3d(direction.x, direction.y, direction.z));
     
     // 计算当前鼠标点的空间直角坐标
     Vector3d intersectPoint;
-    bool isIntersect = IntersectionTests::RayEllipsoid(ray, mEllipsoid, intersectPoint);
+    bool isIntersect = IntersectionTests::RayEllipsoid(ray1, mEllipsoid, intersectPoint);
     if (!isIntersect)
     {
         return;
