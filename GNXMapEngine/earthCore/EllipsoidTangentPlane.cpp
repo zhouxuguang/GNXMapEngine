@@ -17,12 +17,12 @@ EllipsoidTangentPlane::EllipsoidTangentPlane(
 	const Matrix4x4d& eastNorthUpToFixedFrame,
 	const Ellipsoid& ellipsoid)
 	: mEllipsoid(ellipsoid),
-	mOrigin(eastNorthUpToFixedFrame[3].xyz()),
-	mXAxis(eastNorthUpToFixedFrame[0].xyz()),
-	mYAxis(eastNorthUpToFixedFrame[1].xyz()),
+	mOrigin(eastNorthUpToFixedFrame.col(3).xyz()),
+	mXAxis(eastNorthUpToFixedFrame.col(0).xyz()),
+	mYAxis(eastNorthUpToFixedFrame.col(1).xyz()),
 	mPlane(
-		Vector3d(eastNorthUpToFixedFrame[3].xyz()),
-		Vector3d(eastNorthUpToFixedFrame[2].xyz()))
+		Vector3d(eastNorthUpToFixedFrame.col(2).xyz()),
+		Vector3d(eastNorthUpToFixedFrame.col(3).xyz()))
 {
 }
 

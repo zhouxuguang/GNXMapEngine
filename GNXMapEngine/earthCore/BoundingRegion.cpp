@@ -143,8 +143,7 @@ OrientedBoundingBoxd BoundingRegion::computeBoundingBox(const GlobeRectangle& re
 		minZ = std::min(
 			plane.getPointDistance(perimeterCartesianNW),
 			plane.getPointDistance(perimeterCartesianSW));
-		maxZ = maximumHeight; // Since the tangent plane touches the surface at
-		// height = 0, this is okay
+		maxZ = maximumHeight; // Since the tangent plane touches the surface at height = 0, this is okay
 
 		// Esure our box is at least a millimeter in each direction to avoid
 		// problems with degenerate or nearly-degenerate bounding regions.
