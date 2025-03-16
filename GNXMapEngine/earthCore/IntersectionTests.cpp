@@ -9,6 +9,29 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
+bool IntersectionTests::RayPlane(const Rayd& ray, const Planed& plane, Vector3d& intersectPoint) noexcept 
+{
+	const double denominator = plane.getNormal().DotProduct(ray.GetDirection());
+
+    // 阈值可以小一点吗
+	if (std::abs(denominator) < Epsilon14) 
+    {
+		// Ray is parallel to plane.  The ray may be in the polygon's plane.
+		return false;
+	}
+
+	const double t = (-plane.getDist() - plane.getNormal().DotProduct(ray.GetOrigin())) / denominator;
+
+    if (t < 0)
+    {
+        return false;
+    }
+    
+    intersectPoint = ray.PointFromDistance(t);
+    //intersectPoint = ray.GetOrigin() + ray.GetDirection() * t;
+    return true;
+}
+
 bool IntersectionTests::RayEllipsoid(const Rayd& ray, const Ellipsoid& ellipsoid, Vector3d& intersectPoint) noexcept
 {
     Vector3d inverseRadii = ellipsoid.GetOneOverRadii();

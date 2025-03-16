@@ -1,5 +1,6 @@
 #include "EllipsoidTangentPlane.h"
 #include "GeoTransform.h"
+#include "IntersectionTests.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -27,20 +28,21 @@ EllipsoidTangentPlane::EllipsoidTangentPlane(
 
 Vector2d EllipsoidTangentPlane::projectPointToNearestOnPlane(const Vector3d& cartesian) const noexcept
 {
-	return Vector2d();
-	/*const Ray ray(cartesian, this->mPlane.getNormal());
+	const Rayd ray(cartesian, this->mPlane.getNormal());
 
-	std::optional<glm::dvec3> intersectionPoint =
-		IntersectionTests::rayPlane(ray, this->_plane);
-	if (!intersectionPoint) {
-		intersectionPoint = IntersectionTests::rayPlane(-ray, this->_plane);
-		if (!intersectionPoint) {
+	Vector3d intersectionPoint;
+	bool isIntersect = IntersectionTests::RayPlane(ray, this->mPlane, intersectionPoint);
+	if (!isIntersect) 
+	{
+		isIntersect = IntersectionTests::RayPlane(-ray, this->mPlane, intersectionPoint);
+		if (!isIntersect) 
+		{
 			intersectionPoint = cartesian;
 		}
 	}
 
-	const glm::dvec3 v = intersectionPoint.value() - this->_origin;
-	return glm::dvec2(glm::dot(this->_xAxis, v), glm::dot(this->_yAxis, v));*/
+	const Vector3d v = intersectionPoint - this->mOrigin;
+	return Vector2d(mXAxis.DotProduct(v), mYAxis.DotProduct(v));
 }
 
 Matrix4x4d EllipsoidTangentPlane::computeEastNorthUpToFixedFrame(
