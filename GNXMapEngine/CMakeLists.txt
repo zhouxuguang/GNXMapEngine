@@ -26,6 +26,8 @@ set(PROJECT_SOURCES
         earthCore/EarthEngineDefine.h
         earthCore/Ellipsoid.h
         earthCore/Ellipsoid.cpp
+        earthCore/EllipsoidTangentPlane.h
+        earthCore/EllipsoidTangentPlane.cpp
         earthCore/Geodetic3D.h
         earthCore/Geodetic3D.cpp
         earthCore/GeoGridTessellator.h

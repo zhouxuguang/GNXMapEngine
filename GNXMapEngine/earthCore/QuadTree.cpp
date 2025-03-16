@@ -1,5 +1,6 @@
 #include "QuadTree.h"
 #include "rendersystem/AABB.h"
+#include "BoundingRegion.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -22,12 +23,17 @@ QuadNode::QuadNode(QuadNode* parent, const Vector2d& vStart, const Vector2d& vEn
 
 	Geodetic3D llPoint2 = Geodetic3D(mLLEnd.x, mLLEnd.y);
 	Vector3d point2 = wgs84.CartographicToCartesian(llPoint2);
-	std::vector<Vector3d> points;
+
+	GlobeRectangle globeRec(mLLStart.x, mLLStart.y, mLLEnd.x, mLLEnd.y);
+	BoundingRegion geoBound(globeRec, 0, 0, wgs84);
+	mBoundingBox = geoBound.getBoundingBox().ToAxisAligned();
+
+	/*std::vector<Vector3d> points;
 	points.reserve(2);
 	points.push_back(point1);
 	points.push_back(point2);
 
-	mBoundingBox = AxisAlignedBoxd::FromPositions(points);
+	mBoundingBox = AxisAlignedBoxd::FromPositions(points);*/
 
 	mChildNodes[0] = nullptr;
 	mChildNodes[1] = nullptr;
@@ -44,21 +50,18 @@ QuadNode::~QuadNode()
 }
 
 // 判断是否有子节点
-
 inline bool QuadNode::HasChild() const
 {
 	return mChildNodes[0] != nullptr;
 }
 
 // 四叉树节点的经纬度中心点
-
 inline Vector2d QuadNode::GetLonLatCenter() const
 {
 	return  (mLLStart + mLLEnd) * 0.5;
 }
 
 // 四叉树节点的经纬度范围
-
 inline Vector2d QuadNode::GetLonLatRange() const
 {
 	return (mLLEnd - mLLStart);
@@ -123,7 +126,6 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 				, 0
 				, CHILD_RT
 			);
-
 
 			mChildNodes[CHILD_LB] = std::make_shared<QuadNode>(this
 				, Vector2d(vLlCenter.x - vLLHalf.x, vLlCenter.y - vLLHalf.y)
