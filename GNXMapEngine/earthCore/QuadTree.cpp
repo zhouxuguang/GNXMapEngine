@@ -76,23 +76,25 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 	
 	// 判断瓦片和视锥体是否相交，相交的话去掉被裁剪的标记，否则加上被裁剪的标记
 
-	/*if (cubeInFrustum(
-		mBoundingBox._minimum.x
-		, mBoundingBox._maximum.x
-		, mBoundingBox._minimum.y
-		, mBoundingBox._maximum.y
-		, mBoundingBox._minimum.z
-		, mBoundingBox._maximum.z))
-	{
-		mStatusFlag &= ~FLAG_HAS_CULL;
-	}
-	else
-	{
-		mStatusFlag |= FLAG_HAS_CULL;
-	}*/
+	Frustumd frustum;
+
+// 	if (cubeInFrustum(
+// 		mBoundingBox._minimum.x
+// 		, mBoundingBox._maximum.x
+// 		, mBoundingBox._minimum.y
+// 		, mBoundingBox._maximum.y
+// 		, mBoundingBox._minimum.z
+// 		, mBoundingBox._maximum.z))
+// 	{
+// 		mStatusFlag &= ~FLAG_HAS_CULL;
+// 	}
+// 	else
+// 	{
+// 		mStatusFlag |= FLAG_HAS_CULL;
+// 	}
 
 	// 相机位置
-	Vector3f eyePosition = camera->GetPosition();
+	Vector3d eyePosition = camera->GetPosition();
 
 	// 瓦片中心点
 	Vector3d vWCenter = mBoundingBox.center;

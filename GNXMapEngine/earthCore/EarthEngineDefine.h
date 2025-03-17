@@ -20,6 +20,7 @@
 #include "RenderSystem/Ray.h"
 #include "RenderSystem/Plane.h"
 #include "RenderSystem/AABB.h"
+#include "RenderSystem/Frustum.h"
 
 USING_NS_MATHUTIL
 USING_NS_RENDERSYSTEM
