@@ -94,7 +94,7 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 // 	}
 
 	// 相机位置
-	Vector3d eyePosition = camera->GetPosition();
+	Vector3f eyePosition = camera->GetPosition();
 
 	// 瓦片中心点
 	Vector3d vWCenter = mBoundingBox.center;
