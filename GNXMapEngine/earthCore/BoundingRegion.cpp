@@ -207,7 +207,8 @@ OrientedBoundingBoxd BoundingRegion::computeBoundingBox(const GlobeRectangle& re
           centerLongitude + M_PI_2,
           latitudeNearestToEquator,
           maximumHeight));
-    //maxX = glm::dot(plane.projectPointOntoPlane(horizonCartesian), planeXAxis);
+    
+    maxX = plane.projectPointOntoPlane(horizonCartesian).DotProduct(planeXAxis);
     minX = -maxX; // symmetrical
     
     // Get the min and max Y, using the height that will give the largest extent
