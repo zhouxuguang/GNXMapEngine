@@ -152,7 +152,11 @@ void MapRenderer::BuildEarthNode()
     meshRender->SetSharedMesh(mesh);
     
     MaterialPtr material = Material::GetDefaultDiffuseMaterial();
+#if OS_WINDOWS
     Texture2DPtr texture = TextureFromFile(R"(D:\source\graphics\engine\GNXMapEngine\GNXMapEngine\asset\NaturalEarth\NE2_50M_SR_W.jpg)");
+#else
+    Texture2DPtr texture = TextureFromFile(R"(/Users/zhouxuguang/work/mycode/GNXMapEngine/GNXMapEngine/asset/NaturalEarth/NE2_50M_SR_W.jpg)");
+#endif
     material->SetTexture("diffuseTexture", texture);
     meshRender->AddMaterial(material);
 
