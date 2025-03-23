@@ -176,11 +176,72 @@ OrientedBoundingBoxd BoundingRegion::computeBoundingBox(const GlobeRectangle& re
 			minZ,
 			maxZ);
 	}
+    
+    // 处理矩形宽度大于 π 的情况（环绕椭球体超过一半）。
+    const bool fullyAboveEquator = rectangle.getSouth() > 0.0;
+    const bool fullyBelowEquator = rectangle.getNorth() < 0.0;
+    const double latitudeNearestToEquator =
+      fullyAboveEquator   ? rectangle.getSouth()
+      : fullyBelowEquator ? rectangle.getNorth()
+                          : 0.0;
+    const double centerLongitude = rectangle.computeCenter().longitude;
+    
+    // Plane is located at the rectangle's center longitude and the rectangle's
+    // latitude that is closest to the equator. It rotates around the Z axis. This
+    // results in a better fit than the obb approach for smaller rectangles, which
+    // orients with the rectangle's center normal.
+    Vector3d planeOrigin = ellipsoid.CartographicToCartesian(
+                                                             Geodetic3D(centerLongitude, latitudeNearestToEquator, maximumHeight));
+    planeOrigin.z = 0.0; // center the plane on the equator to simpify plane normal calculation
+    const bool isPole = fabs(planeOrigin.x) < Epsilon14 && fabs(planeOrigin.y) < Epsilon14;
+    const Vector3d planeNormal =
+      !isPole ? planeOrigin.Normalize() : Vector3d(1.0, 0.0, 0.0);
+    const Vector3d planeYAxis(0.0, 0.0, 1.0);
+    const Vector3d planeXAxis = Vector3d::CrossProduct(planeNormal, planeYAxis);
+    plane = Plane(planeOrigin, planeNormal);
+    
+    // Get the horizon point relative to the center. This will be the farthest
+    // extent in the plane's X dimension.
+    const Vector3d horizonCartesian =
+      ellipsoid.CartographicToCartesian(Geodetic3D(
+          centerLongitude + M_PI_2,
+          latitudeNearestToEquator,
+          maximumHeight));
+    //maxX = glm::dot(plane.projectPointOntoPlane(horizonCartesian), planeXAxis);
+    minX = -maxX; // symmetrical
+    
+    // Get the min and max Y, using the height that will give the largest extent
+    maxY = ellipsoid
+             .CartographicToCartesian(Geodetic3D(
+                 0.0,
+                 rectangle.getNorth(),
+                 fullyBelowEquator ? minimumHeight : maximumHeight))
+             .z;
+    minY = ellipsoid
+             .CartographicToCartesian(Geodetic3D(
+                 0.0,
+                 rectangle.getSouth(),
+                 fullyAboveEquator ? minimumHeight : maximumHeight))
+             .z;
+    const Vector3d farZ = ellipsoid.CartographicToCartesian(Geodetic3D(
+      rectangle.getEast(),
+      latitudeNearestToEquator,
+      maximumHeight));
+    minZ = plane.getPointDistance(farZ);
+    maxZ = 0.0; // plane origin starts at maxZ already
 
-	Vector3d center;
-	Matrix3x3d halfAxes;
-	return OrientedBoundingBoxd(center, halfAxes);
+    // min and max are local to the plane axes
+    return fromPlaneExtents(
+      planeOrigin,
+      planeXAxis,
+      planeYAxis,
+      planeNormal,
+      minX,
+      maxX,
+      minY,
+      maxY,
+      minZ,
+      maxZ);
 }
 
 EARTH_CORE_NAMESPACE_END
-
