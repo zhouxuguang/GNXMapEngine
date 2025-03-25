@@ -11,6 +11,7 @@
 #include "EarthEngineDefine.h"
 #include "Ellipsoid.h"
 #include "QuadTree.h"
+#include "ObjectBase.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -24,7 +25,7 @@ public:
     TileDataSource(const std::string& dataPath, const std::string& extName);
     ~TileDataSource();
 
-    bool ReadTile(TaskRunnerPtr task);
+    ObjectBasePtr ReadTile(const QuadTileID& tileID);
 };
 
 using TileDataSourcePtr = std::shared_ptr<TileDataSource>;

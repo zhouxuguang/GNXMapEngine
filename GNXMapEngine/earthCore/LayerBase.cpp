@@ -14,7 +14,7 @@ LayerBase::~LayerBase()
 }
 
 // 创建瓦片加载的任务
-TaskRunnerPtr LayerBase::createTask(const QuadTileID& tileID)
+TaskRunnerPtr LayerBase::CreateTask(const QuadTileID& tileID)
 {
     size_t key = baselib::GetHashCode(tileID);
 
@@ -25,7 +25,7 @@ TaskRunnerPtr LayerBase::createTask(const QuadTileID& tileID)
     }
 
     TileLoadTaskPtr tileLoadTask = std::make_shared<TileLoadTask>();
-    //tileLoadTask->layer = this;
+    tileLoadTask->layer = toPtr<LayerBase>();
     //tileLoadTask->node = node;
     tileLoadTask->tileId = tileID;
     mLoadTiles.insert(key);
@@ -33,7 +33,7 @@ TaskRunnerPtr LayerBase::createTask(const QuadTileID& tileID)
     return tileLoadTask;
 }
 
-void LayerBase::destroyTask(const QuadTileID& tileID)
+void LayerBase::DestroyTask(const QuadTileID& tileID)
 {
     size_t key = baselib::GetHashCode(tileID);
 	auto itr = mLoadTiles.find(key);
@@ -43,10 +43,10 @@ void LayerBase::destroyTask(const QuadTileID& tileID)
 	}
 }
 
-bool LayerBase::readTile(TaskRunner* task)
+ObjectBasePtr LayerBase::ReadTile(const QuadTileID& tileID)
 {
     // 用数据源的读取接口读取数据了
-    return false;
+    return mDataSourcePtr->ReadTile(tileID);
 }
 
 EARTH_CORE_NAMESPACE_END

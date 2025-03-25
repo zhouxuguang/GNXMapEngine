@@ -10,7 +10,7 @@
 
 #include "QuadTree.h"
 #include "TileDataSource.h"
-#include "BaseLib/BaseLib.h"
+#include "ObjectBase.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -21,7 +21,7 @@ enum LayerType : uint32_t
 };
 
 //数据图层的基类
-class LayerBase
+class LayerBase : public ObjectBase
 {
 private:
     LayerType mLayerType;
@@ -36,7 +36,7 @@ public:
     /**
      * 设置数据源
      */
-    void setDataSource(TileDataSourcePtr dataSource)
+    void SetDataSource(TileDataSourcePtr dataSource)
     {
         mDataSourcePtr = dataSource;
     }
@@ -44,15 +44,17 @@ public:
     /**
      * 创建瓦片加载的任务
      */
-    TaskRunnerPtr createTask(const QuadTileID& tileID);
+    TaskRunnerPtr CreateTask(const QuadTileID& tileID);
 
     /**
      * 销毁瓦片加载的任务
      */
-    void destroyTask(const QuadTileID& tileID);
+    void DestroyTask(const QuadTileID& tileID);
 
-    // 读取瓦片数据
-    bool readTile(TaskRunner* task);
+    /**
+     * 读取瓦片数据
+     */
+    ObjectBasePtr ReadTile(const QuadTileID& tileID);
 };
 
 using LayerBasePtr = std::shared_ptr<LayerBase>;

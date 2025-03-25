@@ -13,7 +13,7 @@ EarthNode::EarthNode(const Ellipsoid& ellipsoid, EarthCameraPtr cameraPtr) : mEl
 {
 	mCameraPtr = cameraPtr;
 
-	// ¿ªÆôÒì²½¼ÓÔØÊý¾ÝµÄÏß³Ì³Ø
+	// å¼€å¯å¼‚æ­¥åŠ è½½æ•°æ®çš„çº¿ç¨‹æ± 
 	mTileLoadPool.Start();
 }
 
@@ -62,7 +62,7 @@ void EarthNode::RequestTile(QuadNode* node)
 {
 	for (auto& layer : mLayers)
 	{
-		auto task = layer->createTask(node->mTileID);
+		auto task = layer->CreateTask(node->mTileID);
 		if (!task)
 		{
 			continue;
@@ -75,7 +75,7 @@ void EarthNode::CancelRequest(QuadNode* node)
 {
 	for (auto& layer : mLayers)
 	{
-		layer->destroyTask(node->mTileID);
+		layer->DestroyTask(node->mTileID);
 	}
 }
 

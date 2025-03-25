@@ -167,9 +167,10 @@ void MapRenderer::BuildEarthNode()
     earthcore::EarthNode *pEarthNode = new earthcore::EarthNode(wgs84, mCameraPtr);
 
     // 增加数据源
-    earthcore::TileDataSourcePtr demSource = std::make_shared<earthcore::TileDataSource>(R"(D://source//gis//源码//dem-tiles-01)", "dem");
-    earthcore::LayerBasePtr demLayer = std::make_shared<earthcore::LayerBase>("Dem", earthcore::LT_Terrain);
-	demLayer->setDataSource(demSource);
+    fs::path dataPath = R"(D:/source/gis/源码/dem-tiles-01)";
+    earthcore::TileDataSourcePtr demSource = std::make_shared<earthcore::TileDataSource>(dataPath.string(), "jpg");
+    earthcore::LayerBasePtr demLayer = std::make_shared<earthcore::LayerBase>("Image", earthcore::LT_Image);
+	demLayer->SetDataSource(demSource);
     pEarthNode->AddLayer(demLayer);
     pEarthNode->Initialize();
 
