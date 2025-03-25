@@ -24,7 +24,7 @@ public:
     TileDataSource(const std::string& dataPath, const std::string& extName);
     ~TileDataSource();
 
-    bool readTile();
+    bool ReadTile(TaskRunnerPtr task);
 };
 
 using TileDataSourcePtr = std::shared_ptr<TileDataSource>;

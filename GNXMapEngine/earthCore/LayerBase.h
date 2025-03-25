@@ -8,10 +8,9 @@
 #ifndef GNX_EARTHENGINE_CORE_LAYERBASE_INCLUDE_DKGJJDFGJ
 #define GNX_EARTHENGINE_CORE_LAYERBASE_INCLUDE_DKGJJDFGJ
 
-#include "EarthEngineDefine.h"
-#include "Ellipsoid.h"
 #include "QuadTree.h"
 #include "TileDataSource.h"
+#include "BaseLib/BaseLib.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -29,24 +28,34 @@ private:
     std::string mName;
     // 数据源
     TileDataSourcePtr mDataSourcePtr = nullptr;
+    std::set<size_t> mLoadTiles;   // 当前图层加载的任务ID，用于去重，防止同一个数据重复加载，浪费资源
 public:
     LayerBase(const std::string& name, LayerType type);
     ~LayerBase();
 
+    /**
+     * 设置数据源
+     */
     void setDataSource(TileDataSourcePtr dataSource)
     {
         mDataSourcePtr = dataSource;
     }
 
-    // 创建瓦片加载的任务
-    void createTask();
+    /**
+     * 创建瓦片加载的任务
+     */
+    TaskRunnerPtr createTask(const QuadTileID& tileID);
 
-    // 销毁瓦片加载的任务
-    void destroyTask();
+    /**
+     * 销毁瓦片加载的任务
+     */
+    void destroyTask(const QuadTileID& tileID);
 
     // 读取瓦片数据
-    bool readTile();
+    bool readTile(TaskRunner* task);
 };
+
+using LayerBasePtr = std::shared_ptr<LayerBase>;
 
 EARTH_CORE_NAMESPACE_END
 

@@ -38,6 +38,8 @@ inline bool HasNoFlag(uint32_t flag, uint32_t checkFlag)
 	return !HasFlag(flag, checkFlag);
 }
 
+class EarthNode;
+
 // 瓦片四叉树的定义
 class QuadNode
 {
@@ -72,7 +74,7 @@ public:
 	// 状态标记
 	uint32_t mStatusFlag = 0;
 
-	QuadNode(QuadNode* parent
+	QuadNode(EarthNode* earthNode, QuadNode* parent
 		, const Vector2d& vStart
 		, const Vector2d& vEnd
 		, uint32_t level
@@ -91,9 +93,13 @@ public:
 	
 	// 四叉树节点更新
 	void Update(const EarthCameraPtr& camera);
+
+private:
+	EarthNode* mEarthNode = nullptr;
 };
 
 using QuadTreePtr = QuadNode::QuadNodePtr;
+using QuadNodePtr = QuadTreePtr;
 
 EARTH_CORE_NAMESPACE_END
 

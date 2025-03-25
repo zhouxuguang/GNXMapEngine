@@ -12,10 +12,19 @@ TileDataSource::~TileDataSource()
 {
 }
 
-// 读取tile的数据
-bool TileDataSource::readTile()
+bool TileDataSource::ReadTile(TaskRunnerPtr task)
 {
-    return true;
+	/*TileLoadTaskPtr pTask = std::dynamic_pointer_cast<TileLoadTask>(task);
+	if (pTask == nullptr)
+	{
+		return false;
+	}
+
+	if (pTask->layer->readTile(pTask))
+	{
+	}*/
+
+	return false;
 }
 
 EARTH_CORE_NAMESPACE_END

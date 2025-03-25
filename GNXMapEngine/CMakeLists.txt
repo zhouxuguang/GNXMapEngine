@@ -58,6 +58,8 @@ set(PROJECT_SOURCES
         earthCore/LayerBase.cpp
         earthCore/TileDataSource.h
         earthCore/TileDataSource.cpp
+        earthCore/TileLoadTask.h
+        earthCore/TileLoadTask.cpp
 )
 
 if(APPLE)

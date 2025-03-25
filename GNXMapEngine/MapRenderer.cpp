@@ -26,6 +26,7 @@
 #include "earthCore/EarthNode.h"
 #include "earthCore/EarthCamera.h"
 #include "earthCore/QuadTree.h"
+#include "earthCore/LayerBase.h"
 
 #include <filesystem>
 
@@ -67,9 +68,9 @@ static Texture2DPtr TextureFromFile(const char *filename)
 
 MapRenderer::MapRenderer(void *metalLayer) : mTileLoadPool(4)
 {
-#ifdef _WIN32
+#if OS_WINDOWS
     mRenderdevice = createRenderDevice(RenderDeviceType::VULKAN, metalLayer);
-#elif __APPLE__
+#elif OS_MACOS
     mRenderdevice = createRenderDevice(RenderDeviceType::METAL, metalLayer);
 #endif // _WIN
 
@@ -163,13 +164,16 @@ void MapRenderer::BuildEarthNode()
     // 创建相机
 	mCameraPtr = std::make_shared<earthcore::EarthCamera>(wgs84, "MainCamera");
     
-    earthcore::EarthNode *pNode = new earthcore::EarthNode(wgs84, mCameraPtr);
-    pNode->AddComponent(meshRender);
-    
-//    Matrix4x4f modelMat = Matrix4x4f::CreateRotation(1, 0, 0, 90) * Matrix4x4f::CreateRotation(0, 0, 1, 90);
-//    Quaternionf rotate;
-//    rotate.FromRotateMatrix(modelMat.GetMatrix3());
-    
-    mSceneManager->getRootNode()->AddSceneNode(pNode);
+    earthcore::EarthNode *pEarthNode = new earthcore::EarthNode(wgs84, mCameraPtr);
+
+    // 增加数据源
+    earthcore::TileDataSourcePtr demSource = std::make_shared<earthcore::TileDataSource>(R"(D://source//gis//源码//dem-tiles-01)", "dem");
+    earthcore::LayerBasePtr demLayer = std::make_shared<earthcore::LayerBase>("Dem", earthcore::LT_Terrain);
+	demLayer->setDataSource(demSource);
+    pEarthNode->AddLayer(demLayer);
+    pEarthNode->Initialize();
+
+    pEarthNode->AddComponent(meshRender);
+    mSceneManager->getRootNode()->AddSceneNode(pEarthNode);
     
 }

@@ -1,11 +1,13 @@
 #include "QuadTree.h"
 #include "rendersystem/AABB.h"
 #include "BoundingRegion.h"
+#include "EarthNode.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-QuadNode::QuadNode(QuadNode* parent, const Vector2d& vStart, const Vector2d& vEnd, uint32_t level, ChildRegion region)
+QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStart, const Vector2d& vEnd, uint32_t level, ChildRegion region)
 {
+	mEarthNode = earthNode;
 	mRegion = region;
 	mParent = parent;
 	mLLStart = vStart;
@@ -39,10 +41,14 @@ QuadNode::QuadNode(QuadNode* parent, const Vector2d& vStart, const Vector2d& vEn
 	mChildNodes[1] = nullptr;
 	mChildNodes[2] = nullptr;
 	mChildNodes[3] = nullptr;
+
+	mEarthNode->RequestTile(this);
 }
 
 QuadNode::~QuadNode()
 {
+	mEarthNode->CancelRequest(this);
+
 	for (int i = 0; i < 4; ++i)
 	{
 		mChildNodes[i] = nullptr;
@@ -115,28 +121,28 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 
 			// 开始分裂出新的瓦片
 
-			mChildNodes[CHILD_LT] = std::make_shared<QuadNode>(this
+			mChildNodes[CHILD_LT] = std::make_shared<QuadNode>(mEarthNode, this
 				, Vector2d(vLlCenter.x - vLLHalf.x, vLlCenter.y)
 				, Vector2d(vLlCenter.x, vLlCenter.y + vLLHalf.y)
 				, 0
 				, CHILD_LT
 			);
 
-			mChildNodes[CHILD_RT] = std::make_shared<QuadNode>(this
+			mChildNodes[CHILD_RT] = std::make_shared<QuadNode>(mEarthNode, this
 				, Vector2d(vLlCenter.x, vLlCenter.y)
 				, Vector2d(vLlCenter.x + vLLHalf.x, vLlCenter.y + vLLHalf.y)
 				, 0
 				, CHILD_RT
 			);
 
-			mChildNodes[CHILD_LB] = std::make_shared<QuadNode>(this
+			mChildNodes[CHILD_LB] = std::make_shared<QuadNode>(mEarthNode, this
 				, Vector2d(vLlCenter.x - vLLHalf.x, vLlCenter.y - vLLHalf.y)
 				, Vector2d(vLlCenter.x, vLlCenter.y)
 				, 0
 				, CHILD_LB
 			);
 
-			mChildNodes[CHILD_RB] = std::make_shared<QuadNode>(this
+			mChildNodes[CHILD_RB] = std::make_shared<QuadNode>(mEarthNode, this
 				, Vector2d(vLlCenter.x, vLlCenter.y - vLLHalf.y)
 				, Vector2d(vLlCenter.x + vLLHalf.x, vLlCenter.y)
 				, 0
