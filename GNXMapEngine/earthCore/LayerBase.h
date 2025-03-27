@@ -29,6 +29,10 @@ private:
     // 数据源
     TileDataSourcePtr mDataSourcePtr = nullptr;
     std::set<size_t> mLoadTiles;   // 当前图层加载的任务ID，用于去重，防止同一个数据重复加载，浪费资源
+
+    std::vector<ObjectBasePtr> mLoadedTileData;   //已经加载完成的瓦片数据
+    baselib::MutexLock mTileDataLock;
+
 public:
     LayerBase(const std::string& name, LayerType type);
     ~LayerBase();
@@ -55,6 +59,11 @@ public:
      * 读取瓦片数据
      */
     ObjectBasePtr ReadTile(const QuadTileID& tileID);
+
+    /**
+     * 交换加载好的数据
+     */
+    void SwapLoaedTiles(std::vector<ObjectBasePtr>& loadedTiles);
 };
 
 using LayerBasePtr = std::shared_ptr<LayerBase>;

@@ -26,7 +26,6 @@ TaskRunnerPtr LayerBase::CreateTask(const QuadTileID& tileID)
 
     TileLoadTaskPtr tileLoadTask = std::make_shared<TileLoadTask>();
     tileLoadTask->layer = toPtr<LayerBase>();
-    //tileLoadTask->node = node;
     tileLoadTask->tileId = tileID;
     mLoadTiles.insert(key);
 
@@ -46,7 +45,21 @@ void LayerBase::DestroyTask(const QuadTileID& tileID)
 ObjectBasePtr LayerBase::ReadTile(const QuadTileID& tileID)
 {
     // 用数据源的读取接口读取数据了
-    return mDataSourcePtr->ReadTile(tileID);
+    ObjectBasePtr dataPtr = mDataSourcePtr->ReadTile(tileID);
+
+    {
+		baselib::AutoLock lockGuard(mTileDataLock);
+		mLoadedTileData.push_back(dataPtr);
+    }
+
+    return dataPtr;
+}
+
+void LayerBase::SwapLoaedTiles(std::vector<ObjectBasePtr>& loadedTiles)
+{
+    baselib::AutoLock lockGuard(mTileDataLock);
+    loadedTiles = mLoadedTileData;
+    mLoadedTileData.clear();
 }
 
 EARTH_CORE_NAMESPACE_END
