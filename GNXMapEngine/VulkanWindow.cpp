@@ -14,8 +14,6 @@
 #include <QWheelEvent>
 #include "MapRenderer.h"
 
-// Simple private class for the purpose of moving the Objective-C
-// bits out of the header.
 class VulkanWindowPrivate
 {
 public:
@@ -41,6 +39,7 @@ void VulkanWindow::exposeEvent(QExposeEvent*)
 	if (isExposed() && !mInited)
     {
         initVulkan();
+		d->m_renderer->SetWindowSize(mWidth, mHeight);
         mInited = true;
 	}
 
@@ -83,18 +82,12 @@ bool VulkanWindow::event(QEvent *ev)
         QResizeEvent* resizeEvent = (QResizeEvent*)ev;
         printf("resize = width = %d, height = %d\n", resizeEvent->size().width(), resizeEvent->size().height());
         
-        mWidth = resizeEvent->size().width() * mDevicePixelRatio;
-        mHeight = resizeEvent->size().height() * mDevicePixelRatio;
-        
-        if (d->m_renderer)
-        {
-            d->m_renderer->SetWindowSize(mWidth, mHeight);
-        }
-        else
+		mWidth = resizeEvent->size().width() * mDevicePixelRatio;
+		mHeight = resizeEvent->size().height() * mDevicePixelRatio;
+
+		if (d->m_renderer)
 		{
-			initVulkan();
-            d->m_renderer->SetWindowSize(mWidth, mHeight);
-			mInited = true;
+			d->m_renderer->SetWindowSize(mWidth, mHeight);
 		}
 
         updateEvent();
