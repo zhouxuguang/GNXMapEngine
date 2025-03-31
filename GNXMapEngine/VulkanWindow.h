@@ -18,6 +18,7 @@ public:
     VulkanWindow();
     ~VulkanWindow();
     void exposeEvent(QExposeEvent *) override;
+    //void resizeEvent(QResizeEvent*) override;
     void updateEvent();
     bool event(QEvent *ev) override;
     void initVulkan();
@@ -25,6 +26,8 @@ private:
     VulkanWindowPrivate* d;
     uint32_t mWidth;
     uint32_t mHeight;
+
+    bool mInited = false;
     
     QPoint mMouseDown;    //记录鼠标按下去时候的点，以及按下鼠标时，实时移动的点
     bool mIsDown = false;

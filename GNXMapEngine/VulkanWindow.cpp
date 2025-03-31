@@ -36,22 +36,38 @@ VulkanWindow::~VulkanWindow()
     delete d;
 }
 
-void VulkanWindow::exposeEvent(QExposeEvent *)
+void VulkanWindow::exposeEvent(QExposeEvent*)
 {
-    initVulkan();
+	if (isExposed() && !mInited)
+    {
+        initVulkan();
+        mInited = true;
+	}
 
-    d->m_renderer->DrawFrame();
-
-    requestUpdate(); // request new animation frame
+    //requestUpdate();
+    
 }
+
+//void VulkanWindow::resizeEvent(QResizeEvent* resizeEvent)
+//{
+//	printf("resize = width = %d, height = %d\n", resizeEvent->size().width(), resizeEvent->size().height());
+//
+//	mWidth = resizeEvent->size().width() * mDevicePixelRatio;
+//	mHeight = resizeEvent->size().height() * mDevicePixelRatio;
+//
+//	if (d->m_renderer)
+//	{
+//		d->m_renderer->SetWindowSize(mWidth, mHeight);
+//	}
+//}
 
 void VulkanWindow::updateEvent()
 {
-    if (!d || !d->m_renderer)
-    {
-        return;
-    }
-    d->m_renderer->DrawFrame();
+	if (d->m_renderer)
+	{
+		d->m_renderer->DrawFrame();
+	}
+
     requestUpdate();
 }
 
@@ -69,12 +85,19 @@ bool VulkanWindow::event(QEvent *ev)
         
         mWidth = resizeEvent->size().width() * mDevicePixelRatio;
         mHeight = resizeEvent->size().height() * mDevicePixelRatio;
-        updateEvent();
         
         if (d->m_renderer)
         {
             d->m_renderer->SetWindowSize(mWidth, mHeight);
         }
+        else
+		{
+			initVulkan();
+            d->m_renderer->SetWindowSize(mWidth, mHeight);
+			mInited = true;
+		}
+
+        updateEvent();
         
         return false;
     }
@@ -158,5 +181,5 @@ void VulkanWindow::initVulkan()
 {
     // Create Renderer
     d->m_renderer = new MapRenderer((HWND)winId());
-    d->m_renderer->SetWindowSize(mWidth, mHeight);
+    //d->m_renderer->SetWindowSize(mWidth, mHeight);
 }

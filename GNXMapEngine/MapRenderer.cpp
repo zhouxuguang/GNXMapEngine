@@ -132,6 +132,10 @@ void MapRenderer::DrawFrame()
     mSceneManager->Update(deltaTime);
     
     CommandBufferPtr commandBuffer = mRenderdevice->createCommandBuffer();
+    if (!commandBuffer)
+    {
+        return;
+    }
     RenderEncoderPtr renderEncoder = commandBuffer->createDefaultRenderEncoder();
     
     mSceneManager->Render(renderEncoder);
