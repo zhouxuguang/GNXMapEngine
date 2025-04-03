@@ -43,4 +43,12 @@ Matrix4x4d GeoTransform::eastNorthUpToFixedFrame(const Vector3d& origin, const E
 		0.0, 0.0, 0.0, 1.0);
 }
 
+Matrix4x4d GeoTransform::eastNorthUpToFixedFrame(
+    const Geodetic3D& origin,
+    const Ellipsoid& ellipsoid) noexcept
+{
+    Vector3d cartOrigin = ellipsoid.CartographicToCartesian(origin);
+    return eastNorthUpToFixedFrame(cartOrigin, ellipsoid);
+}
+
 EARTH_CORE_NAMESPACE_END

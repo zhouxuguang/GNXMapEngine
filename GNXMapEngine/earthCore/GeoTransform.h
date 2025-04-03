@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include "Ellipsoid.h"
-#include "mathutil/Matrix4x4.h"
+#include "MathUtil/Matrix4x4.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -30,12 +30,32 @@ public:
     * which passes through the position.</li>
     * </ul>
     *
-    * @param origin 局部坐标系的远点坐标.
+    * @param origin 局部坐标系的原点坐标.
     * @param ellipsoid 用于计算的椭球 默认值: {@link Ellipsoid::WGS84}.
     * @return 变换矩阵
     */
     static Matrix4x4d eastNorthUpToFixedFrame(
         const Vector3d& origin,
+        const Ellipsoid& ellipsoid) noexcept;
+    
+    /**
+    * @brief 计算从局部东北天的局部坐标系到椭球的固定参考系的变换矩阵
+    *
+    * Computes a 4x4 transformation matrix from a reference frame with an
+    * east-north-up axes centered at the provided origin to the provided
+    * ellipsoid's fixed reference frame. The local axes are defined as: <ul>
+    *  <li>The `x` axis points in the local east direction.</li>
+    *  <li>The `y` axis points in the local north direction.</li>
+    *  <li>The `z` axis points in the direction of the ellipsoid surface normal
+    * which passes through the position.</li>
+    * </ul>
+    *
+    * @param origin 局部坐标系的原点坐标.
+    * @param ellipsoid 用于计算的椭球 默认值: {@link Ellipsoid::WGS84}.
+    * @return 变换矩阵
+    */
+    static Matrix4x4d eastNorthUpToFixedFrame(
+        const Geodetic3D& origin,
         const Ellipsoid& ellipsoid) noexcept;
 };
 

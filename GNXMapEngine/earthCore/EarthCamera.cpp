@@ -7,6 +7,7 @@
 
 #include "EarthCamera.h"
 #include "IntersectionTests.h"
+#include "GeoTransform.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -32,9 +33,8 @@ EarthCamera::EarthCamera(const Ellipsoid& ellipsoid, const std::string& name) :
     Vector3f zAxis = Vector3f(mEyeToEllipsoid[0][1], mEyeToEllipsoid[1][1], mEyeToEllipsoid[2][1]);
     
     // 计算局部的东北天的坐标轴向
-    Vector3d up = ellipsoid.GeodeticSurfaceNormal(mEyeGeodetic);
-    Vector3d east = Vector3d(-mEyePos.y, mEyePos.x, 0.0).Normalize();
-    Vector3d north = Vector3d::CrossProduct(up, east);
+    Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, ellipsoid);
+    Vector4d north = eastNorthUp.col(1);
     
     LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
            Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
@@ -78,9 +78,8 @@ void EarthCamera::Zoom(double deltaDistance)
     mEyeGeodetic = mEllipsoid.CartesianToCartographic(mEyePos);
     
     // 计算局部的东北天的坐标轴向
-    Vector3d up = mEllipsoid.GeodeticSurfaceNormal(mEyeGeodetic);
-    Vector3d east = Vector3d(-mEyePos.y, mEyePos.x, 0.0).Normalize();
-    Vector3d north = Vector3d::CrossProduct(up, east);
+    Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, mEllipsoid);
+    Vector4d north = eastNorthUp.col(1);
     
     LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
            Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
@@ -143,9 +142,8 @@ void EarthCamera::Pan(float offsetX, float offsetY)
     mTargetPos = mEllipsoid.CartographicToCartesian(mEyeGeodeticTarget);
     
     // 计算局部的东北天的坐标轴向
-    Vector3d up = mEllipsoid.GeodeticSurfaceNormal(mEyeGeodetic);
-    Vector3d east = Vector3d(-mEyePos.y, mEyePos.x, 0.0).Normalize();
-    Vector3d north = Vector3d::CrossProduct(up, east);
+    Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, mEllipsoid);
+    Vector4d north = eastNorthUp.col(1);
     
     LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
            Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
