@@ -112,7 +112,7 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 	double fSize = vWSize.Length() * 0.5;
 	double distance = (vWCenter - Vector3d(eyePosition.x, eyePosition.y, eyePosition.z)).Length();
 
-	if (distance / fSize < 3 && HasNoFlag(mStatusFlag, FLAG_HAS_CULL))
+	if (distance / fSize < 1 && HasNoFlag(mStatusFlag, FLAG_HAS_CULL))
 	{
 		if (!HasChild() && HasImage(mStatusFlag))
 		{
@@ -164,7 +164,7 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 			}
 		}
 	}
-	else if (distance / fSize > 3.45)
+	else if (distance / fSize > 1.45)
 	{
 		for (int i = 0; i < 4; ++i)
 		{
