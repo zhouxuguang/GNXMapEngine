@@ -13,6 +13,18 @@ if(MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
+macro(SETUP_GROUPS src_files)
+	foreach(FILE ${src_files})
+		get_filename_component(PARENT_DIR "${FILE}" PATH)
+
+		# skip src or include and changes /'s to \\'s
+		set(GROUP "${PARENT_DIR}")
+		string(REPLACE "/" "\\" GROUP "${GROUP}")
+
+		source_group("${GROUP}" FILES "${FILE}")
+	endforeach()
+endmacro()
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
@@ -97,6 +109,9 @@ else()
         )
     endif()
 endif()
+
+#SETUP_GROUPS(PROJECT_SOURCES)
+SETUP_GROUPS("${PROJECT_SOURCES}")
 
 set_property(TARGET GNXMapEngine PROPERTY AUTOUIC ON)
 set_property(TARGET GNXMapEngine PROPERTY AUTOMOC ON)
