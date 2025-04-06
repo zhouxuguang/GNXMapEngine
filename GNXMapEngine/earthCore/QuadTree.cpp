@@ -124,28 +124,28 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 			mChildNodes[CHILD_LT] = std::make_shared<QuadNode>(mEarthNode, this
 				, Vector2d(vLlCenter.x - vLLHalf.x, vLlCenter.y)
 				, Vector2d(vLlCenter.x, vLlCenter.y + vLLHalf.y)
-				, 0
+				, mTileID.level + 1
 				, CHILD_LT
 			);
 
 			mChildNodes[CHILD_RT] = std::make_shared<QuadNode>(mEarthNode, this
 				, Vector2d(vLlCenter.x, vLlCenter.y)
 				, Vector2d(vLlCenter.x + vLLHalf.x, vLlCenter.y + vLLHalf.y)
-				, 0
+				, mTileID.level + 1
 				, CHILD_RT
 			);
 
 			mChildNodes[CHILD_LB] = std::make_shared<QuadNode>(mEarthNode, this
 				, Vector2d(vLlCenter.x - vLLHalf.x, vLlCenter.y - vLLHalf.y)
 				, Vector2d(vLlCenter.x, vLlCenter.y)
-				, 0
+				, mTileID.level + 1
 				, CHILD_LB
 			);
 
 			mChildNodes[CHILD_RB] = std::make_shared<QuadNode>(mEarthNode, this
 				, Vector2d(vLlCenter.x, vLlCenter.y - vLLHalf.y)
 				, Vector2d(vLlCenter.x + vLLHalf.x, vLlCenter.y)
-				, 0
+				, mTileID.level + 1
 				, CHILD_RB
 			);
 		}

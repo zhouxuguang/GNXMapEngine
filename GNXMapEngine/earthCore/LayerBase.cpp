@@ -11,12 +11,18 @@ LayerBase::LayerBase(const std::string& name, LayerType type)
 
 LayerBase::~LayerBase()
 {
+    mLoadTiles.clear();
+    mLoadedTileData.clear();
 }
 
 // 创建瓦片加载的任务
-TaskRunnerPtr LayerBase::CreateTask(const QuadTileID& tileID)
+TaskRunnerPtr LayerBase::CreateTask(QuadNode* node)
 {
-    size_t key = baselib::GetHashCode(tileID);
+    if (!node)
+    {
+        return nullptr;
+    }
+    size_t key = baselib::GetHashCode(node->mTileID);
 
     // 已经在加载中，不要创建加载任务了
     if (mLoadTiles.find(key) != mLoadTiles.end())
@@ -26,7 +32,8 @@ TaskRunnerPtr LayerBase::CreateTask(const QuadTileID& tileID)
 
     TileLoadTaskPtr tileLoadTask = std::make_shared<TileLoadTask>();
     tileLoadTask->layer = toPtr<LayerBase>();
-    tileLoadTask->tileId = tileID;
+    tileLoadTask->tileId = node->mTileID;
+    tileLoadTask->nodePtr = node;
     mLoadTiles.insert(key);
 
     return tileLoadTask;

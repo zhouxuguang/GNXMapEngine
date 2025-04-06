@@ -62,7 +62,7 @@ void EarthNode::RequestTile(QuadNode* node)
 {
 	for (auto& layer : mLayers)
 	{
-		auto task = layer->CreateTask(node->mTileID);
+		auto task = layer->CreateTask(node);
 		if (!task)
 		{
 			continue;

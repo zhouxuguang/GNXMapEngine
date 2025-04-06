@@ -48,7 +48,7 @@ public:
     /**
      * 创建瓦片加载的任务
      */
-    TaskRunnerPtr CreateTask(const QuadTileID& tileID);
+    TaskRunnerPtr CreateTask(QuadNode* node);
 
     /**
      * 销毁瓦片加载的任务

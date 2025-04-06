@@ -23,8 +23,9 @@ public:
 
     virtual void Run();
 
-    LayerBasePtr layer;
+    LayerBasePtr layer = nullptr;
     QuadTileID tileId;
+    QuadNode* nodePtr = nullptr;
 };
 
 using TileLoadTaskPtr = std::shared_ptr<TileLoadTask>;
