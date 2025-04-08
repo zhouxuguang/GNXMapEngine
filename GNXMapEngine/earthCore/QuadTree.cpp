@@ -37,6 +37,13 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 
 	mBoundingBox = AxisAlignedBoxd::FromPositions(points);*/
 
+	mDemData.FillFace();
+	mDemData.FillVertex(vStart, vEnd, wgs84);
+	mDemData.FillUV(Vector2f(0.0f, 1.0f), Vector2f(1.0f, 0.0f));
+
+	mVertexBuffer = getRenderDevice()->createVertexBufferWithBytes(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
+	mIndexBuffer = getRenderDevice()->createIndexBufferWithBytes(mDemData.GetFaceData(), mDemData.GetFaceBytes(), RenderCore::IndexType_UShort);
+
 	mChildNodes[0] = nullptr;
 	mChildNodes[1] = nullptr;
 	mChildNodes[2] = nullptr;
@@ -169,6 +176,24 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 		for (int i = 0; i < 4; ++i)
 		{
 			mChildNodes[i] = nullptr;
+		}
+	}
+}
+
+void QuadNode::GetRenderableNodes(QuadNodeArray& nodes)
+{
+	if (HasChild())
+	{
+		mChildNodes[0]->GetRenderableNodes(nodes);
+		mChildNodes[1]->GetRenderableNodes(nodes);
+		mChildNodes[2]->GetRenderableNodes(nodes);
+		mChildNodes[3]->GetRenderableNodes(nodes);
+	}
+	else
+	{
+		if (HasFlag(mStatusFlag, FLAG_RENDER) && HasNoFlag(mStatusFlag, FLAG_HAS_CULL))
+		{
+			nodes.push_back(this);
 		}
 	}
 }

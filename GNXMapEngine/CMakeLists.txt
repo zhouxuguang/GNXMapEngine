@@ -72,6 +72,10 @@ set(PROJECT_SOURCES
         earthCore/TileDataSource.cpp
         earthCore/TileLoadTask.h
         earthCore/TileLoadTask.cpp
+        earthCore/EarthRenderer.h
+        earthCore/EarthRenderer.cpp
+        earthCore/DEMMeshData.h
+        earthCore/DEMMeshData.cpp
 )
 
 if(APPLE)

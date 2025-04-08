@@ -27,6 +27,7 @@
 #include "earthCore/EarthCamera.h"
 #include "earthCore/QuadTree.h"
 #include "earthCore/LayerBase.h"
+#include "earthCore/EarthRenderer.h"
 
 #include <filesystem>
 
@@ -178,7 +179,12 @@ void MapRenderer::BuildEarthNode()
     pEarthNode->AddLayer(demLayer);
     pEarthNode->Initialize();
 
-    pEarthNode->AddComponent(meshRender);
+    
+    earthcore::EarthRenderer* earthRender = new earthcore::EarthRenderer();
+    earthRender->AddMaterial(material);
+    pEarthNode->AddComponent(earthRender);
+
+    //pEarthNode->AddComponent(meshRender);
     mSceneManager->getRootNode()->AddSceneNode(pEarthNode);
     
 }

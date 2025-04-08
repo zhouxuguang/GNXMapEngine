@@ -29,6 +29,8 @@ public:
 
     virtual void Update(float deltaTime) override;
 
+    void GetAllRendererNodes(QuadNode::QuadNodeArray& quadNodes);
+
     void Initialize();
 
     /**

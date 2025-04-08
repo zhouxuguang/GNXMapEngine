@@ -32,6 +32,14 @@ void EarthNode::Update(float deltaTime)
 	}
 }
 
+void EarthNode::GetAllRendererNodes(QuadNode::QuadNodeArray& quadNodes)
+{
+	for (size_t i = 0; i < mQuadNodes.size(); i++)
+	{
+		mQuadNodes[i]->GetRenderableNodes(quadNodes);
+	}
+}
+
 void EarthNode::Initialize()
 {
 	if (mInited)

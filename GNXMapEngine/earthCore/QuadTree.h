@@ -5,6 +5,7 @@
 #include "Vector3.h"
 #include "EarthCamera.h"
 #include "QuadTileID.h"
+#include "DEMMeshData.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -53,6 +54,7 @@ public:
 	};
 
 	using QuadNodePtr = std::shared_ptr<QuadNode>;
+	using QuadNodeArray = std::vector<QuadNode*>;
 
 	// 经纬度起始和结束点
 	Vector2d  mLLStart;
@@ -74,6 +76,12 @@ public:
 	// 状态标记
 	uint32_t mStatusFlag = 0;
 
+	// 渲染相关数据
+	DemData mDemData;
+	RenderCore::VertexBufferPtr mVertexBuffer = nullptr;
+	RenderCore::IndexBufferPtr mIndexBuffer = nullptr;
+	RenderCore::Texture2DPtr mTexture = nullptr;
+
 	QuadNode(EarthNode* earthNode, QuadNode* parent
 		, const Vector2d& vStart
 		, const Vector2d& vEnd
@@ -93,6 +101,8 @@ public:
 	
 	// 四叉树节点更新
 	void Update(const EarthCameraPtr& camera);
+
+	void GetRenderableNodes(QuadNodeArray& nodes);
 
 private:
 	EarthNode* mEarthNode = nullptr;
