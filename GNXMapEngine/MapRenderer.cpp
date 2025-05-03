@@ -172,7 +172,11 @@ void MapRenderer::BuildEarthNode()
     earthcore::EarthNode *pEarthNode = new earthcore::EarthNode(wgs84, mCameraPtr);
 
     // 增加数据源
+#if OS_MACOS
+    fs::path dataPath = R"(/Users/zhouxuguang/work/data/gis/tile/image)";
+#elif OS_WINDOWS
     fs::path dataPath = R"(D:/source/gis/data/tile/image)";
+#endif
     earthcore::TileDataSourcePtr demSource = std::make_shared<earthcore::TileDataSource>(dataPath.string(), "jpg");
     earthcore::LayerBasePtr demLayer = std::make_shared<earthcore::LayerBase>("Image", earthcore::LT_Image);
 	demLayer->SetDataSource(demSource);
