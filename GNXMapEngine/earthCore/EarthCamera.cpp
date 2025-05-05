@@ -11,6 +11,8 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
+const static double MIN_EYE_DISTANCE = 20;
+
 EarthCamera::EarthCamera(const Ellipsoid& ellipsoid, const std::string& name) :
     mEllipsoid(ellipsoid),
     Camera(getRenderDevice()->getRenderDeviceType(), name),
@@ -64,12 +66,15 @@ void EarthCamera::Zoom(double deltaDistance)
            radToDeg(mEyeGeodetic.longitude), radToDeg(mEyeGeodetic.latitude), mEyeGeodetic.height, dist, deltaDistance);
     
     // 当前距离加上增量小于最小距离，那么就停止缩放了
-    if (dist + deltaDistance <= 10 && deltaDistance < 0)
+    if (dist + deltaDistance <= MIN_EYE_DISTANCE && deltaDistance < 0)
     {
-        return;
+        dist = MIN_EYE_DISTANCE;
+    }
+    else
+    {
+        dist += deltaDistance;
     }
     
-    dist += deltaDistance;
     //计算视线方向
     Vector3d viewDir = (mEyePos - mTargetPos).Normalize();
     mEyePos = mTargetPos + viewDir * dist;
