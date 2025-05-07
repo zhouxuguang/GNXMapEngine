@@ -30,13 +30,6 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	BoundingRegion geoBound(globeRec, 0, 0, wgs84);
 	mBoundingBox = geoBound.getBoundingBox().ToAxisAligned();
 
-	/*std::vector<Vector3d> points;
-	points.reserve(2);
-	points.push_back(point1);
-	points.push_back(point2);
-
-	mBoundingBox = AxisAlignedBoxd::FromPositions(points);*/
-
 	mDemData.FillFace();
 	mDemData.FillVertex(vStart, vEnd, wgs84);
 	mDemData.FillUV(Vector2f(0.0f, 1.0f), Vector2f(1.0f, 0.0f));
@@ -88,23 +81,26 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 	}
 	
 	// 判断瓦片和视锥体是否相交，相交的话去掉被裁剪的标记，否则加上被裁剪的标记
-
 	Frustumd frustum;
+	Matrix4x4d coloMatrix;
+	Matrix4x4f viewProjMat = camera->GetProjectionMatrix() * camera->GetViewMatrix();
+	for (uint16_t i = 0; i < 4; i ++)
+	{
+		for (uint16_t j = 0; j < 4; j++)
+		{
+			coloMatrix[i][j] = viewProjMat[i][j];
+		}
+	}
+	frustum.initFrustum(coloMatrix);
 
-// 	if (cubeInFrustum(
-// 		mBoundingBox._minimum.x
-// 		, mBoundingBox._maximum.x
-// 		, mBoundingBox._minimum.y
-// 		, mBoundingBox._maximum.y
-// 		, mBoundingBox._minimum.z
-// 		, mBoundingBox._maximum.z))
-// 	{
-// 		mStatusFlag &= ~FLAG_HAS_CULL;
-// 	}
-// 	else
-// 	{
-// 		mStatusFlag |= FLAG_HAS_CULL;
-// 	}
+ 	if (!frustum.isOutOfFrustum(mBoundingBox))
+ 	{
+ 		mStatusFlag &= ~FLAG_HAS_CULL;
+ 	}
+ 	else
+ 	{
+ 		mStatusFlag |= FLAG_HAS_CULL;
+ 	}
 
 	// 相机位置
 	Vector3f eyePosition = camera->GetPosition();
