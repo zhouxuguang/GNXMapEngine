@@ -93,14 +93,14 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 	}
 	frustum.initFrustum(coloMatrix);
 
- 	if (!frustum.isOutOfFrustum(mBoundingBox))
+ 	/*if (!frustum.isOutOfFrustum(mBoundingBox))
  	{
  		mStatusFlag &= ~FLAG_HAS_CULL;
  	}
  	else
  	{
  		mStatusFlag |= FLAG_HAS_CULL;
- 	}
+ 	}*/
 
 	// 相机位置
 	Vector3f eyePosition = camera->GetPosition();

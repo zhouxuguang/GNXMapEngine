@@ -13,6 +13,22 @@ EARTH_CORE_NAMESPACE_BEGIN
 
 const static double MIN_EYE_DISTANCE = 20;
 
+static const void CalAngles(const Geodetic3D& eyeGeodetic, const Geodetic3D& eyeGeodeticTarget, const Vector3d& eyePos, 
+    double &azimuthAngle, double& verticalAngle)
+{
+
+}
+
+Vector3d GetDirInEyeSpace(double azimuthAngle, double verticalAngle)
+{
+    Vector3d dir;
+    dir.x = sin(verticalAngle) * sin(azimuthAngle);
+    dir.y = sin(verticalAngle) * cos(azimuthAngle);
+    dir.z = -cos(verticalAngle);
+
+    return dir;
+}
+
 EarthCamera::EarthCamera(const Ellipsoid& ellipsoid, const std::string& name) :
     mEllipsoid(ellipsoid),
     Camera(getRenderDevice()->getRenderDeviceType(), name),
@@ -20,7 +36,19 @@ EarthCamera::EarthCamera(const Ellipsoid& ellipsoid, const std::string& name) :
     mEyeGeodeticTarget(degToRad(110), degToRad(23), 0)
 {
     mEyePos = ellipsoid.CartographicToCartesian(mEyeGeodetic);
+
+    // 计算水平和垂直视角
+    CalAngles(mEyeGeodetic, mEyeGeodeticTarget, mEyePos, mAzimuthAngle, mVerticalAngle);
+
+    // 计算水平角变换的矩阵
+    Matrix4x4d azimuthMatrix = Matrix4x4d::CreateRotation(0, 1, 0, -radToDeg(mAzimuthAngle));
+
     mTargetPos = ellipsoid.CartographicToCartesian(mEyeGeodeticTarget);
+
+    double eyeDistance = (mTargetPos - mEyePos).Length();
+
+    // 获得视线在眼空间中的方向
+    Vector3d viewDirInEye = GetDirInEyeSpace(mAzimuthAngle, mVerticalAngle);
     
     // 用于计算椭球空间到视空间的坐标转换，对应于博士论文中5. 3. 1. 2 椭球空间变换到眼空间
     mEllipsoidToEye = Matrix4x4d::CreateRotation(1, 0, 0, -90 + radToDeg(mEyeGeodetic.latitude)) *
@@ -31,12 +59,16 @@ EarthCamera::EarthCamera(const Ellipsoid& ellipsoid, const std::string& name) :
     mEyeToEllipsoid = Matrix4x4d::CreateRotation(0, 0, 1, 90 + radToDeg(mEyeGeodetic.longitude)) *
                         Matrix4x4d::CreateRotation(1, 0, 0, 90 - radToDeg(mEyeGeodetic.latitude)) *
                         Matrix4x4d::CreateTranslate(mEyePos);
-    
-    Vector3f zAxis = Vector3f(mEyeToEllipsoid[0][1], mEyeToEllipsoid[1][1], mEyeToEllipsoid[2][1]);
+
+    Vector3d viewDirInWorld = (mEyeToEllipsoid.GetMatrix3() * viewDirInEye).Normalize();
+
+    Vector3d newEyePos = mTargetPos - viewDirInWorld * eyeDistance;
+    mEyePos = newEyePos;
     
     // 计算局部的东北天的坐标轴向
     Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, ellipsoid);
     Vector4d north = eastNorthUp.col(1);
+    north = azimuthMatrix * north;
     
     LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
            Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
