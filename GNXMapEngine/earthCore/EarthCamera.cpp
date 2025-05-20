@@ -117,34 +117,40 @@ void EarthCamera::Zoom(double deltaDistance)
     // 计算局部的东北天的坐标轴向
     Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, mEllipsoid);
     Vector4d north = eastNorthUp.col(1);
+
+	// 计算水平角变换的矩阵
+	Matrix4x4d azimuthMatrix = Matrix4x4d::CreateRotation(0, 1, 0, -radToDeg(mAzimuthAngle));
+    north = azimuthMatrix * north;
     
     LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
            Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
            Vector3f(north.x, north.y, north.z));
-    
-    // for test
-    Vector3d origin = Vector3d(mEyePos.x, mEyePos.y, mEyePos.z);
-    Vector3d direction = Vector3d(-viewDir.x, -viewDir.y, -viewDir.z);
-    Rayd ray(mEyePos, direction);
-    
-    Vector3d intersectPoint;
-    bool isIntersect = IntersectionTests::RayEllipsoid(ray, mEllipsoid, intersectPoint);
-    
-    Geodetic3D geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
-    
-    double lont = radToDeg(geodeticPoint.longitude);
-    double lat = radToDeg(geodeticPoint.latitude);
-    printf("inter point lont = %lf, lat = %lf\n", lont, lat);
-    
-    /*Ray ray1 = GenerateRay(800, 400);
-    
-    isIntersect = IntersectionTests::RayEllipsoid(ray1, mEllipsoid, intersectPoint);*/
-    
-    geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
-    
-    lont = radToDeg(geodeticPoint.longitude);
-    lat = radToDeg(geodeticPoint.latitude);
-    printf("zoom inter point lont = %lf, lat = %lf\n", lont, lat);
+
+    {
+		// for test
+		Vector3d origin = Vector3d(mEyePos.x, mEyePos.y, mEyePos.z);
+		Vector3d direction = Vector3d(-viewDir.x, -viewDir.y, -viewDir.z);
+		Rayd ray(mEyePos, direction);
+
+		Vector3d intersectPoint;
+		bool isIntersect = IntersectionTests::RayEllipsoid(ray, mEllipsoid, intersectPoint);
+
+		Geodetic3D geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
+
+		double lont = radToDeg(geodeticPoint.longitude);
+		double lat = radToDeg(geodeticPoint.latitude);
+		printf("inter point lont = %lf, lat = %lf\n", lont, lat);
+
+		/*Ray ray1 = GenerateRay(800, 400);
+
+		isIntersect = IntersectionTests::RayEllipsoid(ray1, mEllipsoid, intersectPoint);*/
+
+		geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
+
+		lont = radToDeg(geodeticPoint.longitude);
+		lat = radToDeg(geodeticPoint.latitude);
+		printf("zoom inter point lont = %lf, lat = %lf\n", lont, lat);
+    }
 }
 
 void EarthCamera::Pan(float offsetX, float offsetY)
@@ -181,6 +187,10 @@ void EarthCamera::Pan(float offsetX, float offsetY)
     // 计算局部的东北天的坐标轴向
     Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, mEllipsoid);
     Vector4d north = eastNorthUp.col(1);
+
+	// 计算水平角变换的矩阵
+	Matrix4x4d azimuthMatrix = Matrix4x4d::CreateRotation(0, 1, 0, -radToDeg(mAzimuthAngle));
+	north = azimuthMatrix * north;
     
     LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
            Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
