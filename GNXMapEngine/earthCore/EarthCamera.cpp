@@ -172,17 +172,33 @@ void EarthCamera::Pan(float offsetX, float offsetY)
         return;
     }
     
-    // 计算出新的视点坐标和注视点的坐标
+    double eyeDistance = (mTargetPos - mEyePos).Length();
+    
+    // 计算出新的注视点的坐标
     Geodetic3D geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
     mEyeGeodeticTarget = Geodetic3D(geodeticPoint.longitude, geodeticPoint.latitude);
-    mEyeGeodetic = Geodetic3D(geodeticPoint.longitude, geodeticPoint.latitude, mEyeGeodetic.height);
+    mTargetPos = mEllipsoid.CartographicToCartesian(mEyeGeodeticTarget);
+    
+    // 获得视线在眼空间中的方向
+    Vector3d viewDirInEye = GetDirInEyeSpace(mAzimuthAngle, mVerticalAngle);
+    
+    // 用于计算视空间到椭球空间的坐标转换，对应于博士论文中5. 3. 1. 1 眼空间变换到椭球空间
+    mEyeToEllipsoid = Matrix4x4d::CreateRotation(0, 0, 1, 90 + radToDeg(mEyeGeodeticTarget.longitude)) *
+                        Matrix4x4d::CreateRotation(1, 0, 0, 90 - radToDeg(mEyeGeodeticTarget.latitude)) *
+                        Matrix4x4d::CreateTranslate(mEyePos);
+
+    Vector3d viewDirInWorld = (mEyeToEllipsoid.GetMatrix3() * viewDirInEye).Normalize();
+
+    // 计算新的视点坐标
+    Vector3d newEyePos = mTargetPos - viewDirInWorld * eyeDistance;
+    mEyePos = newEyePos;
+    mEyeGeodetic = mEllipsoid.CartesianToCartographic(mEyePos);
     
     double lont = radToDeg(geodeticPoint.longitude);
     double lat = radToDeg(geodeticPoint.latitude);
     printf("pan point lont = %lf, lat = %lf\n", lont, lat);
     
     mEyePos = mEllipsoid.CartographicToCartesian(mEyeGeodetic);
-    mTargetPos = mEllipsoid.CartographicToCartesian(mEyeGeodeticTarget);
     
     // 计算局部的东北天的坐标轴向
     Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, mEllipsoid);
