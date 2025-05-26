@@ -17,6 +17,7 @@ class TiledImage : public ObjectBase
 {
 public:
     imagecodec::VImage image;
+    float heightData[65 * 65];
 };
 
 using TiledImagePtr = std::shared_ptr<TiledImage>;

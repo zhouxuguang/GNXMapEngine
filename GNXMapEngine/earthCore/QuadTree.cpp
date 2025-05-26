@@ -5,7 +5,7 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStart, const Vector2d& vEnd, uint32_t level, ChildRegion region)
+QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStart, const Vector2d& vEnd, uint32_t level, ChildRegion region) : mDemData(Ellipsoid::WGS84)
 {
 	mEarthNode = earthNode;
 	mRegion = region;
@@ -30,12 +30,9 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	BoundingRegion geoBound(globeRec, 0, 0, wgs84);
 	mBoundingBox = geoBound.getBoundingBox().ToAxisAligned();
 
+	mDemData.SetStartEndGeoCoord(vStart, vEnd);
 	mDemData.FillFace();
-	mDemData.FillVertex(vStart, vEnd, wgs84);
 	mDemData.FillUV(Vector2f(0.0f, 1.0f), Vector2f(1.0f, 0.0f));
-
-	mVertexBuffer = getRenderDevice()->createVertexBufferWithBytes(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
-	mIndexBuffer = getRenderDevice()->createIndexBufferWithBytes(mDemData.GetFaceData(), mDemData.GetFaceBytes(), RenderCore::IndexType_UShort);
 
 	mChildNodes[0] = nullptr;
 	mChildNodes[1] = nullptr;
@@ -78,6 +75,13 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 	if (!camera)
 	{
 		return;
+	}
+
+	if (mDemData.IsInited() && !mInited)
+	{
+		mVertexBuffer = getRenderDevice()->createVertexBufferWithBytes(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
+		mIndexBuffer = getRenderDevice()->createIndexBufferWithBytes(mDemData.GetFaceData(), mDemData.GetFaceBytes(), RenderCore::IndexType_UShort);
+		mInited = true;
 	}
 	
 	// 判断瓦片和视锥体是否相交，相交的话去掉被裁剪的标记，否则加上被裁剪的标记

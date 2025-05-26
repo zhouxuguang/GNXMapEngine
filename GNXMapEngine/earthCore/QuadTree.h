@@ -78,6 +78,7 @@ public:
 
 	// 渲染相关数据
 	DemData mDemData;
+	bool mInited = false;
 	RenderCore::VertexBufferPtr mVertexBuffer = nullptr;
 	RenderCore::IndexBufferPtr mIndexBuffer = nullptr;
 	RenderCore::Texture2DPtr mTexture = nullptr;

@@ -64,6 +64,30 @@ public:
      * 交换加载好的数据
      */
     void SwapLoaedTiles(std::vector<ObjectBasePtr>& loadedTiles);
+
+    /**
+     * 获得当前图层的名字
+     */
+    const std::string& GetLayerName() const
+    {
+        return mName;
+    }
+
+    /**
+     * 获得当前图层的名字
+     */
+    std::string& GetLayerName()
+    {
+        return mName;
+    }
+
+    /**
+     * 获得图层的类型
+     */
+    LayerType GetLayerType()
+	{
+		return mLayerType;
+	}
 };
 
 using LayerBasePtr = std::shared_ptr<LayerBase>;

@@ -32,6 +32,7 @@ private:
 		mathutil::simd_float4 position[row * col];
 		mathutil::simd_float4 normal[row * col];
 		mathutil::simd_float2 texCoord[row * col];
+        float height[row * col];
     };
 
     DemVertex mVertexData;
@@ -39,8 +40,13 @@ private:
     uint16_t mFaces[(row -1) * (col - 1) * 6];
     uint16_t mRow = 0;
     uint16_t mCol = 0;
+    bool mInited = false;
+
+    mathutil::Vector2d mLLStart;
+    mathutil::Vector2d mLLEnd;
+    const Ellipsoid& mEllipsoid;
 public:
-    DemMeshData()
+    DemMeshData(const Ellipsoid& ellipsoid) : mEllipsoid(ellipsoid)
     {
         mRow = row;
         mCol = col;
@@ -54,6 +60,17 @@ public:
     int GetCols() const
     {
         return mCol;
+    }
+
+    bool IsInited() const
+    {
+        return mInited;
+    }
+
+    void SetStartEndGeoCoord(const mathutil::Vector2d& vStart, const mathutil::Vector2d& vEnd)
+    {
+        mLLStart = vStart;
+        mLLEnd = vEnd;
     }
 
     DemVertex* GetVertData()
@@ -115,9 +132,9 @@ public:
         }
     }
 
-    void FillVertex(const mathutil::Vector2d& vStart, const mathutil::Vector2d& vEnd, const Ellipsoid& ellipsoid)
+    void FillVertex()
     {
-        mathutil::Vector2d vSize = vEnd - vStart;
+        mathutil::Vector2d vSize = mLLEnd - mLLStart;
         mathutil::Vector2d vGrid = mathutil::Vector2d(vSize.x/(mCol -1), vSize.y/(mRow - 1));
 
 		for (uint16_t r = 0; r < mRow; ++r)
@@ -125,8 +142,10 @@ public:
 			for (uint16_t c = 0; c < mCol; ++c)
 			{
 				int idx = r * mCol + c;
-                mathutil::Vector3d vWorld = ellipsoid.CartographicToCartesian(Geodetic3D(vStart.x + c * vGrid.x, vStart.y + r * vGrid.y));
-                mathutil::Vector3d normal = ellipsoid.GeodeticSurfaceNormal(Geodetic3D(vStart.x + c * vGrid.x, vStart.y + r * vGrid.y));
+                mathutil::Vector3d vWorld = mEllipsoid.CartographicToCartesian(
+                    Geodetic3D(mLLStart.x + c * vGrid.x, mLLStart.y + r * vGrid.y, mVertexData.height[idx]));
+                mathutil::Vector3d normal = mEllipsoid.GeodeticSurfaceNormal(
+                    Geodetic3D(mLLStart.x + c * vGrid.x, mLLStart.y + r * vGrid.y, mVertexData.height[idx]));
 				
                 mVertexData.position[idx].x = vWorld.x;
                 mVertexData.position[idx].y = vWorld.y;
@@ -156,13 +175,14 @@ public:
         }
     }
 
-	void FillHeight()
+	void FillHeight(const float * pHeightData)
 	{
-        float* pData = nullptr;
 		for (size_t i = 0;i < mRow * mCol; ++i)
 		{
-			mVertexData[i].h = pData[i];
+			mVertexData.height[i] = pHeightData[i] * 20;
 		}
+
+        mInited = true;
 	}
 };
 
