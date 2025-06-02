@@ -177,6 +177,7 @@ void MapRenderer::BuildEarthNode()
 #elif OS_WINDOWS
     fs::path dataPath = R"(D:/source/gis/data/tile/image)";
     fs::path demPath = R"(D:/source/gis/data/tile/terrain)";
+    //fs::path demPath = R"(D:/source/gis/gdal/cesium-terrain-builder/build/Debug/terrain-tiles/test)";
 #endif
     earthcore::TileDataSourcePtr imageSource = std::make_shared<earthcore::TileDataSource>(dataPath.string(), "jpg");
     earthcore::LayerBasePtr imageLayer = std::make_shared<earthcore::LayerBase>("Image", earthcore::LT_Image);

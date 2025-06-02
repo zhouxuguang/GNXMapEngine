@@ -141,7 +141,7 @@ public:
 		{
 			for (uint16_t c = 0; c < mCol; ++c)
 			{
-				int idx = r * mCol + c;
+				int idx = (r) * mCol + c;
                 mathutil::Vector3d vWorld = mEllipsoid.CartographicToCartesian(
                     Geodetic3D(mLLStart.x + c * vGrid.x, mLLStart.y + r * vGrid.y, mVertexData.height[idx]));
                 mathutil::Vector3d normal = mEllipsoid.GeodeticSurfaceNormal(
