@@ -25,7 +25,7 @@ void verticalFlip(unsigned char* image, int width, int height, int channels)
 		unsigned char* top = image + y * rowSize;
 		unsigned char* bottom = image + (height - 1 - y) * rowSize;
 
-		// ½»»»ÐÐÊý¾Ý
+		// äº¤æ¢è¡Œæ•°æ®
 		memcpy(tempRow, top, rowSize);
 		memcpy(top, bottom, rowSize);
 		memcpy(bottom, tempRow, rowSize);
@@ -98,7 +98,7 @@ ObjectBasePtr TileDataSource::ReadTile(const QuadTileID& tileID)
 				return  nullptr;
 			}
 
-#if 1
+#if 0
 			char szHeader[16] = { 0 };
 			fread(szHeader, 1, sizeof(szHeader), pFile);
 			if (strcmp(szHeader, "short") == 0)
@@ -129,17 +129,17 @@ ObjectBasePtr TileDataSource::ReadTile(const QuadTileID& tileID)
 			fclose(pFile);
 			size_t uncompressedDataSize = baselib::UnCompressBound(compressedData, fileSize, baselib::COMPRESS_GZIP);
 			uint8_t* uncompressedData = new uint8_t[uncompressedDataSize];
-			baselib::DataUnCompress(compressedData, fileSize, uncompressedData, &uncompressedDataSize, baselib::COMPRESS_GZIP);
+			//baselib::DataUnCompress(compressedData, fileSize, uncompressedData, &uncompressedDataSize, baselib::COMPRESS_GZIP);
 
 			float* pDst = image->heightData;
-			int16_t* pDem = (int16_t*)uncompressedData;
+			int16_t* pDem = (int16_t*)compressedData;
 			for (size_t i = 0; i < 65 * 65; i++)
 			{
 				pDst[i] = float(pDem[i]) * 0.2 - 1000;
 			}
 
-			// ×¢Òâ¸ß¶ÈÍ¼ÊÇ´ÓÉÏÍùÏÂÅÅÁÐ£¬ÕâÀï½«¸ß¶ÈÍ¼·´×ª
-			//verticalFlip((uint8_t*)pDst, 65, 65, 4);
+			// æ³¨æ„é«˜åº¦å›¾æ˜¯ä»Žä¸Šå¾€ä¸‹æŽ’åˆ—ï¼Œè¿™é‡Œå°†é«˜åº¦å›¾åè½¬
+			verticalFlip((uint8_t*)pDst, 65, 65, 4);
 
 			delete[] compressedData;
 			delete[] uncompressedData;
