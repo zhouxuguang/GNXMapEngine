@@ -1,6 +1,10 @@
 #include "TileDataSource.h"
 #include "TiledImage.h"
 
+#if OS_MACOS
+#include <sys/stat.h>
+#endif
+
 EARTH_CORE_NAMESPACE_BEGIN
 
 long long get_file_size_stat(const char* filename) 

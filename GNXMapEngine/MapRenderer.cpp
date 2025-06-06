@@ -174,6 +174,7 @@ void MapRenderer::BuildEarthNode()
     // 增加数据源
 #if OS_MACOS
     fs::path dataPath = R"(/Users/zhouxuguang/work/data/gis/tile/image)";
+    fs::path demPath = R"(/Users/zhouxuguang/work/data/gis/tile/image)";
 #elif OS_WINDOWS
     fs::path dataPath = R"(D:/source/gis/data/tile/image)";
     //fs::path demPath = R"(D:/source/gis/data/tile/terrain)";
