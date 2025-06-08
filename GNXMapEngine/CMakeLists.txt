@@ -129,7 +129,7 @@ if(APPLE)
 endif()
 
 target_link_libraries(GNXMapEngine PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-    baselib imagecodec mathutil rendercore rendersystem shadercompiler spirv_reflect)
+    baselib imagecodec mathutil rendercore rendersystem shadercompiler spirv_reflect AssetProcess)
 
 set_target_properties(GNXMapEngine PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

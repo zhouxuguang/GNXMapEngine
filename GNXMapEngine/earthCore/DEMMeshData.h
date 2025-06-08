@@ -179,7 +179,7 @@ public:
 	{
 		for (size_t i = 0;i < mRow * mCol; ++i)
 		{
-			mVertexData.height[i] = pHeightData[i] * 20;
+			mVertexData.height[i] = pHeightData[i] * 3;
 		}
 
         mInited = true;
