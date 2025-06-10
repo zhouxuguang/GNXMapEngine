@@ -17,6 +17,7 @@
 #include "RenderSystem/RenderEngine.h"
 #include "RenderSystem/ImageTextureUtil.h"
 #include "BaseLib/DateTime.h"
+#include "BaseLib/LogService.h"
 #include "imagecodec/ColorConverter.h"
 
 #include "WebMercator.h"
@@ -127,7 +128,7 @@ void MapRenderer::DrawFrame()
     
     uint64_t thisTime = GetTickNanoSeconds();
     float deltaTime = float(thisTime - mLastTime) * 0.000000001f;
-    printf("deltaTime = %f\n", deltaTime);
+    LOG_INFO("deltaTime = %f", deltaTime);
     mLastTime = thisTime;
     
     mSceneManager->Update(deltaTime);
@@ -180,6 +181,10 @@ void MapRenderer::BuildEarthNode()
     //fs::path demPath = R"(D:/source/gis/data/tile/terrain)";
     fs::path demPath = R"(D:/source/gis/gdal/cesium-terrain-builder/build/Debug/terrain-tiles/test)";
 #endif
+
+    std::string curDir = baselib::EnvironmentUtility::GetInstance().GetCurrentWorkingDir();
+
+    LOG_INFO("%s", curDir.c_str());
     earthcore::TileDataSourcePtr imageSource = std::make_shared<earthcore::TileDataSource>(dataPath.string(), "jpg");
     earthcore::LayerBasePtr imageLayer = std::make_shared<earthcore::LayerBase>("Image", earthcore::LT_Image);
     imageLayer->SetDataSource(imageSource);

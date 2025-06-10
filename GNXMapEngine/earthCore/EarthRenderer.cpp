@@ -1,5 +1,6 @@
 #include "EarthRenderer.h"
 #include "EarthNode.h"
+#include "BaseLib/LogService.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -24,7 +25,7 @@ void EarthRenderer::Render(RenderInfo& renderInfo)
 
 	QuadNode::QuadNodeArray quadNodes;
 	earthNode->GetAllRendererNodes(quadNodes);
-	printf("nodes count = %d\n", (int)quadNodes.size());
+	LOG_INFO("nodes count = %d\n", (int)quadNodes.size());
 
 	RenderEncoderPtr renderEncoder = renderInfo.renderEncoder;
 	assert(renderEncoder);
@@ -40,7 +41,7 @@ void EarthRenderer::Render(RenderInfo& renderInfo)
 	for (int n = 0; n < quadNodes.size(); n++)
 	{
 		renderEncoder->setVertexUniformBuffer("cbPerCamera", renderInfo.cameraUBO);
-		renderEncoder->setVertexUniformBuffer("cbPerObject", renderInfo.objectUBO);
+		renderEncoder->setVertexUniformBuffer("cbPerObject", quadNodes[n]->mLocalUniform);
 		renderEncoder->setVertexUniformBuffer("LightInfo", renderInfo.lightUBO);
 
 		renderEncoder->setFragmentUniformBuffer("cbPerCamera", renderInfo.cameraUBO);

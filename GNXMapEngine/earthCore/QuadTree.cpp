@@ -2,6 +2,7 @@
 #include "rendersystem/AABB.h"
 #include "BoundingRegion.h"
 #include "EarthNode.h"
+#include "RenderSystem/RenderParameter.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -33,6 +34,15 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	mDemData.SetStartEndGeoCoord(vStart, vEnd);
 	mDemData.FillFace();
 	mDemData.FillUV(Vector2f(0.0f, 1.0f), Vector2f(1.0f, 0.0f));
+
+	// 计算瓦片局部偏移的矩阵的uniform
+	mStartPoint = wgs84.CartographicToCartesian(Geodetic3D(mLLStart.x, mLLStart.y, 0));
+
+	cbPerObject modelMatrix;
+	modelMatrix.MATRIX_M = mathutil::Matrix4x4f::CreateTranslate(mStartPoint.x, mStartPoint.y, mStartPoint.z);
+	modelMatrix.MATRIX_M_INV = modelMatrix.MATRIX_M.Inverse();
+	mLocalUniform = getRenderDevice()->createUniformBufferWithSize(sizeof(cbPerObject));
+	mLocalUniform->setData(&modelMatrix, 0, sizeof(cbPerObject));
 
 	mChildNodes[0] = nullptr;
 	mChildNodes[1] = nullptr;

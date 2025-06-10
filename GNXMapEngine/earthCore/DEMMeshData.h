@@ -134,8 +134,11 @@ public:
 
     void FillVertex()
     {
+        // 计算左下角地理坐标的空间直角坐标，网格内的坐标都以该坐标为原点，也就是使用相对坐标，这样减少数据的数值，降低浮点数的误差 
+		mathutil::Vector3d startPoint = mEllipsoid.CartographicToCartesian(Geodetic3D(mLLStart.x, mLLStart.y, 0));
+
         mathutil::Vector2d vSize = mLLEnd - mLLStart;
-        mathutil::Vector2d vGrid = mathutil::Vector2d(vSize.x/(mCol -1), vSize.y/(mRow - 1));
+        mathutil::Vector2d vGrid = mathutil::Vector2d(vSize.x / (mCol -1), vSize.y / (mRow - 1));
 
 		for (uint16_t r = 0; r < mRow; ++r)
 		{
@@ -144,6 +147,9 @@ public:
 				int idx = (r) * mCol + c;
                 mathutil::Vector3d vWorld = mEllipsoid.CartographicToCartesian(
                     Geodetic3D(mLLStart.x + c * vGrid.x, mLLStart.y + r * vGrid.y, mVertexData.height[idx]));
+
+                vWorld -= startPoint;
+
                 mathutil::Vector3d normal = mEllipsoid.GeodeticSurfaceNormal(
                     Geodetic3D(mLLStart.x + c * vGrid.x, mLLStart.y + r * vGrid.y, mVertexData.height[idx]));
 				

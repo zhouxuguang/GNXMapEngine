@@ -78,6 +78,8 @@ public:
 
 	// 渲染相关数据
 	DemData mDemData;
+	mathutil::Vector3d mStartPoint;   //左下角地理坐标对应的空间直角坐标
+	RenderCore::UniformBufferPtr mLocalUniform = nullptr;
 	bool mInited = false;
 	RenderCore::VertexBufferPtr mVertexBuffer = nullptr;
 	RenderCore::IndexBufferPtr mIndexBuffer = nullptr;
