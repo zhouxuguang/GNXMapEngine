@@ -98,8 +98,6 @@ private:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     SceneManager* mSceneManager;
     
-    baselib::ThreadPool mTileLoadPool;
-    
     double mWidth;
     double mHeight;
     

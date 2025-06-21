@@ -68,7 +68,7 @@ static Texture2DPtr TextureFromFile(const char *filename)
     return texture;
 }
 
-MapRenderer::MapRenderer(void *metalLayer) : mTileLoadPool(4)
+MapRenderer::MapRenderer(void *metalLayer)
 {
 #if OS_WINDOWS
     mRenderdevice = createRenderDevice(RenderDeviceType::VULKAN, metalLayer);
@@ -80,9 +80,6 @@ MapRenderer::MapRenderer(void *metalLayer) : mTileLoadPool(4)
     mSceneManager = SceneManager::GetInstance();
     
     BuildEarthNode();
-    
-    // 开启异步加载数据的线程池
-    mTileLoadPool.Start();
 }
 
 void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
@@ -175,7 +172,7 @@ void MapRenderer::BuildEarthNode()
     // 增加数据源
 #if OS_MACOS
     fs::path dataPath = R"(/Users/zhouxuguang/work/data/gis/tile/image)";
-    fs::path demPath = R"(/Users/zhouxuguang/work/data/gis/tile/image)";
+    fs::path demPath = R"(/Users/zhouxuguang/work/data/gis/tile/terrain)";
 #elif OS_WINDOWS
     fs::path dataPath = R"(D:/source/gis/data/tile/image)";
     //fs::path demPath = R"(D:/source/gis/data/tile/terrain)";
