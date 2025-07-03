@@ -31,7 +31,7 @@ Vector3d GetDirInEyeSpace(double azimuthAngle, double verticalAngle)
 
 EarthCamera::EarthCamera(const Ellipsoid& ellipsoid, const std::string& name) :
     mEllipsoid(ellipsoid),
-    Camera(getRenderDevice()->getRenderDeviceType(), name),
+    Camera(GetRenderDevice()->GetRenderDeviceType(), name),
     mEyeGeodetic(degToRad(110), degToRad(23), 6398140),
     mEyeGeodeticTarget(degToRad(110), degToRad(23), 0)
 {

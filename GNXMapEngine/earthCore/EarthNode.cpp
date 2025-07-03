@@ -9,7 +9,7 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-EarthNode::EarthNode(const Ellipsoid& ellipsoid, EarthCameraPtr cameraPtr) : mEllipsoid(ellipsoid)
+EarthNode::EarthNode(const Ellipsoid& ellipsoid, EarthCameraPtr cameraPtr) : mEllipsoid(ellipsoid), mTileLoadPool(4)
 {
 	mCameraPtr = cameraPtr;
 

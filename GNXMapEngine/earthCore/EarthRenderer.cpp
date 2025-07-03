@@ -7,7 +7,7 @@ EARTH_CORE_NAMESPACE_BEGIN
 EarthRenderer::EarthRenderer()
 {
 	SamplerDescriptor samplerDescriptor;
-	mSampler = getRenderDevice()->createSamplerWithDescriptor(samplerDescriptor);
+	mSampler = GetRenderDevice()->CreateSamplerWithDescriptor(samplerDescriptor);
 }
 
 EarthRenderer::~EarthRenderer()
@@ -32,7 +32,7 @@ void EarthRenderer::Render(RenderInfo& renderInfo)
 
 	renderInfo.materials = GetMaterials();
 
-	renderEncoder->setGraphicsPipeline(renderInfo.materials[0]->GetPSO());
+	renderEncoder->SetGraphicsPipeline(renderInfo.materials[0]->GetPSO());
 
 	/*const ChannelInfo* channels = mesh.GetVertexData().GetChannels();
 	VertexBufferPtr vertexBuffer = mesh.GetVertexBuffer();
@@ -40,18 +40,18 @@ void EarthRenderer::Render(RenderInfo& renderInfo)
 
 	for (int n = 0; n < quadNodes.size(); n++)
 	{
-		renderEncoder->setVertexUniformBuffer("cbPerCamera", renderInfo.cameraUBO);
-		renderEncoder->setVertexUniformBuffer("cbPerObject", quadNodes[n]->mLocalUniform);
-		renderEncoder->setVertexUniformBuffer("LightInfo", renderInfo.lightUBO);
+		renderEncoder->SetVertexUniformBuffer("cbPerCamera", renderInfo.cameraUBO);
+		renderEncoder->SetVertexUniformBuffer("cbPerObject", quadNodes[n]->mLocalUniform);
+		renderEncoder->SetVertexUniformBuffer("LightInfo", renderInfo.lightUBO);
 
-		renderEncoder->setFragmentUniformBuffer("cbPerCamera", renderInfo.cameraUBO);
-		renderEncoder->setFragmentUniformBuffer("LightInfo", renderInfo.lightUBO);
+		renderEncoder->SetFragmentUniformBuffer("cbPerCamera", renderInfo.cameraUBO);
+		renderEncoder->SetFragmentUniformBuffer("LightInfo", renderInfo.lightUBO);
 
-		renderEncoder->setVertexBuffer(quadNodes[n]->mVertexBuffer, 0, 0);
+		renderEncoder->SetVertexBuffer(quadNodes[n]->mVertexBuffer, 0, 0);
 		uint32_t offset = quadNodes[n]->mDemData.GetVertCount() * sizeof(simd_float4);
-		renderEncoder->setVertexBuffer(quadNodes[n]->mVertexBuffer, offset, 1);
+		renderEncoder->SetVertexBuffer(quadNodes[n]->mVertexBuffer, offset, 1);
 		offset += quadNodes[n]->mDemData.GetVertCount() * sizeof(simd_float4);
-		renderEncoder->setVertexBuffer(quadNodes[n]->mVertexBuffer, offset, 3);
+		renderEncoder->SetVertexBuffer(quadNodes[n]->mVertexBuffer, offset, 3);
 		/*renderEncoder->setVertexBuffer(vertexBuffer, channels[kShaderChannelTangent].offset, 2);
 		renderEncoder->setVertexBuffer(vertexBuffer, channels[kShaderChannelTexCoord0].offset, 3);*/
 
@@ -61,7 +61,7 @@ void EarthRenderer::Render(RenderInfo& renderInfo)
 		//TextureSamplerPtr textureSampler = mesh.GetSampler();
 
 		//这里感觉采样器和纹理封装在一个对象里面会比较方便
-		renderEncoder->setFragmentTextureAndSampler("gDiffuseMap", quadNodes[n]->mTexture, mSampler);
+		renderEncoder->SetFragmentTextureAndSampler("gDiffuseMap", quadNodes[n]->mTexture, mSampler);
 		/*renderEncoder->setFragmentTextureAndSampler("gNormalMap", material->GetTexture("normalTexture"), textureSampler);
 		renderEncoder->setFragmentTextureAndSampler("gMetalRoughMap", material->GetTexture("roughnessTexture"), textureSampler);
 		renderEncoder->setFragmentTextureAndSampler("gEmissiveMap", material->GetTexture("emissiveTexture"), textureSampler);
@@ -69,7 +69,7 @@ void EarthRenderer::Render(RenderInfo& renderInfo)
 
 		//const SubMeshInfo& subInfo = mesh.GetSubMeshInfo(n);
 
-		renderEncoder->drawIndexedPrimitives(PrimitiveMode_TRIANGLES, 
+		renderEncoder->DrawIndexedPrimitives(PrimitiveMode_TRIANGLES, 
 			(int)quadNodes[n]->mDemData.GetFaceCount() * 3, 
 			quadNodes[n]->mIndexBuffer, 0);
 

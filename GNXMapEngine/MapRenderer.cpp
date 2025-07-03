@@ -62,16 +62,16 @@ static Texture2DPtr TextureFromFile(const char *filename)
     TextureDescriptor textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(*image);
     textureDescriptor.mipmaped = true;
     
-    Texture2DPtr texture = getRenderDevice()->createTextureWithDescriptor(textureDescriptor);
+    Texture2DPtr texture = GetRenderDevice()->CreateTextureWithDescriptor(textureDescriptor);
     Rect2D rect(0, 0, image->GetWidth(), image->GetHeight());
-    texture->replaceRegion(rect, image->GetPixels());
+    texture->ReplaceRegion(rect, image->GetPixels());
     return texture;
 }
 
 MapRenderer::MapRenderer(void *metalLayer) : mTileLoadPool(4)
 {
 #if OS_WINDOWS
-    mRenderdevice = createRenderDevice(RenderDeviceType::VULKAN, metalLayer);
+    mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, metalLayer);
 #elif OS_MACOS
     mRenderdevice = createRenderDevice(RenderDeviceType::METAL, metalLayer);
 #endif // _WIN
@@ -90,7 +90,7 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     mWidth = width;
     mHeight = height;
     
-    mRenderdevice->resize(width, height);
+    mRenderdevice->Resize(width, height);
     
     mSceneManager->AddCamara(mCameraPtr);
     mCameraPtr->SetLens(60, float(width) / height, 10, 6378137.0 * 4);
@@ -133,17 +133,17 @@ void MapRenderer::DrawFrame()
     
     mSceneManager->Update(deltaTime);
     
-    CommandBufferPtr commandBuffer = mRenderdevice->createCommandBuffer();
+    CommandBufferPtr commandBuffer = mRenderdevice->CreateCommandBuffer();
     if (!commandBuffer)
     {
         return;
     }
-    RenderEncoderPtr renderEncoder = commandBuffer->createDefaultRenderEncoder();
+    RenderEncoderPtr renderEncoder = commandBuffer->CreateDefaultRenderEncoder();
     
     mSceneManager->Render(renderEncoder);
     
     renderEncoder->EndEncode();
-    commandBuffer->presentFrameBuffer();
+    commandBuffer->PresentFrameBuffer();
 }
 
 void MapRenderer::BuildEarthNode()

@@ -41,8 +41,8 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	cbPerObject modelMatrix;
 	modelMatrix.MATRIX_M = mathutil::Matrix4x4f::CreateTranslate(mStartPoint.x, mStartPoint.y, mStartPoint.z);
 	modelMatrix.MATRIX_M_INV = modelMatrix.MATRIX_M.Inverse();
-	mLocalUniform = getRenderDevice()->createUniformBufferWithSize(sizeof(cbPerObject));
-	mLocalUniform->setData(&modelMatrix, 0, sizeof(cbPerObject));
+	mLocalUniform = GetRenderDevice()->CreateUniformBufferWithSize(sizeof(cbPerObject));
+	mLocalUniform->SetData(&modelMatrix, 0, sizeof(cbPerObject));
 
 	mChildNodes[0] = nullptr;
 	mChildNodes[1] = nullptr;
@@ -89,8 +89,8 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 
 	if (mDemData.IsInited() && !mInited)
 	{
-		mVertexBuffer = getRenderDevice()->createVertexBufferWithBytes(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
-		mIndexBuffer = getRenderDevice()->createIndexBufferWithBytes(mDemData.GetFaceData(), mDemData.GetFaceBytes(), RenderCore::IndexType_UShort);
+		mVertexBuffer = GetRenderDevice()->CreateVertexBufferWithBytes(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
+		mIndexBuffer = GetRenderDevice()->CreateIndexBufferWithBytes(mDemData.GetFaceData(), mDemData.GetFaceBytes(), RenderCore::IndexType_UShort);
 		mInited = true;
 	}
 	

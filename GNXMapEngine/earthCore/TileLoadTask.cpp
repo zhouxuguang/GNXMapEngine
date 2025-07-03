@@ -15,29 +15,29 @@ static Texture2DPtr TextureFromImage(const imagecodec::VImage& image)
 
 	baselib::TimeCost cost;
 	cost.Begin();
-	for (int i = 0; i < 1000; i ++)
+	//for (int i = 0; i < 1000; i ++)
 	{
 		AssetProcess::CompressDXT1(dxt1Image->GetPixels(), image.GetPixels(), image.GetWidth(), image.GetHeight(), image.GetBytesPerRow());
 	}
 	cost.End();
 	uint64_t t1 = cost.GetCostTimeNano();
-	LOG_INFO("CompressDXT1 cost %lf", (double)t1);
+	LOG_INFO("CompressDXT1 cost %lf\n", (double)t1);
 
 	cost.Begin();
-	for (int i = 0; i < 1000; i++)
+	/*for (int i = 0; i < 1000; i++)
 	{
 		AssetProcess::CompressDXT1_ISPC(dxt1Image->GetPixels(), image.GetPixels(), image.GetWidth(), image.GetHeight(), image.GetBytesPerRow());
-	}
+	}*/
 	cost.End();
 	t1 = cost.GetCostTimeNano();
-	LOG_INFO("CompressDXT1_ISPC cost %lf", (double)t1);
+	LOG_INFO("CompressDXT1_ISPC cost %lf\n", (double)t1);
 
 	TextureDescriptor textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(*dxt1Image);
 	textureDescriptor.mipmaped = true;
 
-	Texture2DPtr texture = getRenderDevice()->createTextureWithDescriptor(textureDescriptor);
+	Texture2DPtr texture = GetRenderDevice()->CreateTextureWithDescriptor(textureDescriptor);
 	Rect2D rect(0, 0, image.GetWidth(), image.GetHeight());
-	texture->replaceRegion(rect, dxt1Image->GetPixels());
+	texture->ReplaceRegion(rect, dxt1Image->GetPixels());
 	return texture;
 }
 
