@@ -73,7 +73,7 @@ MapRenderer::MapRenderer(void *metalLayer)
 #if OS_WINDOWS
     mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, metalLayer);
 #elif OS_MACOS
-    mRenderdevice = createRenderDevice(RenderDeviceType::METAL, metalLayer);
+    mRenderdevice = CreateRenderDevice(RenderDeviceType::METAL, metalLayer);
 #endif // _WIN
 
     
