@@ -128,8 +128,7 @@ if(APPLE)
     #set_target_properties(GNXMapEngine PROPERTIES LINK_FLAGS "-fobjc-arc")
 endif()
 
-target_link_libraries(GNXMapEngine PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-    baselib imagecodec mathutil rendercore rendersystem shadercompiler spirv_reflect AssetProcess)
+target_link_libraries(GNXMapEngine PRIVATE Qt${QT_VERSION_MAJOR}::Widgets GNXEngine)
 
 set_target_properties(GNXMapEngine PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
