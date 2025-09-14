@@ -51,8 +51,8 @@ TileDataSource::~TileDataSource()
 ObjectBasePtr TileDataSource::ReadTile(const QuadTileID& tileID)
 {
 	const uint32_t MAX_PATH_LENGHT = 512;
-	char szPathName[MAX_PATH_LENGHT];
-	sprintf(szPathName
+    char szPathName[MAX_PATH_LENGHT] = {0};
+	snprintf(szPathName, MAX_PATH_LENGHT
 		, "%s/%d/%d/%d.%s"
 		, mDataPath.c_str()
 		, int(tileID.level)
@@ -73,7 +73,7 @@ ObjectBasePtr TileDataSource::ReadTile(const QuadTileID& tileID)
 	}
 	else
 	{
-		sprintf(szPathName
+		snprintf(szPathName, MAX_PATH_LENGHT
 			, "%s/%d/%d/%d..%s"
 			, mDataPath.c_str()
 			, int(tileID.level)
@@ -88,7 +88,7 @@ ObjectBasePtr TileDataSource::ReadTile(const QuadTileID& tileID)
 		}
 		else
 		{
-			sprintf(szPathName
+			snprintf(szPathName, MAX_PATH_LENGHT
 				, "%s/%d/%d/%d.%s"
 				, mDataPath.c_str()
 				, int(tileID.level)
@@ -139,7 +139,7 @@ ObjectBasePtr TileDataSource::ReadTile(const QuadTileID& tileID)
 			int16_t* pDem = (int16_t*)compressedData;
 			for (size_t i = 0; i < 65 * 65; i++)
 			{
-				pDst[i] = float(pDem[i]) * 0.2 - 1000;
+				pDst[i] = (float(pDem[i]) * 0.2 - 1000);
 			}
 
 			// 注意高度图是从上往下排列，这里将高度图反转

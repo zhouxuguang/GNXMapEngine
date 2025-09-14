@@ -18,7 +18,10 @@
 #include "RenderSystem/ImageTextureUtil.h"
 #include "BaseLib/DateTime.h"
 #include "BaseLib/LogService.h"
-#include "imagecodec/ColorConverter.h"
+#include "ImageCodec/ColorConverter.h"
+#include "MathUtil/Vector3.h"
+#include "RenderSystem/Atmosphere/AtmosphereModel.h"
+#include "RenderSystem/Atmosphere/AtmosphereRenderer.h"
 
 #include "WebMercator.h"
 //#include "httplib.h"
@@ -116,6 +119,77 @@ void MapRenderer::Pan(float offsetX, float offsetY)
     mCameraPtr->Pan(offsetX, offsetY);
 }
 
+static PostProcessing* postProcessing = nullptr;
+
+void initPostResource(RenderDevicePtr renderDevice)
+{
+    postProcessing = new PostProcessing(renderDevice);
+}
+
+void testPost(const RenderEncoderPtr &renderEncoder, const RenderTexturePtr texture)
+{
+    postProcessing->SetRenderTexture(texture);
+    postProcessing->Process(renderEncoder);
+}
+
+void MapRenderer::TestAtmo()
+{
+    if (!transmittance_texture)
+    {
+        RenderCore::TextureDescriptor imagedes;
+        imagedes.width = Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH;
+        imagedes.height = Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT;
+        imagedes.format = kTexFormatRGBA32Float;
+        transmittance_texture = mRenderdevice->CreateRenderTexture(imagedes);
+        
+        initPostResource(mRenderdevice);
+    }
+    if (!mPipeline)
+    {
+        ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeTransmittance");
+            
+        ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
+        ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
+
+        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+
+        GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+        graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
+        
+        mPipeline = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
+        mPipeline->AttachGraphicsShader(graphicsShader);
+    }
+    if (!mUBO)
+    {
+        size_t size = sizeof(Atmosphere::AtmosphereParameters);
+        mUBO = mRenderdevice->CreateUniformBufferWithSize((uint32_t)size);
+        AtmosphereModel* model = CreateAtmoModel();
+        mUBO->SetData(&model->GetAtmosphereParameters(), 0, (uint32_t)size);
+    }
+    
+    CommandBufferPtr commandBuffer = mRenderdevice->CreateCommandBuffer();
+        
+    RenderPass renderPass;
+    RenderPassColorAttachmentPtr colorAttachmentPtr = std::make_shared<RenderPassColorAttachment>();
+    colorAttachmentPtr->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+    colorAttachmentPtr->texture = transmittance_texture;
+    renderPass.colorAttachments.push_back(colorAttachmentPtr);
+
+    renderPass.renderRegion = Rect2D(0, 0, Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH, Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT);
+    RenderEncoderPtr renderEncoder1 = commandBuffer->CreateRenderEncoder(renderPass);
+    
+    renderEncoder1->SetGraphicsPipeline(mPipeline);
+    renderEncoder1->SetFragmentUniformBuffer(mUBO, 0);
+    renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+    
+    renderEncoder1->EndEncode();
+    
+    RenderEncoderPtr renderEncoder = commandBuffer->CreateDefaultRenderEncoder();
+    testPost(renderEncoder, transmittance_texture);
+    renderEncoder->EndEncode();
+    commandBuffer->PresentFrameBuffer();
+}
+
 void MapRenderer::DrawFrame()
 {
     if (!mRenderdevice)
@@ -129,6 +203,9 @@ void MapRenderer::DrawFrame()
     mLastTime = thisTime;
     
     mSceneManager->Update(deltaTime);
+    
+    TestAtmo();
+    return;
     
     CommandBufferPtr commandBuffer = mRenderdevice->CreateCommandBuffer();
     if (!commandBuffer)

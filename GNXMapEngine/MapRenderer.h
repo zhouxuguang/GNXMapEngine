@@ -94,6 +94,8 @@ public:
     
     void Pan(float offsetX, float offsetY);
     
+    void TestAtmo();
+    
 private:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     SceneManager* mSceneManager;
@@ -106,6 +108,10 @@ private:
     earthcore::EarthCameraPtr mCameraPtr = nullptr;
     
     void BuildEarthNode();
+    
+    RenderCore::RenderTexturePtr transmittance_texture = nullptr;
+    RenderCore::GraphicsPipelinePtr mPipeline = nullptr;   //渲染管线
+    RenderCore::UniformBufferPtr mUBO = nullptr;
 };
 
 #endif /* MapRenderer_hpp */
