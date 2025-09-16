@@ -134,60 +134,120 @@ void testPost(const RenderEncoderPtr &renderEncoder, const RenderTexturePtr text
 
 void MapRenderer::TestAtmo()
 {
-    if (!transmittance_texture)
-    {
-        RenderCore::TextureDescriptor imagedes;
-        imagedes.width = Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH;
-        imagedes.height = Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT;
-        imagedes.format = kTexFormatRGBA32Float;
-        transmittance_texture = mRenderdevice->CreateRenderTexture(imagedes);
-        
-        initPostResource(mRenderdevice);
-    }
-    if (!mPipeline)
-    {
-        ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeTransmittance");
-            
-        ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
-        ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
-
-        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
-
-        GraphicsPipelineDescriptor graphicsPipelineDescriptor;
-        graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
-        
-        mPipeline = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
-        mPipeline->AttachGraphicsShader(graphicsShader);
-    }
-    if (!mUBO)
-    {
-        size_t size = sizeof(Atmosphere::AtmosphereParameters);
-        mUBO = mRenderdevice->CreateUniformBufferWithSize((uint32_t)size);
-        AtmosphereModel* model = CreateAtmoModel();
-        mUBO->SetData(&model->GetAtmosphereParameters(), 0, (uint32_t)size);
-    }
+    InitAtmo();
     
     CommandBufferPtr commandBuffer = mRenderdevice->CreateCommandBuffer();
         
-    RenderPass renderPass;
-    RenderPassColorAttachmentPtr colorAttachmentPtr = std::make_shared<RenderPassColorAttachment>();
-    colorAttachmentPtr->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
-    colorAttachmentPtr->texture = transmittance_texture;
-    renderPass.colorAttachments.push_back(colorAttachmentPtr);
+    // 
+    {
+		RenderPass renderPass;
+		RenderPassColorAttachmentPtr colorAttachmentPtr = std::make_shared<RenderPassColorAttachment>();
+		colorAttachmentPtr->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+		colorAttachmentPtr->texture = transmittance_texture;
+		renderPass.colorAttachments.push_back(colorAttachmentPtr);
 
-    renderPass.renderRegion = Rect2D(0, 0, Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH, Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT);
-    RenderEncoderPtr renderEncoder1 = commandBuffer->CreateRenderEncoder(renderPass);
-    
-    renderEncoder1->SetGraphicsPipeline(mPipeline);
-    renderEncoder1->SetFragmentUniformBuffer(mUBO, 0);
-    renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
-    
-    renderEncoder1->EndEncode();
+		renderPass.renderRegion = Rect2D(0, 0, Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH, Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT);
+		RenderEncoderPtr renderEncoder1 = commandBuffer->CreateRenderEncoder(renderPass);
+
+		renderEncoder1->SetGraphicsPipeline(mPipeline1);
+		renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
+		renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+
+		renderEncoder1->EndEncode();
+    }
+
+    {
+		RenderPass renderPass;
+		RenderPassColorAttachmentPtr colorAttachmentPtr = std::make_shared<RenderPassColorAttachment>();
+		colorAttachmentPtr->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+		colorAttachmentPtr->texture = delta_irradiance_texture;
+		renderPass.colorAttachments.push_back(colorAttachmentPtr);
+
+		renderPass.renderRegion = Rect2D(0, 0, Atmosphere::IRRADIANCE_TEXTURE_WIDTH, Atmosphere::IRRADIANCE_TEXTURE_HEIGHT);
+		RenderEncoderPtr renderEncoder1 = commandBuffer->CreateRenderEncoder(renderPass);
+
+		renderEncoder1->SetGraphicsPipeline(mPipeline2);
+		renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
+        renderEncoder1->SetFragmentRenderTextureAndSampler("transmittance_texture", transmittance_texture, sampler);
+		renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+
+		renderEncoder1->EndEncode();
+    }
     
     RenderEncoderPtr renderEncoder = commandBuffer->CreateDefaultRenderEncoder();
-    testPost(renderEncoder, transmittance_texture);
+    testPost(renderEncoder, delta_irradiance_texture);
     renderEncoder->EndEncode();
     commandBuffer->PresentFrameBuffer();
+}
+
+void MapRenderer::InitAtmo()
+{
+    if (!postProcessing)
+    {
+        initPostResource(mRenderdevice);
+    }
+
+    if (!sampler)
+    {
+        SamplerDescriptor des;
+        sampler = mRenderdevice->CreateSamplerWithDescriptor(des);
+    }
+
+	if (!transmittance_texture)
+	{
+		RenderCore::TextureDescriptor imagedes;
+		imagedes.width = Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH;
+		imagedes.height = Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT;
+		imagedes.format = kTexFormatRGBA32Float;
+		transmittance_texture = mRenderdevice->CreateRenderTexture(imagedes);
+	}
+	if (!mPipeline1)
+	{
+		ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeTransmittance");
+
+		ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
+		ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
+
+		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+
+		GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
+
+		mPipeline1 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
+		mPipeline1->AttachGraphicsShader(graphicsShader);
+	}
+
+	if (!delta_irradiance_texture)
+	{
+		RenderCore::TextureDescriptor imagedes;
+		imagedes.width = Atmosphere::IRRADIANCE_TEXTURE_WIDTH;
+		imagedes.height = Atmosphere::IRRADIANCE_TEXTURE_HEIGHT;
+		imagedes.format = kTexFormatRGBA32Float;
+		delta_irradiance_texture = mRenderdevice->CreateRenderTexture(imagedes);
+	}
+	if (!mPipeline2)
+	{
+		ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeDirectIrradiance");
+
+		ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
+		ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
+
+		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+
+		GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
+
+        mPipeline2 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
+        mPipeline2->AttachGraphicsShader(graphicsShader);
+	}
+
+	if (!mUBO)
+	{
+		size_t size = sizeof(Atmosphere::AtmosphereParameters);
+		mUBO = mRenderdevice->CreateUniformBufferWithSize((uint32_t)size);
+		AtmosphereModel* model = CreateAtmoModel();
+		mUBO->SetData(&model->GetAtmosphereParameters(), 0, (uint32_t)size);
+	}
 }
 
 void MapRenderer::DrawFrame()
