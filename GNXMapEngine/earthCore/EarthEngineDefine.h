@@ -23,6 +23,7 @@
 #include "RenderSystem/Frustum.h"
 #include "ImageCodec/ImageDecoder.h"
 #include "BaseLib/BaseLib.h"
+#include "RenderCore/RCTexture.h"
 
 USING_NS_MATHUTIL
 USING_NS_RENDERSYSTEM

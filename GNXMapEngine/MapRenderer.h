@@ -24,7 +24,7 @@ public:
     Vector2i key;       //xy方向编号
     Vector2d     start;  //起始点
     Vector2d     end;    //结束点
-    Texture2DPtr texture;
+    //RCTexture2DPtr texture;
     VertexBufferPtr vertexBuffer;
 };
 
@@ -111,10 +111,10 @@ private:
     
     void BuildEarthNode();
     
-    RenderCore::RenderTexturePtr transmittance_texture = nullptr;
+    RenderCore::RCTexturePtr transmittance_texture = nullptr;
     RenderCore::GraphicsPipelinePtr mPipeline1 = nullptr;   //渲染管线
 
-    RenderCore::RenderTexturePtr delta_irradiance_texture = nullptr;
+    RenderCore::RCTexturePtr delta_irradiance_texture = nullptr;
     RenderCore::GraphicsPipelinePtr mPipeline2 = nullptr;   //渲染管线
     RenderCore::UniformBufferPtr mUBO = nullptr;
     RenderCore::TextureSamplerPtr sampler = nullptr;

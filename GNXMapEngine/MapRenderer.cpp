@@ -40,42 +40,12 @@ namespace fs = std::filesystem;
 using namespace RenderCore;
 using namespace RenderSystem;
 
-static Texture2DPtr TextureFromFile(const char *filename)
-{
-    if (filename == nullptr)
-    {
-        return nullptr;
-    }
-    
-    imagecodec::VImagePtr image = std::make_shared<imagecodec::VImage>();
-    if (!imagecodec::ImageDecoder::DecodeFile(filename, image.get()))
-    {
-        return nullptr;
-    }
-
-    if (image->GetFormat() == imagecodec::FORMAT_SRGB8)
-    {
-        imagecodec::VImagePtr dstImage = std::make_shared<imagecodec::VImage>();
-        dstImage->SetImageInfo(imagecodec::FORMAT_SRGB8_ALPHA8, image->GetWidth(), image->GetHeight());
-        dstImage->AllocPixels();
-        imagecodec::ColorConverter::convert_RGB24toRGBA32(image, dstImage);
-        image = dstImage;
-    }
-    
-    TextureDescriptor textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(*image);
-    textureDescriptor.mipmaped = true;
-    
-    Texture2DPtr texture = GetRenderDevice()->CreateTextureWithDescriptor(textureDescriptor);
-    Rect2D rect(0, 0, image->GetWidth(), image->GetHeight());
-    texture->ReplaceRegion(rect, image->GetPixels());
-    return texture;
-}
-
 MapRenderer::MapRenderer(void *metalLayer)
 {
 #if OS_WINDOWS
     mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, metalLayer);
 #elif OS_MACOS
+    //mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, metalLayer);
     mRenderdevice = CreateRenderDevice(RenderDeviceType::METAL, metalLayer);
 #endif // _WIN
 
@@ -126,7 +96,7 @@ void initPostResource(RenderDevicePtr renderDevice)
     postProcessing = new PostProcessing(renderDevice);
 }
 
-void testPost(const RenderEncoderPtr &renderEncoder, const RenderTexturePtr texture)
+void testPost(const RenderEncoderPtr &renderEncoder, const RCTexturePtr texture)
 {
     postProcessing->SetRenderTexture(texture);
     postProcessing->Process(renderEncoder);
@@ -168,7 +138,7 @@ void MapRenderer::TestAtmo()
 
 		renderEncoder1->SetGraphicsPipeline(mPipeline2);
 		renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
-        renderEncoder1->SetFragmentRenderTextureAndSampler("transmittance_texture", transmittance_texture, sampler);
+        renderEncoder1->SetFragmentTextureAndSampler("transmittance_texture", transmittance_texture, sampler);
 		renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
 
 		renderEncoder1->EndEncode();
@@ -195,11 +165,10 @@ void MapRenderer::InitAtmo()
 
 	if (!transmittance_texture)
 	{
-		RenderCore::TextureDescriptor imagedes;
-		imagedes.width = Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH;
-		imagedes.height = Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT;
-		imagedes.format = kTexFormatRGBA32Float;
-		transmittance_texture = mRenderdevice->CreateRenderTexture(imagedes);
+		transmittance_texture = mRenderdevice->CreateTexture2D(kTexFormatRGBA32Float,
+                                                               TextureUsage::TextureUsageRenderTarget,
+                                                               Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH,
+                                                               Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT, 1);
 	}
 	if (!mPipeline1)
 	{
@@ -219,11 +188,10 @@ void MapRenderer::InitAtmo()
 
 	if (!delta_irradiance_texture)
 	{
-		RenderCore::TextureDescriptor imagedes;
-		imagedes.width = Atmosphere::IRRADIANCE_TEXTURE_WIDTH;
-		imagedes.height = Atmosphere::IRRADIANCE_TEXTURE_HEIGHT;
-		imagedes.format = kTexFormatRGBA32Float;
-		delta_irradiance_texture = mRenderdevice->CreateRenderTexture(imagedes);
+		delta_irradiance_texture = mRenderdevice->CreateTexture2D(kTexFormatRGBA32Float,
+                                                                  TextureUsage::TextureUsageRenderTarget,
+                                                                  Atmosphere::IRRADIANCE_TEXTURE_WIDTH, 
+                                                                  Atmosphere::IRRADIANCE_TEXTURE_HEIGHT, 1);
 	}
 	if (!mPipeline2)
 	{
@@ -264,8 +232,8 @@ void MapRenderer::DrawFrame()
     
     mSceneManager->Update(deltaTime);
     
-    TestAtmo();
-    return;
+//    TestAtmo();
+//    return;
     
     CommandBufferPtr commandBuffer = mRenderdevice->CreateCommandBuffer();
     if (!commandBuffer)
@@ -287,23 +255,12 @@ void MapRenderer::BuildEarthNode()
     Vector3d position = wgs84.CartographicToCartesian(geodetic3D);
     earthcore::Geodetic3D geodetic3D1 = wgs84.CartesianToCartographic(position);
     
+    // 这句删掉为啥显示异常？
     MeshPtr mesh = earthcore::GeoGridTessellator::Compute(wgs84, 360, 180, earthcore::GeoGridTessellator::GeoGridVertexAttributes::All);
-    
-    MeshRenderer* meshRender = new(std::nothrow) MeshRenderer();
-    meshRender->SetSharedMesh(mesh);
-    
     MaterialPtr material = Material::GetDefaultDiffuseMaterial();
-    
-    fs::path filePath = fs::absolute(fs::path(__FILE__)).parent_path();
-    filePath = (filePath / "asset/NaturalEarth/NE2_50M_SR_W.jpg").lexically_normal();
-    Texture2DPtr texture = TextureFromFile(filePath.string().c_str());
-    
-    material->SetTexture("diffuseTexture", texture);
-    meshRender->AddMaterial(material);
 
     // 创建相机
 	mCameraPtr = std::make_shared<earthcore::EarthCamera>(wgs84, "MainCamera");
-    
     earthcore::EarthNode *pEarthNode = new earthcore::EarthNode(wgs84, mCameraPtr);
 
     // 增加数据源
@@ -336,7 +293,6 @@ void MapRenderer::BuildEarthNode()
     earthRender->AddMaterial(material);
     pEarthNode->AddComponent(earthRender);
 
-    //pEarthNode->AddComponent(meshRender);
     mSceneManager->getRootNode()->AddSceneNode(pEarthNode);
     
 }
