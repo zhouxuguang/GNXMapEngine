@@ -83,7 +83,7 @@ public:
 	bool mInited = false;
 	RenderCore::VertexBufferPtr mVertexBuffer = nullptr;
 	RenderCore::IndexBufferPtr mIndexBuffer = nullptr;
-	RenderCore::Texture2DPtr mTexture = nullptr;
+	RenderCore::RCTexturePtr mTexture = nullptr;
 
 	QuadNode(EarthNode* earthNode, QuadNode* parent
 		, const Vector2d& vStart

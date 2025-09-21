@@ -7,7 +7,7 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-static Texture2DPtr TextureFromImage(const imagecodec::VImage& image)
+static RCTexturePtr TextureFromImage(const imagecodec::VImage& image)
 {
 	VImagePtr dxt1Image = std::make_shared<VImage>();
 	dxt1Image->SetImageInfo(FORMAT_DXT1_RGB, image.GetWidth(), image.GetHeight());
@@ -34,9 +34,11 @@ static Texture2DPtr TextureFromImage(const imagecodec::VImage& image)
 
 	TextureDescriptor textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(image);
 
-	Texture2DPtr texture = GetRenderDevice()->CreateTextureWithDescriptor(textureDescriptor);
+    RCTexture2DPtr texture = GetRenderDevice()->CreateTexture2D(textureDescriptor.format,
+                                                              TextureUsage::TextureUsageShaderRead,
+                                                              textureDescriptor.width, textureDescriptor.height, 1);
 	Rect2D rect(0, 0, image.GetWidth(), image.GetHeight());
-	texture->ReplaceRegion(rect, image.GetPixels());
+    texture->ReplaceRegion(rect, 0, image.GetPixels(), image.GetBytesPerRow());
 	return texture;
 }
 
