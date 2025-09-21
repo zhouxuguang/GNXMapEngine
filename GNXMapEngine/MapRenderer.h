@@ -111,10 +111,10 @@ private:
     
     void BuildEarthNode();
     
-    RenderCore::RenderTexturePtr transmittance_texture = nullptr;
+    RenderCore::RCTexturePtr transmittance_texture = nullptr;
     RenderCore::GraphicsPipelinePtr mPipeline1 = nullptr;   //渲染管线
 
-    RenderCore::RenderTexturePtr delta_irradiance_texture = nullptr;
+    RenderCore::RCTexturePtr delta_irradiance_texture = nullptr;
     RenderCore::GraphicsPipelinePtr mPipeline2 = nullptr;   //渲染管线
     RenderCore::UniformBufferPtr mUBO = nullptr;
     RenderCore::TextureSamplerPtr sampler = nullptr;

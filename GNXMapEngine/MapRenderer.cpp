@@ -76,6 +76,7 @@ MapRenderer::MapRenderer(void *metalLayer)
 #if OS_WINDOWS
     mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, metalLayer);
 #elif OS_MACOS
+    //mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, metalLayer);
     mRenderdevice = CreateRenderDevice(RenderDeviceType::METAL, metalLayer);
 #endif // _WIN
 
@@ -126,7 +127,7 @@ void initPostResource(RenderDevicePtr renderDevice)
     postProcessing = new PostProcessing(renderDevice);
 }
 
-void testPost(const RenderEncoderPtr &renderEncoder, const RenderTexturePtr texture)
+void testPost(const RenderEncoderPtr &renderEncoder, const RCTexturePtr texture)
 {
     postProcessing->SetRenderTexture(texture);
     postProcessing->Process(renderEncoder);
@@ -168,7 +169,7 @@ void MapRenderer::TestAtmo()
 
 		renderEncoder1->SetGraphicsPipeline(mPipeline2);
 		renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
-        renderEncoder1->SetFragmentRenderTextureAndSampler("transmittance_texture", transmittance_texture, sampler);
+        renderEncoder1->SetFragmentTextureAndSampler("transmittance_texture", transmittance_texture, sampler);
 		renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
 
 		renderEncoder1->EndEncode();
@@ -195,11 +196,10 @@ void MapRenderer::InitAtmo()
 
 	if (!transmittance_texture)
 	{
-		RenderCore::TextureDescriptor imagedes;
-		imagedes.width = Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH;
-		imagedes.height = Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT;
-		imagedes.format = kTexFormatRGBA32Float;
-		transmittance_texture = mRenderdevice->CreateRenderTexture(imagedes);
+		transmittance_texture = mRenderdevice->CreateTexture2D(kTexFormatRGBA32Float,
+                                                               TextureUsage::TextureUsageRenderTarget,
+                                                               Atmosphere::TRANSMITTANCE_TEXTURE_WIDTH,
+                                                               Atmosphere::TRANSMITTANCE_TEXTURE_HEIGHT, 1);
 	}
 	if (!mPipeline1)
 	{
@@ -219,11 +219,10 @@ void MapRenderer::InitAtmo()
 
 	if (!delta_irradiance_texture)
 	{
-		RenderCore::TextureDescriptor imagedes;
-		imagedes.width = Atmosphere::IRRADIANCE_TEXTURE_WIDTH;
-		imagedes.height = Atmosphere::IRRADIANCE_TEXTURE_HEIGHT;
-		imagedes.format = kTexFormatRGBA32Float;
-		delta_irradiance_texture = mRenderdevice->CreateRenderTexture(imagedes);
+		delta_irradiance_texture = mRenderdevice->CreateTexture2D(kTexFormatRGBA32Float,
+                                                                  TextureUsage::TextureUsageRenderTarget,
+                                                                  Atmosphere::IRRADIANCE_TEXTURE_WIDTH, 
+                                                                  Atmosphere::IRRADIANCE_TEXTURE_HEIGHT, 1);
 	}
 	if (!mPipeline2)
 	{

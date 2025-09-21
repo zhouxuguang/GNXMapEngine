@@ -32,12 +32,11 @@ static Texture2DPtr TextureFromImage(const imagecodec::VImage& image)
 	t1 = cost.GetCostTimeNano();
 	LOG_INFO("CompressDXT1_ISPC cost %lf\n", (double)t1);
 
-	TextureDescriptor textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(*dxt1Image);
-	textureDescriptor.mipmaped = true;
+	TextureDescriptor textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(image);
 
 	Texture2DPtr texture = GetRenderDevice()->CreateTextureWithDescriptor(textureDescriptor);
 	Rect2D rect(0, 0, image.GetWidth(), image.GetHeight());
-	texture->ReplaceRegion(rect, dxt1Image->GetPixels());
+	texture->ReplaceRegion(rect, image.GetPixels());
 	return texture;
 }
 
