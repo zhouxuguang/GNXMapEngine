@@ -232,8 +232,8 @@ void MapRenderer::DrawFrame()
     
     mSceneManager->Update(deltaTime);
     
-//    TestAtmo();
-//    return;
+    TestAtmo();
+    return;
     
     CommandBufferPtr commandBuffer = mRenderdevice->CreateCommandBuffer();
     if (!commandBuffer)
