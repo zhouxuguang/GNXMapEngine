@@ -118,6 +118,15 @@ private:
     RenderCore::GraphicsPipelinePtr mPipeline2 = nullptr;   //渲染管线
     RenderCore::UniformBufferPtr mUBO = nullptr;
     RenderCore::TextureSamplerPtr sampler = nullptr;
+
+    RenderCore::RCTexturePtr delta_rayleigh_scattering_texture = nullptr;
+    RenderCore::RCTexturePtr delta_mie_scattering_texture = nullptr;
+    RenderCore::RCTexturePtr scattering_texture = nullptr;
+    RenderCore::RCTexturePtr optional_single_mie_scattering_texture = nullptr;
+	RenderCore::GraphicsPipelinePtr mPipeline3 = nullptr;   //渲染管线
+	//RenderCore::UniformBufferPtr mUBO2 = nullptr;
+    std::vector<RenderCore::UniformBufferPtr> mUBOs;
+
 };
 
 #endif /* MapRenderer_hpp */

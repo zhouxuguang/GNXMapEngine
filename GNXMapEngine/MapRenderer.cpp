@@ -19,7 +19,6 @@
 #include "BaseLib/DateTime.h"
 #include "BaseLib/LogService.h"
 #include "ImageCodec/ColorConverter.h"
-#include "MathUtil/Vector3.h"
 #include "RenderSystem/Atmosphere/AtmosphereModel.h"
 #include "RenderSystem/Atmosphere/AtmosphereRenderer.h"
 
@@ -101,6 +100,11 @@ void testPost(const RenderEncoderPtr &renderEncoder, const RCTexturePtr texture)
     postProcessing->SetRenderTexture(texture);
     postProcessing->Process(renderEncoder);
 }
+struct ScatteringCB
+{
+	int layer;  // 当前散射层
+	int scattering_order;
+};
 
 void MapRenderer::TestAtmo()
 {
@@ -142,6 +146,13 @@ void MapRenderer::TestAtmo()
 		renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
 
 		renderEncoder1->EndEncode();
+    }
+
+    {
+		for (uint32_t i = 0; i < Atmosphere::SCATTERING_TEXTURE_DEPTH; i++)
+		{
+			//
+		}
     }
     
     RenderEncoderPtr renderEncoder = commandBuffer->CreateDefaultRenderEncoder();
@@ -216,6 +227,69 @@ void MapRenderer::InitAtmo()
 		AtmosphereModel* model = CreateAtmoModel();
 		mUBO->SetData(&model->GetAtmosphereParameters(), 0, (uint32_t)size);
 	}
+
+    if (!mPipeline3)
+    {
+		delta_rayleigh_scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+			TextureUsage::TextureUsageRenderTarget,
+			Atmosphere::SCATTERING_TEXTURE_WIDTH,
+			Atmosphere::SCATTERING_TEXTURE_HEIGHT, 
+            Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);
+
+        delta_mie_scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+			TextureUsage::TextureUsageRenderTarget,
+			Atmosphere::SCATTERING_TEXTURE_WIDTH,
+			Atmosphere::SCATTERING_TEXTURE_HEIGHT,
+			Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);
+
+        scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+			TextureUsage::TextureUsageRenderTarget,
+			Atmosphere::SCATTERING_TEXTURE_WIDTH,
+			Atmosphere::SCATTERING_TEXTURE_HEIGHT,
+			Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);
+
+        optional_single_mie_scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+			TextureUsage::TextureUsageRenderTarget,
+			Atmosphere::SCATTERING_TEXTURE_WIDTH,
+			Atmosphere::SCATTERING_TEXTURE_HEIGHT,
+			Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);
+
+		ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeSingleScattering");
+
+		ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
+		ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
+
+		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+
+		GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
+
+		mPipeline3 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
+        mPipeline3->AttachGraphicsShader(graphicsShader);
+
+		size_t size = sizeof(ScatteringCB);
+        ScatteringCB scatteringData = {};
+
+        for (uint32_t i = 0; i < 256; i ++)
+        {
+            RenderCore::UniformBufferPtr ubo = mRenderdevice->CreateUniformBufferWithSize((uint32_t)size);
+            mUBOs.push_back(ubo);
+        }
+
+        /*delta_scattering_density_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+			TextureUsage::TextureUsageRenderTarget,
+			Atmosphere::SCATTERING_TEXTURE_WIDTH,
+			Atmosphere::SCATTERING_TEXTURE_HEIGHT,
+			Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);*/
+
+
+		/*OpenGLTexture delta_scattering_density_texture(
+			SCATTERING_TEXTURE_WIDTH,
+			SCATTERING_TEXTURE_HEIGHT,
+			SCATTERING_TEXTURE_DEPTH,
+			rgb_format_supported_ ? GL_RGB : GL_RGBA,
+			half_precision_);*/
+    }
 }
 
 void MapRenderer::DrawFrame()
