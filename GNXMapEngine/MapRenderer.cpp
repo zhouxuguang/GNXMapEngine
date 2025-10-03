@@ -151,7 +151,47 @@ void MapRenderer::TestAtmo()
     {
 		for (uint32_t i = 0; i < Atmosphere::SCATTERING_TEXTURE_DEPTH; i++)
 		{
-			//
+            RenderPass renderPass;
+            RenderPassColorAttachmentPtr colorAttachmentPtr1 = std::make_shared<RenderPassColorAttachment>();
+            colorAttachmentPtr1->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+            colorAttachmentPtr1->texture = delta_rayleigh_scattering_texture;
+            colorAttachmentPtr1->slice = i;
+            renderPass.colorAttachments.push_back(colorAttachmentPtr1);
+            
+            RenderPassColorAttachmentPtr colorAttachmentPtr2 = std::make_shared<RenderPassColorAttachment>();
+            colorAttachmentPtr2->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+            colorAttachmentPtr2->texture = delta_mie_scattering_texture;
+            colorAttachmentPtr2->slice = i;
+            renderPass.colorAttachments.push_back(colorAttachmentPtr2);
+            
+            RenderPassColorAttachmentPtr colorAttachmentPtr3 = std::make_shared<RenderPassColorAttachment>();
+            colorAttachmentPtr3->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+            colorAttachmentPtr3->texture = scattering_texture;
+            colorAttachmentPtr3->slice = i;
+            renderPass.colorAttachments.push_back(colorAttachmentPtr3);
+            
+            RenderPassColorAttachmentPtr colorAttachmentPtr4 = std::make_shared<RenderPassColorAttachment>();
+            colorAttachmentPtr4->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+            colorAttachmentPtr4->texture = optional_single_mie_scattering_texture;
+            colorAttachmentPtr4->slice = i;
+            renderPass.colorAttachments.push_back(colorAttachmentPtr4);
+
+            renderPass.renderRegion = Rect2D(0, 0, Atmosphere::SCATTERING_TEXTURE_WIDTH, Atmosphere::SCATTERING_TEXTURE_HEIGHT);
+            renderPass.layerCount = Atmosphere::SCATTERING_TEXTURE_DEPTH;
+            RenderEncoderPtr renderEncoder1 = commandBuffer->CreateRenderEncoder(renderPass);
+
+            renderEncoder1->SetGraphicsPipeline(mPipeline3);
+            renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
+            renderEncoder1->SetFragmentTextureAndSampler("transmittance_texture", transmittance_texture, sampler);
+            
+            ScatteringCB scatteringCB = {};
+            scatteringCB.layer = i;
+            mUBOs[i]->SetData(&scatteringCB, 0, sizeof(scatteringCB));
+            renderEncoder1->SetFragmentUniformBuffer("ScatteringCB", mUBOs[i]);
+            
+            renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+
+            renderEncoder1->EndEncode();
 		}
     }
     
