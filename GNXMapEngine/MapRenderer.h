@@ -125,6 +125,9 @@ private:
     RenderCore::RCTexturePtr optional_single_mie_scattering_texture = nullptr;
 	RenderCore::GraphicsPipelinePtr mPipeline3 = nullptr;   //渲染管线
     std::vector<RenderCore::UniformBufferPtr> mUBOs;
+    
+    RenderCore::RCTexturePtr delta_scattering_density_texture = nullptr;
+    RenderCore::GraphicsPipelinePtr mPipeline4 = nullptr;   //渲染管线
 
 };
 

@@ -193,6 +193,49 @@ void MapRenderer::TestAtmo()
 
             renderEncoder1->EndEncode();
 		}
+        
+        /**
+         * @brief 计算多重散射
+         delta_multiple_scattering_texture用于计算3次及3次以上的多重散射
+         而delta_rayleigh_scattering_texture仅用于双重散射,为了节省内存，共用同一个纹理
+         * 
+         */
+        for (unsigned int scattering_order = 2; scattering_order <= 2; ++scattering_order)
+        {
+            // 计算特定(r,mu)接收的辐照度，存储到delta_scattering_density_texture中
+            for (int layer = 0; layer < Atmosphere::SCATTERING_TEXTURE_DEPTH; ++layer)
+            {
+                RenderPass renderPass;
+                RenderPassColorAttachmentPtr colorAttachmentPtr = std::make_shared<RenderPassColorAttachment>();
+                colorAttachmentPtr->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+                colorAttachmentPtr->texture = delta_scattering_density_texture;
+                colorAttachmentPtr->slice = layer;
+                renderPass.colorAttachments.push_back(colorAttachmentPtr);
+                
+                renderPass.renderRegion = Rect2D(0, 0, Atmosphere::SCATTERING_TEXTURE_WIDTH, Atmosphere::SCATTERING_TEXTURE_HEIGHT);
+                renderPass.layerCount = Atmosphere::SCATTERING_TEXTURE_DEPTH;
+                RenderEncoderPtr renderEncoder1 = commandBuffer->CreateRenderEncoder(renderPass);
+                renderEncoder1->SetGraphicsPipeline(mPipeline4);
+                
+                renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
+                
+                ScatteringCB scatteringCB = {};
+                scatteringCB.layer = layer;
+                scatteringCB.scattering_order = scattering_order;
+                mUBOs[layer]->SetData(&scatteringCB, 0, sizeof(scatteringCB));
+                renderEncoder1->SetFragmentUniformBuffer("ScatteringCB", mUBOs[layer]);
+                
+                renderEncoder1->SetFragmentTextureAndSampler("transmittance_texture", transmittance_texture, nullptr);
+                renderEncoder1->SetFragmentTextureAndSampler("single_rayleigh_scattering_texture", delta_rayleigh_scattering_texture, nullptr);
+                renderEncoder1->SetFragmentTextureAndSampler("single_mie_scattering_texture", delta_mie_scattering_texture, nullptr);
+                renderEncoder1->SetFragmentTextureAndSampler("multiple_scattering_texture", delta_rayleigh_scattering_texture, nullptr);
+                renderEncoder1->SetFragmentTextureAndSampler("irradiance_texture", delta_irradiance_texture, nullptr);
+                
+                renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+
+                renderEncoder1->EndEncode();
+            }
+        }
     }
     
     RenderEncoderPtr renderEncoder = commandBuffer->CreateDefaultRenderEncoder();
@@ -315,20 +358,28 @@ void MapRenderer::InitAtmo()
             RenderCore::UniformBufferPtr ubo = mRenderdevice->CreateUniformBufferWithSize((uint32_t)size);
             mUBOs.push_back(ubo);
         }
+    }
+    
+    if (!mPipeline4)
+    {
+        delta_scattering_density_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+            TextureUsage::TextureUsageRenderTarget,
+            Atmosphere::SCATTERING_TEXTURE_WIDTH,
+            Atmosphere::SCATTERING_TEXTURE_HEIGHT,
+            Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);
+        
+        ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeScatteringDensity");
 
-        /*delta_scattering_density_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
-			TextureUsage::TextureUsageRenderTarget,
-			Atmosphere::SCATTERING_TEXTURE_WIDTH,
-			Atmosphere::SCATTERING_TEXTURE_HEIGHT,
-			Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);*/
+        ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
+        ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
 
+        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
 
-		/*OpenGLTexture delta_scattering_density_texture(
-			SCATTERING_TEXTURE_WIDTH,
-			SCATTERING_TEXTURE_HEIGHT,
-			SCATTERING_TEXTURE_DEPTH,
-			rgb_format_supported_ ? GL_RGB : GL_RGBA,
-			half_precision_);*/
+        GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+        graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
+
+        mPipeline4 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
+        mPipeline4->AttachGraphicsShader(graphicsShader);
     }
 }
 
