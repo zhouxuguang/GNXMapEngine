@@ -128,7 +128,9 @@ private:
     
     RenderCore::RCTexturePtr delta_scattering_density_texture = nullptr;
     RenderCore::GraphicsPipelinePtr mPipeline4 = nullptr;   //渲染管线
-
+    
+    RenderCore::RCTexturePtr irradiance_texture = nullptr;
+    RenderCore::GraphicsPipelinePtr mPipeline5 = nullptr;   //渲染管线
 };
 
 #endif /* MapRenderer_hpp */

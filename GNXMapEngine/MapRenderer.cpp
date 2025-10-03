@@ -100,6 +100,7 @@ void testPost(const RenderEncoderPtr &renderEncoder, const RCTexturePtr texture)
     postProcessing->SetRenderTexture(texture);
     postProcessing->Process(renderEncoder);
 }
+
 struct ScatteringCB
 {
 	int layer;  // 当前散射层
@@ -130,6 +131,7 @@ void MapRenderer::TestAtmo()
 		renderEncoder1->EndEncode();
     }
 
+    // 计算直接辐照度，存储到delta_irradiance_texture中 irradiance_texture_存储地面接收的天空辐照度
     {
 		RenderPass renderPass;
 		RenderPassColorAttachmentPtr colorAttachmentPtr = std::make_shared<RenderPassColorAttachment>();
@@ -230,6 +232,43 @@ void MapRenderer::TestAtmo()
                 renderEncoder1->SetFragmentTextureAndSampler("single_mie_scattering_texture", delta_mie_scattering_texture, nullptr);
                 renderEncoder1->SetFragmentTextureAndSampler("multiple_scattering_texture", delta_rayleigh_scattering_texture, nullptr);
                 renderEncoder1->SetFragmentTextureAndSampler("irradiance_texture", delta_irradiance_texture, nullptr);
+                
+                renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+
+                renderEncoder1->EndEncode();
+            }
+            
+            // 计算间接辐照度，存储到delta_irradiance_texture中, 然后累加到irradiance_texture_
+            {
+                RenderPass renderPass;
+                RenderPassColorAttachmentPtr colorAttachmentPtr1 = std::make_shared<RenderPassColorAttachment>();
+                colorAttachmentPtr1->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+                colorAttachmentPtr1->texture = delta_irradiance_texture;
+                colorAttachmentPtr1->loadOp = ATTACHMENT_LOAD_OP_LOAD;
+                colorAttachmentPtr1->storeOp = ATTACHMENT_STORE_OP_STORE;
+                renderPass.colorAttachments.push_back(colorAttachmentPtr1);
+                
+                RenderPassColorAttachmentPtr colorAttachmentPtr2 = std::make_shared<RenderPassColorAttachment>();
+                colorAttachmentPtr2->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+                colorAttachmentPtr2->texture = irradiance_texture;
+                colorAttachmentPtr2->loadOp = ATTACHMENT_LOAD_OP_LOAD;
+                colorAttachmentPtr2->storeOp = ATTACHMENT_STORE_OP_STORE;
+                renderPass.colorAttachments.push_back(colorAttachmentPtr2);
+                
+                renderPass.renderRegion = Rect2D(0, 0, Atmosphere::IRRADIANCE_TEXTURE_WIDTH, Atmosphere::IRRADIANCE_TEXTURE_HEIGHT);
+                RenderEncoderPtr renderEncoder1 = commandBuffer->CreateRenderEncoder(renderPass);
+                renderEncoder1->SetGraphicsPipeline(mPipeline5);
+                
+                renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
+                
+                ScatteringCB scatteringCB = {};
+                scatteringCB.scattering_order = scattering_order - 1;
+                mUBOs[0]->SetData(&scatteringCB, 0, sizeof(scatteringCB));
+                renderEncoder1->SetFragmentUniformBuffer("ScatteringCB", mUBOs[0]);
+                
+                renderEncoder1->SetFragmentTextureAndSampler("single_rayleigh_scattering_texture", delta_rayleigh_scattering_texture, nullptr);
+                renderEncoder1->SetFragmentTextureAndSampler("single_mie_scattering_texture", delta_mie_scattering_texture, nullptr);
+                renderEncoder1->SetFragmentTextureAndSampler("multiple_scattering_texture", delta_rayleigh_scattering_texture, nullptr);
                 
                 renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
 
@@ -380,6 +419,27 @@ void MapRenderer::InitAtmo()
 
         mPipeline4 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
         mPipeline4->AttachGraphicsShader(graphicsShader);
+    }
+    
+    if (!mPipeline5)
+    {
+        ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeIndirectIrradiance");
+
+        ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
+        ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
+
+        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+
+        GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+        graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
+
+        mPipeline5 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
+        mPipeline5->AttachGraphicsShader(graphicsShader);
+        
+        irradiance_texture = mRenderdevice->CreateTexture2D(kTexFormatRGBA32Float,
+                                                            TextureUsage::TextureUsageRenderTarget,
+                                                            Atmosphere::IRRADIANCE_TEXTURE_WIDTH,
+                                                            Atmosphere::IRRADIANCE_TEXTURE_HEIGHT, 1);
     }
 }
 
