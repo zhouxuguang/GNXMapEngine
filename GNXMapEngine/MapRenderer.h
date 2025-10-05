@@ -131,6 +131,8 @@ private:
     
     RenderCore::RCTexturePtr irradiance_texture = nullptr;
     RenderCore::GraphicsPipelinePtr mPipeline5 = nullptr;   //渲染管线
+    
+    RenderCore::GraphicsPipelinePtr mPipeline6 = nullptr;   //渲染管线
 };
 
 #endif /* MapRenderer_hpp */

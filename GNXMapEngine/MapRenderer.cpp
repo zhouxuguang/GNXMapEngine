@@ -273,6 +273,43 @@ void MapRenderer::TestAtmo()
                 renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
 
                 renderEncoder1->EndEncode();
+
+                // 计算多重散射，存储到delta_multiple_scattering_texture, 累加到scattering_texture_
+                for (int layer = 0; layer < Atmosphere::SCATTERING_TEXTURE_DEPTH; ++layer)
+                {
+                    RenderPass renderPass;
+                    RenderPassColorAttachmentPtr colorAttachmentPtr1 = std::make_shared<RenderPassColorAttachment>();
+                    colorAttachmentPtr1->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+                    colorAttachmentPtr1->texture = delta_rayleigh_scattering_texture;
+                    colorAttachmentPtr1->loadOp = ATTACHMENT_LOAD_OP_LOAD;
+                    colorAttachmentPtr1->storeOp = ATTACHMENT_STORE_OP_STORE;
+                    renderPass.colorAttachments.push_back(colorAttachmentPtr1);
+                    
+                    RenderPassColorAttachmentPtr colorAttachmentPtr2 = std::make_shared<RenderPassColorAttachment>();
+                    colorAttachmentPtr2->clearColor = MakeClearColor(0.0, 0.0, 0.0, 1.0);
+                    colorAttachmentPtr2->texture = scattering_texture;
+                    colorAttachmentPtr2->loadOp = ATTACHMENT_LOAD_OP_LOAD;
+                    colorAttachmentPtr2->storeOp = ATTACHMENT_STORE_OP_STORE;
+                    renderPass.colorAttachments.push_back(colorAttachmentPtr2);
+                    
+                    renderPass.renderRegion = Rect2D(0, 0, Atmosphere::SCATTERING_TEXTURE_WIDTH, Atmosphere::SCATTERING_TEXTURE_HEIGHT);
+                    RenderEncoderPtr renderEncoder1 = commandBuffer->CreateRenderEncoder(renderPass);
+                    renderEncoder1->SetGraphicsPipeline(mPipeline6);
+                    
+                    renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
+                    
+                    ScatteringCB scatteringCB = {};
+                    scatteringCB.layer = layer;
+                    mUBOs[layer]->SetData(&scatteringCB, 0, sizeof(scatteringCB));
+                    renderEncoder1->SetFragmentUniformBuffer("ScatteringCB", mUBOs[layer]);
+                    
+                    renderEncoder1->SetFragmentTextureAndSampler("transmittance_texture", transmittance_texture, nullptr);
+                    renderEncoder1->SetFragmentTextureAndSampler("scattering_density_texture", delta_scattering_density_texture, nullptr);
+                    
+                    renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+
+                    renderEncoder1->EndEncode();
+                }
             }
         }
     }
@@ -440,6 +477,29 @@ void MapRenderer::InitAtmo()
                                                             TextureUsage::TextureUsageRenderTarget,
                                                             Atmosphere::IRRADIANCE_TEXTURE_WIDTH,
                                                             Atmosphere::IRRADIANCE_TEXTURE_HEIGHT, 1);
+    }
+    
+    if (!mPipeline6)
+    {
+        ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeMultipleScattering");
+
+        ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
+        ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
+
+        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+
+        GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+        graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
+        
+        graphicsPipelineDescriptor.renderTargetCount = 2;
+        graphicsPipelineDescriptor.colorAttachmentDescriptors[1].blendingEnabled = true;
+        graphicsPipelineDescriptor.colorAttachmentDescriptors[1].sourceRGBBlendFactor = BlendFactorOne;
+        graphicsPipelineDescriptor.colorAttachmentDescriptors[1].sourceAlphaBlendFactor = BlendFactorOne;
+        graphicsPipelineDescriptor.colorAttachmentDescriptors[1].destinationRGBBlendFactor = BlendFactorOne;
+        graphicsPipelineDescriptor.colorAttachmentDescriptors[1].destinationAplhaBlendFactor = BlendFactorOne;
+
+        mPipeline6 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
+        mPipeline6->AttachGraphicsShader(graphicsShader);
     }
 }
 
