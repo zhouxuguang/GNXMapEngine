@@ -11,7 +11,7 @@ EARTH_CORE_NAMESPACE_BEGIN
 
 bool IntersectionTests::RayPlane(const Rayd& ray, const Planed& plane, Vector3d& intersectPoint) noexcept 
 {
-	const double denominator = plane.getNormal().DotProduct(ray.GetDirection());
+	const double denominator = plane.GetNormal().DotProduct(ray.GetDirection());
 
     // 阈值可以小一点吗
 	if (std::abs(denominator) < Epsilon14) 
@@ -20,7 +20,7 @@ bool IntersectionTests::RayPlane(const Rayd& ray, const Planed& plane, Vector3d&
 		return false;
 	}
 
-	const double t = (-plane.getDist() - plane.getNormal().DotProduct(ray.GetOrigin())) / denominator;
+	const double t = (-plane.GetDist() - plane.GetNormal().DotProduct(ray.GetOrigin())) / denominator;
 
     if (t < 0)
     {

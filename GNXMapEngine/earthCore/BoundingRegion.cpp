@@ -141,8 +141,8 @@ OrientedBoundingBoxd BoundingRegion::computeBoundingBox(const GlobeRectangle& re
 			ellipsoid.CartographicToCartesian(perimeterCartographicSW);
 
 		minZ = std::min(
-			plane.getPointDistance(perimeterCartesianNW),
-			plane.getPointDistance(perimeterCartesianSW));
+                        plane.GetPointDistance(perimeterCartesianNW),
+                        plane.GetPointDistance(perimeterCartesianSW));
 		maxZ = maximumHeight; // Since the tangent plane touches the surface at height = 0, this is okay
 
 		// Esure our box is at least a millimeter in each direction to avoid
@@ -208,7 +208,7 @@ OrientedBoundingBoxd BoundingRegion::computeBoundingBox(const GlobeRectangle& re
           latitudeNearestToEquator,
           maximumHeight));
     
-    maxX = plane.projectPointOntoPlane(horizonCartesian).DotProduct(planeXAxis);
+    maxX = plane.ProjectPointOntoPlane(horizonCartesian).DotProduct(planeXAxis);
     minX = -maxX; // symmetrical
     
     // Get the min and max Y, using the height that will give the largest extent
@@ -228,7 +228,7 @@ OrientedBoundingBoxd BoundingRegion::computeBoundingBox(const GlobeRectangle& re
       rectangle.getEast(),
       latitudeNearestToEquator,
       maximumHeight));
-    minZ = plane.getPointDistance(farZ);
+    minZ = plane.GetPointDistance(farZ);
     maxZ = 0.0; // plane origin starts at maxZ already
 
     // min and max are local to the plane axes

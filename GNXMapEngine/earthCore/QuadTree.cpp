@@ -105,7 +105,15 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 			coloMatrix[i][j] = viewProjMat[i][j];
 		}
 	}
-	frustum.initFrustum(coloMatrix);
+	frustum.InitFrustum(coloMatrix);
+    
+    // test
+    Vector3d midPoint = Ellipsoid::WGS84.CartographicToCartesian(Geodetic3D(110, 23, 0));
+    Sphered sphere(midPoint, 20);
+    if (frustum.IsSphereInFrustum(sphere))
+    {
+        printf("");
+    }
 
  	if (frustum.IsBoxInFrustum(mBoundingBox))
  	{

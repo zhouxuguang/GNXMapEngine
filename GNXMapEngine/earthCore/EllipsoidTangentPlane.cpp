@@ -28,7 +28,7 @@ EllipsoidTangentPlane::EllipsoidTangentPlane(
 
 Vector2d EllipsoidTangentPlane::projectPointToNearestOnPlane(const Vector3d& cartesian) const noexcept
 {
-	const Rayd ray(cartesian, this->mPlane.getNormal());
+	const Rayd ray(cartesian, this->mPlane.GetNormal());
 
 	Vector3d intersectionPoint;
 	bool isIntersect = IntersectionTests::RayPlane(ray, this->mPlane, intersectionPoint);

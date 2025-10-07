@@ -67,7 +67,7 @@ public:
      */
     const Vector3d& getZAxis() const noexcept 
     {
-        return this->mPlane.getNormal();
+        return this->mPlane.GetNormal();
     }
 
     /**
