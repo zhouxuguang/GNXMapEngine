@@ -202,7 +202,7 @@ void MapRenderer::TestAtmo()
          而delta_rayleigh_scattering_texture仅用于双重散射,为了节省内存，共用同一个纹理
          * 
          */
-        for (unsigned int scattering_order = 2; scattering_order <= 2; ++scattering_order)
+        for (unsigned int scattering_order = 2; scattering_order <= 5; ++scattering_order)
         {
             // 计算特定(r,mu)接收的辐照度，存储到delta_scattering_density_texture中
             for (int layer = 0; layer < Atmosphere::SCATTERING_TEXTURE_DEPTH; ++layer)
@@ -422,6 +422,7 @@ void MapRenderer::InitAtmo()
 
 		GraphicsPipelineDescriptor graphicsPipelineDescriptor;
 		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
+        graphicsPipelineDescriptor.renderTargetCount = 4;
 
 		mPipeline3 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
         mPipeline3->AttachGraphicsShader(graphicsShader);
@@ -469,6 +470,7 @@ void MapRenderer::InitAtmo()
 
         GraphicsPipelineDescriptor graphicsPipelineDescriptor;
         graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
+        graphicsPipelineDescriptor.renderTargetCount = 2;
 
         mPipeline5 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
         mPipeline5->AttachGraphicsShader(graphicsShader);
