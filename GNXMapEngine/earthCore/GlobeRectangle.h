@@ -12,7 +12,7 @@
 EARTH_CORE_NAMESPACE_BEGIN
 
 /**
- * @brief ���������Ǿ��Σ���ֱ������ϵͳ�оͿ��ܲ���
+ * @brief 在球面上是矩形，在直角坐标系统中就可能不是
  */
 class GlobeRectangle 
 {
