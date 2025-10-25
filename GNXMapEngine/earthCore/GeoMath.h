@@ -10,7 +10,6 @@
 #define EARTH_ENGINE_CORE_GEOMATH_H
 
 #include "EarthEngineDefine.h"
-#include "Vector3.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 

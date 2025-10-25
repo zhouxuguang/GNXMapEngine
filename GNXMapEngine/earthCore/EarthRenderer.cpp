@@ -1,6 +1,6 @@
 #include "EarthRenderer.h"
 #include "EarthNode.h"
-#include "BaseLib/LogService.h"
+#include "Runtime/BaseLib/include/LogService.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 

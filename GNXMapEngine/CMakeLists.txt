@@ -114,7 +114,6 @@ else()
     endif()
 endif()
 
-#SETUP_GROUPS(PROJECT_SOURCES)
 SETUP_GROUPS("${PROJECT_SOURCES}")
 
 set_property(TARGET GNXMapEngine PROPERTY AUTOUIC ON)
@@ -138,7 +137,7 @@ set_target_properties(GNXMapEngine PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-add_subdirectory(../GNXEngine/project/cmake engine)
+add_subdirectory(../GNXEngine engine)
 
 install(TARGETS GNXMapEngine
     BUNDLE DESTINATION .

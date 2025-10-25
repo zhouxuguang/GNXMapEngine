@@ -8,12 +8,11 @@
 #ifndef MapRenderer_hpp
 #define MapRenderer_hpp
 
-#include "RenderCore/RenderDevice.h"
+#include "Runtime/RenderCore/include/RenderDevice.h"
 #include "earthCore/EarthEngineDefine.h"
 #include "earthCore/EarthCamera.h"
-#include "MathUtil/Matrix4x4.h"
-#include "BaseLib/LruCache.h"
-#include "BaseLib/ThreadPool.h"
+#include "Runtime/BaseLib/include/LruCache.h"
+#include "Runtime/BaseLib/include/ThreadPool.h"
 #include "WebMercator.h"
 
 using namespace RenderCore;

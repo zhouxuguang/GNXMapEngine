@@ -5,7 +5,6 @@
 #ifndef GNXMAP_ENGINE_GLOBAL_RECTANGLE_INCLUDE_GDJGJ
 #define GNXMAP_ENGINE_GLOBAL_RECTANGLE_INCLUDE_GDJGJ
 
-#include "mathutil/MathUtil.h"
 #include "EarthEngineDefine.h"
 #include "Geodetic3D.h"
 

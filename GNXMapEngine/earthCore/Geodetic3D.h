@@ -10,7 +10,6 @@
 #define GNX_MAP_ENGINE_EARTH_ENGINE_CORE_FEODETIC3D_INCLUDE_HJFJ
 
 #include "EarthEngineDefine.h"
-#include "MathUtil/MathUtil.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 

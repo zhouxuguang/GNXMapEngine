@@ -1,8 +1,8 @@
 #include "TileLoadTask.h"
-#include "ImageCodec/ColorConverter.h"
-#include "RenderSystem/ImageTextureUtil.h"
-#include "AssetProcess/DXTCompressor.h"
-#include "BaseLib/LogService.h"
+#include "Runtime/ImageCodec/include/ColorConverter.h"
+#include "Runtime/RenderSystem/include/ImageTextureUtil.h"
+#include "Runtime/AssetProcess/include/DXTCompressor.h"
+#include "Runtime/BaseLib/include/LogService.h"
 #include "TiledImage.h"
 
 EARTH_CORE_NAMESPACE_BEGIN

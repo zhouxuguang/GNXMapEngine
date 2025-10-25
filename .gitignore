@@ -23,6 +23,9 @@ out/
 # asset file
 Assets/
 
+.cache
+.vscode
+
 # Local configuration file (sdk path, etc)
 local.properties
 

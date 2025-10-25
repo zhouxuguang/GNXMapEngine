@@ -2,7 +2,6 @@
 #define GNX_MAP_ENGINE_QUADTREE_INCLUDE_GJGJDF
 
 #include "EarthEngineDefine.h"
-#include "Vector3.h"
 #include "EarthCamera.h"
 #include "QuadTileID.h"
 #include "DEMMeshData.h"

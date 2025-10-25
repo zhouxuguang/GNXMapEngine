@@ -10,7 +10,7 @@
 
 #include "QuadTree.h"
 #include "LayerBase.h"
-#include "BaseLib/BaseLib.h"
+#include "Runtime/BaseLib/include/BaseLib.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 

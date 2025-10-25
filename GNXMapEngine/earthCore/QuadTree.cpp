@@ -1,8 +1,7 @@
 #include "QuadTree.h"
-#include "rendersystem/AABB.h"
 #include "BoundingRegion.h"
 #include "EarthNode.h"
-#include "RenderSystem/RenderParameter.h"
+#include "Runtime/RenderSystem/include/RenderParameter.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 

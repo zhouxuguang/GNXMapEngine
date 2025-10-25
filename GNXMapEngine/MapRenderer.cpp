@@ -7,20 +7,20 @@
 
 #include "MapRenderer.h"
 #include <QtCore>
-#include "RenderSystem/SceneManager.h"
-#include "RenderSystem/SceneNode.h"
-#include "RenderSystem/mesh/MeshRenderer.h"
-#include "RenderSystem/ArcballManipulate.h"
-#include "MathUtil/Vector3.h"
-#include "RenderSystem/SkyBoxNode.h"
-#include "ImageCodec/ImageDecoder.h"
-#include "RenderSystem/RenderEngine.h"
-#include "RenderSystem/ImageTextureUtil.h"
-#include "BaseLib/DateTime.h"
-#include "BaseLib/LogService.h"
-#include "ImageCodec/ColorConverter.h"
-#include "RenderSystem/Atmosphere/AtmosphereModel.h"
-#include "RenderSystem/Atmosphere/AtmosphereRenderer.h"
+#include "Runtime/RenderSystem/include/SceneManager.h"
+#include "Runtime/RenderSystem/include/SceneNode.h"
+#include "Runtime/RenderSystem/include/mesh/MeshRenderer.h"
+#include "Runtime/RenderSystem/include/ArcballManipulate.h"
+//#include "MathUtil/Vector3.h"
+#include "Runtime/RenderSystem/include/SkyBoxNode.h"
+#include "Runtime/ImageCodec/include/ImageDecoder.h"
+#include "Runtime/RenderSystem/include/RenderEngine.h"
+#include "Runtime/RenderSystem/include/ImageTextureUtil.h"
+#include "Runtime/BaseLib/include/DateTime.h"
+#include "Runtime/BaseLib/include/LogService.h"
+#include "Runtime/ImageCodec/include/ColorConverter.h"
+#include "Runtime/RenderSystem/include/Atmosphere/AtmosphereModel.h"
+#include "Runtime/RenderSystem/include/Atmosphere/AtmosphereRenderer.h"
 
 #include "WebMercator.h"
 //#include "httplib.h"
@@ -519,8 +519,8 @@ void MapRenderer::DrawFrame()
     
     mSceneManager->Update(deltaTime);
     
-    TestAtmo();
-    return;
+    // TestAtmo();
+    // return;
     
     CommandBufferPtr commandBuffer = mRenderdevice->CreateCommandBuffer();
     if (!commandBuffer)

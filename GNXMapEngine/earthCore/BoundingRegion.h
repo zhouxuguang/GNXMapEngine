@@ -10,11 +10,8 @@
 #define GNX_MAPENGINE_BOUNDING_REGION_INCLUDE_SGKDFGKFKGKF
 
 #include "EarthEngineDefine.h"
-#include "MathUtil/MathUtil.h"
 #include "GlobeRectangle.h"
 #include "Ellipsoid.h"
-#include "rendersystem/OBB.h"
-#include "rendersystem/Plane.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 

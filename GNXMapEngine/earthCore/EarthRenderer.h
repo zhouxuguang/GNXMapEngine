@@ -9,7 +9,7 @@
 #define GNX_MAPENGINE_EARTHRENDERER_INCLUDE_GJFJGJDFNDF
 
 #include "QuadTree.h"
-#include "RenderSystem/mesh/MeshRenderer.h"
+#include "Runtime/RenderSystem/include/mesh/MeshRenderer.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 

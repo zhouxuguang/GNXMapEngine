@@ -11,7 +11,6 @@
 
 #include <stdio.h>
 #include "Ellipsoid.h"
-#include "MathUtil/Matrix4x4.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
