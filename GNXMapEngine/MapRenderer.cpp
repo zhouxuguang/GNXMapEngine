@@ -11,7 +11,6 @@
 #include "Runtime/RenderSystem/include/SceneNode.h"
 #include "Runtime/RenderSystem/include/mesh/MeshRenderer.h"
 #include "Runtime/RenderSystem/include/ArcballManipulate.h"
-//#include "MathUtil/Vector3.h"
 #include "Runtime/RenderSystem/include/SkyBoxNode.h"
 #include "Runtime/ImageCodec/include/ImageDecoder.h"
 #include "Runtime/RenderSystem/include/RenderEngine.h"
@@ -21,6 +20,7 @@
 #include "Runtime/ImageCodec/include/ColorConverter.h"
 #include "Runtime/RenderSystem/include/Atmosphere/AtmosphereModel.h"
 #include "Runtime/RenderSystem/include/Atmosphere/AtmosphereRenderer.h"
+#include "Runtime/RenderCore/include/CommandQueue.h"
 
 #include "WebMercator.h"
 //#include "httplib.h"
@@ -111,7 +111,8 @@ void MapRenderer::TestAtmo()
 {
     InitAtmo();
     
-    CommandBufferPtr commandBuffer = mRenderdevice->CreateCommandBuffer();
+    CommandQueuePtr commandQueue = mRenderdevice->GetCommandQueue(QueueType::Graphics);
+    CommandBufferPtr commandBuffer = commandQueue->CreateCommandBuffer();
         
     // 
     {
@@ -522,7 +523,8 @@ void MapRenderer::DrawFrame()
     // TestAtmo();
     // return;
     
-    CommandBufferPtr commandBuffer = mRenderdevice->CreateCommandBuffer();
+    CommandQueuePtr commandQueue = mRenderdevice->GetCommandQueue(QueueType::Graphics);
+    CommandBufferPtr commandBuffer = commandQueue->CreateCommandBuffer();
     if (!commandBuffer)
     {
         return;
