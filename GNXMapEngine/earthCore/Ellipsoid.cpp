@@ -125,9 +125,18 @@ Vector3d Ellipsoid::ScaleToGeodeticSurface(const Vector3d& cartesian) const
     Vector3d intersection = cartesian * ratio;
 
     // If the position is near the center, the iteration will not converge.
-//    if (squaredNorm < this->_centerToleranceSquared) {
-//        return !std::isfinite(ratio) ? std::optional<glm::dvec3>() : intersection;
-//    }
+    if (squaredNorm < 0.001) 
+    {
+        assert(false);
+        return intersection;
+    }
+
+    // Make sure that we _always_ get a positive radius returned.
+    if (ratio < 0.0)
+    {
+        assert(false);
+        return !std::isfinite(ratio) ? Vector3d() : intersection;
+    }
 
     const double oneOverRadiiSquaredX = this->mOneOverRadiiSquared.x;
     const double oneOverRadiiSquaredY = this->mOneOverRadiiSquared.y;
@@ -158,7 +167,8 @@ Vector3d Ellipsoid::ScaleToGeodeticSurface(const Vector3d& cartesian) const
     double yMultiplier3;
     double zMultiplier3;
 
-    do {
+    do 
+    {
         lambda -= correction;
 
         xMultiplier = 1.0 / (1.0 + lambda * oneOverRadiiSquaredX);
