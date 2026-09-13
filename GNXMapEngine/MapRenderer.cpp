@@ -6,7 +6,6 @@
 //
 
 #include "MapRenderer.h"
-#include <QtCore>
 #include "Runtime/RenderSystem/include/SceneManager.h"
 #include "Runtime/RenderSystem/include/SceneNode.h"
 #include "Runtime/RenderSystem/include/mesh/MeshRenderer.h"
@@ -32,24 +31,16 @@
 #include "earthCore/EarthRenderer.h"
 
 #include <filesystem>
+#include <cstdlib>
 
 namespace fs = std::filesystem;
 
 using namespace RenderCore;
 using namespace RenderSystem;
 
-MapRenderer::MapRenderer(void *metalLayer)
+MapRenderer::MapRenderer()
 {
-    NativeWindow nativeWindow;
-    nativeWindow.viewHandle = metalLayer;
-#if GNX_OS_WINDOWS
-    mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, nativeWindow);
-#elif GNX_OS_MACOS
-    //mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, metalLayer);
-    mRenderdevice = CreateRenderDevice(RenderDeviceType::METAL, nativeWindow);
-#endif // _WIN
-
-    
+    mRenderdevice = GetRenderDevice();
     mSceneManager = SceneManager::GetInstance();
     mSceneManager->SetRenderPath(RenderPath::Forward);
     
@@ -60,8 +51,6 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
 {
     mWidth = width;
     mHeight = height;
-    
-    mRenderdevice->Resize(width, height);
     
     if (!mSceneManager->HasCamera(mCameraPtr->GetName()))
     {
@@ -569,15 +558,15 @@ void MapRenderer::BuildEarthNode()
     fs::path demPath = R"(D:/source/gis/gdal/cesium-terrain-builder/build/Debug/terrain-tiles/test)";
 #endif
 
-    const QString imageTileOverride = qEnvironmentVariable("GNX_MAP_IMAGE_TILES");
-    const QString terrainTileOverride = qEnvironmentVariable("GNX_MAP_TERRAIN_TILES");
-    if (!imageTileOverride.isEmpty())
+    const char* imageTileOverride = std::getenv("GNX_MAP_IMAGE_TILES");
+    const char* terrainTileOverride = std::getenv("GNX_MAP_TERRAIN_TILES");
+    if (imageTileOverride && imageTileOverride[0] != '\0')
     {
-        dataPath = imageTileOverride.toStdString();
+        dataPath = imageTileOverride;
     }
-    if (!terrainTileOverride.isEmpty())
+    if (terrainTileOverride && terrainTileOverride[0] != '\0')
     {
-        demPath = terrainTileOverride.toStdString();
+        demPath = terrainTileOverride;
     }
     earthcore::TileDataSourcePtr imageSource = std::make_shared<earthcore::TileDataSource>(dataPath.string(), "jpg");
     earthcore::LayerBasePtr imageLayer = std::make_shared<earthcore::LayerBase>("Image", earthcore::LT_Image);

@@ -94,6 +94,7 @@ vcs.xml
 .idea/
 .DS_Store
 /build
+/build-*
 /captures
 .externalNativeBuild
 .cxx
@@ -111,4 +112,3 @@ demo/ios/testNX/testNX.xcodeproj/project.xcworkspace/xcuserdata/zhouxuguang.xcus
 demo/ios/testNX/testNX.xcodeproj/xcuserdata/zhouxuguang.xcuserdatad/xcschemes/xcschememanagement.plist
 project/ios/GNXEngine.xcodeproj/project.xcworkspace/xcuserdata/zhouxuguang.xcuserdatad/UserInterfaceState.xcuserstate
 project/ios/GNXEngine.xcodeproj/xcuserdata/zhouxuguang.xcuserdatad/xcschemes/xcschememanagement.plist
-

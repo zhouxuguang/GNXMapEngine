@@ -79,7 +79,7 @@ public:
 class MapRenderer
 {
 public:
-    MapRenderer(void *mtkLayer);
+    MapRenderer();
     
     ~MapRenderer()
     {

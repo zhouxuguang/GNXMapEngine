@@ -1,11 +1,10 @@
-#include "mainwindow.h"
-
-#include <QApplication>
+#include "MapApplication.h"
+#include "Runtime/GNXEngine/include/GNXMain.h"
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    MainWindow w;
-    w.show();
-    return a.exec();
+    GNXEngine::WindowProps props("GNXMapEngine", 800U, 600U);
+    MapApplication app(props);
+    app.RunLoop();
+    return 0;
 }

@@ -2,147 +2,87 @@ cmake_minimum_required(VERSION 3.5)
 
 project(GNXMapEngine VERSION 0.1 LANGUAGES CXX)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(MSVC)
-  add_compile_options(/wd4819)
-  add_compile_options(/wd4828)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_compile_options(/wd4819 /wd4828)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 macro(SETUP_GROUPS src_files)
-	foreach(FILE ${src_files})
-		get_filename_component(PARENT_DIR "${FILE}" PATH)
-
-		# skip src or include and changes /'s to \\'s
-		set(GROUP "${PARENT_DIR}")
-		string(REPLACE "/" "\\" GROUP "${GROUP}")
-
-		source_group("${GROUP}" FILES "${FILE}")
-	endforeach()
+    foreach(FILE ${src_files})
+        get_filename_component(PARENT_DIR "${FILE}" PATH)
+        set(GROUP "${PARENT_DIR}")
+        string(REPLACE "/" "\\" GROUP "${GROUP}")
+        source_group("${GROUP}" FILES "${FILE}")
+    endforeach()
 endmacro()
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
-        MapRenderer.cpp
-        MapRenderer.h
-        WebMercator.cpp
-        WebMercator.h
-        earthCore/BoundingRegion.h
-        earthCore/BoundingRegion.cpp
-        earthCore/GlobeRectangle.h
-        earthCore/GlobeRectangle.cpp
-        earthCore/EarthEngineDefine.h
-        earthCore/Ellipsoid.h
-        earthCore/Ellipsoid.cpp
-        earthCore/EllipsoidTangentPlane.h
-        earthCore/EllipsoidTangentPlane.cpp
-        earthCore/Geodetic3D.h
-        earthCore/Geodetic3D.cpp
-        earthCore/GeoGridTessellator.h
-        earthCore/GeoGridTessellator.cpp
-        earthCore/GeoMath.h
-        earthCore/GeoMath.cpp
-        earthCore/GeoTransform.h
-        earthCore/GeoTransform.cpp
-        earthCore/SubdivisionUtility.h
-        earthCore/SubdivisionUtility.cpp
-        earthCore/EarthNode.h
-        earthCore/EarthNode.cpp
-        earthCore/EarthCamera.h
-        earthCore/EarthCamera.cpp
-        earthCore/IntersectionTests.h
-        earthCore/IntersectionTests.cpp
-        earthCore/QuadTree.h
-        earthCore/QuadTree.cpp
-        earthCore/QuadTileID.h
-        earthCore/QuadTileID.cpp
-        earthCore/LayerBase.h
-        earthCore/LayerBase.cpp
-        earthCore/TileDataSource.h
-        earthCore/TileDataSource.cpp
-        earthCore/TileLoadTask.h
-        earthCore/TileLoadTask.cpp
-        earthCore/EarthRenderer.h
-        earthCore/EarthRenderer.cpp
-        earthCore/DEMMeshData.h
-        earthCore/DEMMeshData.cpp
+    main.cpp
+    MapApplication.cpp
+    MapApplication.h
+    MapRenderer.cpp
+    MapRenderer.h
+    WebMercator.cpp
+    WebMercator.h
+    earthCore/BoundingRegion.h
+    earthCore/BoundingRegion.cpp
+    earthCore/GlobeRectangle.h
+    earthCore/GlobeRectangle.cpp
+    earthCore/EarthEngineDefine.h
+    earthCore/Ellipsoid.h
+    earthCore/Ellipsoid.cpp
+    earthCore/EllipsoidTangentPlane.h
+    earthCore/EllipsoidTangentPlane.cpp
+    earthCore/Geodetic3D.h
+    earthCore/Geodetic3D.cpp
+    earthCore/GeoGridTessellator.h
+    earthCore/GeoGridTessellator.cpp
+    earthCore/GeoMath.h
+    earthCore/GeoMath.cpp
+    earthCore/GeoTransform.h
+    earthCore/GeoTransform.cpp
+    earthCore/SubdivisionUtility.h
+    earthCore/SubdivisionUtility.cpp
+    earthCore/EarthNode.h
+    earthCore/EarthNode.cpp
+    earthCore/EarthCamera.h
+    earthCore/EarthCamera.cpp
+    earthCore/IntersectionTests.h
+    earthCore/IntersectionTests.cpp
+    earthCore/QuadTree.h
+    earthCore/QuadTree.cpp
+    earthCore/QuadTileID.h
+    earthCore/QuadTileID.cpp
+    earthCore/LayerBase.h
+    earthCore/LayerBase.cpp
+    earthCore/TileDataSource.h
+    earthCore/TileDataSource.cpp
+    earthCore/TileLoadTask.h
+    earthCore/TileLoadTask.cpp
+    earthCore/EarthRenderer.h
+    earthCore/EarthRenderer.cpp
+    earthCore/DEMMeshData.h
+    earthCore/DEMMeshData.cpp
 )
 
-if(APPLE)
-    set(PROJECT_SOURCES_APPLE
-            MetalWindow.h
-            MetalWindow.mm)
-    set(PROJECT_SOURCES ${PROJECT_SOURCES} ${PROJECT_SOURCES_APPLE})   # apple下只能这么拼接
-    #message(STATUS "Sources: ${PROJECT_SOURCES}")
-elseif(WIN32)
-    set(PROJECT_SOURCES_WIN32
-            VulkanWindow.h
-            VulkanWindow.cpp)
-    set(APPEND PROJECT_SOURCES PROJECT_SOURCES_WIN32)
-endif()
-
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(GNXMapEngine
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES} ${PROJECT_SOURCES_WIN32}
-    )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET GNXMapEngine APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
-else()
-    if(ANDROID)
-        add_library(GNXMapEngine SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else()
-        add_executable(GNXMapEngine
-            ${PROJECT_SOURCES}
-        )
-    endif()
-endif()
-
+add_executable(GNXMapEngine ${PROJECT_SOURCES})
 SETUP_GROUPS("${PROJECT_SOURCES}")
 
-set_property(TARGET GNXMapEngine PROPERTY AUTOUIC ON)
-set_property(TARGET GNXMapEngine PROPERTY AUTOMOC ON)
-set_property(TARGET GNXMapEngine PROPERTY AUTORCC ON)
-
-if(APPLE)
-    target_link_libraries(GNXMapEngine PRIVATE "-framework CoreGraphics" "-framework CoreVideo" "-framework QuartzCore"
-        "-framework GameController" "-framework Metal" "-framework ImageIO" "-framework OpenGL" "-framework AppKit")
-    #target_compile_options(GNXMapEngine PRIVATE "-fobjc-arc")
-    #set_target_properties(GNXMapEngine PROPERTIES LINK_FLAGS "-fobjc-arc")
-endif()
-
-target_link_libraries(GNXMapEngine PRIVATE Qt${QT_VERSION_MAJOR}::Widgets GNXEngine)
+add_subdirectory(../GNXEngine engine)
+target_link_libraries(GNXMapEngine PRIVATE GNXEngine)
 
 set_target_properties(GNXMapEngine PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.gnxengine.map
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
 
-add_subdirectory(../GNXEngine engine)
-
 install(TARGETS GNXMapEngine
     BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(GNXMapEngine)
-endif()
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib)
