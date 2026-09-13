@@ -10,7 +10,6 @@
 #include "Runtime/RenderSystem/include/SceneManager.h"
 #include "Runtime/RenderSystem/include/SceneNode.h"
 #include "Runtime/RenderSystem/include/mesh/MeshRenderer.h"
-#include "Runtime/RenderSystem/include/ArcballManipulate.h"
 #include "Runtime/RenderSystem/include/SkyBoxNode.h"
 #include "Runtime/ImageCodec/include/ImageDecoder.h"
 #include "Runtime/RenderSystem/include/RenderEngine.h"
@@ -41,15 +40,18 @@ using namespace RenderSystem;
 
 MapRenderer::MapRenderer(void *metalLayer)
 {
-#if OS_WINDOWS
-    mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, metalLayer);
-#elif OS_MACOS
+    NativeWindow nativeWindow;
+    nativeWindow.viewHandle = metalLayer;
+#if GNX_OS_WINDOWS
+    mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, nativeWindow);
+#elif GNX_OS_MACOS
     //mRenderdevice = CreateRenderDevice(RenderDeviceType::VULKAN, metalLayer);
-    mRenderdevice = CreateRenderDevice(RenderDeviceType::METAL, metalLayer);
+    mRenderdevice = CreateRenderDevice(RenderDeviceType::METAL, nativeWindow);
 #endif // _WIN
 
     
     mSceneManager = SceneManager::GetInstance();
+    mSceneManager->SetRenderPath(RenderPath::Forward);
     
     BuildEarthNode();
 }
@@ -61,15 +63,21 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     
     mRenderdevice->Resize(width, height);
     
-    mSceneManager->AddCamara(mCameraPtr);
-    mCameraPtr->SetLens(60, float(width) / height, 10, 6378137.0 * 4);
-    mCameraPtr->SetViewSize(width, height);
+    if (!mSceneManager->HasCamera(mCameraPtr->GetName()))
+    {
+        mSceneManager->AddCamera(mCameraPtr);
+    }
+    mCameraPtr->SetLens(60, width, height, 10, 6378137.0 * 4);
     
 //    cameraPtr->LookAt(Vector3f(2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));
 //    cameraPtr->SetLens(60, float(width) / height, 0.1f, 100);
     
     //初始化灯光信息
-    Light * pointLight = mSceneManager->createLight("mainLight", Light::LightType::PointLight);
+    Light * pointLight = mSceneManager->GetLight("mainLight");
+    if (!pointLight)
+    {
+        pointLight = mSceneManager->CreateLight("mainLight", Light::LightType::PointLight);
+    }
     pointLight->setColor(Vector3f(1.0, 1.0, 1.0));
     //pointLight->setPosition(Vector3f(5.0, 8.0, 0.0));
     pointLight->setPosition(Vector3f(-1.0, -1.0, -1.0));
@@ -127,7 +135,7 @@ void MapRenderer::TestAtmo()
 
 		renderEncoder1->SetGraphicsPipeline(mPipeline1);
 		renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
-		renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+        renderEncoder1->DrawPrimitives(PrimitiveMode_TRIANGLES, 0, 3);
 
 		renderEncoder1->EndEncode();
     }
@@ -146,7 +154,7 @@ void MapRenderer::TestAtmo()
 		renderEncoder1->SetGraphicsPipeline(mPipeline2);
 		renderEncoder1->SetFragmentUniformBuffer("AtmosphereParametersCB", mUBO);
         renderEncoder1->SetFragmentTextureAndSampler("transmittance_texture", transmittance_texture, sampler);
-		renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+        renderEncoder1->DrawPrimitives(PrimitiveMode_TRIANGLES, 0, 3);
 
 		renderEncoder1->EndEncode();
     }
@@ -192,7 +200,7 @@ void MapRenderer::TestAtmo()
             mUBOs[i]->SetData(&scatteringCB, 0, sizeof(scatteringCB));
             renderEncoder1->SetFragmentUniformBuffer("ScatteringCB", mUBOs[i]);
             
-            renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+            renderEncoder1->DrawPrimitives(PrimitiveMode_TRIANGLES, 0, 3);
 
             renderEncoder1->EndEncode();
 		}
@@ -234,7 +242,7 @@ void MapRenderer::TestAtmo()
                 renderEncoder1->SetFragmentTextureAndSampler("multiple_scattering_texture", delta_rayleigh_scattering_texture, nullptr);
                 renderEncoder1->SetFragmentTextureAndSampler("irradiance_texture", delta_irradiance_texture, nullptr);
                 
-                renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+                renderEncoder1->DrawPrimitives(PrimitiveMode_TRIANGLES, 0, 3);
 
                 renderEncoder1->EndEncode();
             }
@@ -271,7 +279,7 @@ void MapRenderer::TestAtmo()
                 renderEncoder1->SetFragmentTextureAndSampler("single_mie_scattering_texture", delta_mie_scattering_texture, nullptr);
                 renderEncoder1->SetFragmentTextureAndSampler("multiple_scattering_texture", delta_rayleigh_scattering_texture, nullptr);
                 
-                renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+                renderEncoder1->DrawPrimitives(PrimitiveMode_TRIANGLES, 0, 3);
 
                 renderEncoder1->EndEncode();
 
@@ -307,7 +315,7 @@ void MapRenderer::TestAtmo()
                     renderEncoder1->SetFragmentTextureAndSampler("transmittance_texture", transmittance_texture, nullptr);
                     renderEncoder1->SetFragmentTextureAndSampler("scattering_density_texture", delta_scattering_density_texture, nullptr);
                     
-                    renderEncoder1->DrawPrimitves(PrimitiveMode_TRIANGLES, 0, 3);
+                    renderEncoder1->DrawPrimitives(PrimitiveMode_TRIANGLES, 0, 3);
 
                     renderEncoder1->EndEncode();
                 }
@@ -330,7 +338,7 @@ void MapRenderer::InitAtmo()
 
     if (!sampler)
     {
-        SamplerDescriptor des;
+        SamplerDesc des;
         sampler = mRenderdevice->CreateSamplerWithDescriptor(des);
     }
 
@@ -350,7 +358,7 @@ void MapRenderer::InitAtmo()
 
 		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
 
-		GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+		GraphicsPipelineDesc graphicsPipelineDescriptor;
 		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
 
 		mPipeline1 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
@@ -373,7 +381,7 @@ void MapRenderer::InitAtmo()
 
 		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
 
-		GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+		GraphicsPipelineDesc graphicsPipelineDescriptor;
 		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
 
         mPipeline2 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
@@ -390,25 +398,25 @@ void MapRenderer::InitAtmo()
 
     if (!mPipeline3)
     {
-		delta_rayleigh_scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+		delta_rayleigh_scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32Float,
 			TextureUsage::TextureUsageRenderTarget,
 			Atmosphere::SCATTERING_TEXTURE_WIDTH,
 			Atmosphere::SCATTERING_TEXTURE_HEIGHT, 
             Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);
 
-        delta_mie_scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+        delta_mie_scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32Float,
 			TextureUsage::TextureUsageRenderTarget,
 			Atmosphere::SCATTERING_TEXTURE_WIDTH,
 			Atmosphere::SCATTERING_TEXTURE_HEIGHT,
 			Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);
 
-        scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+        scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32Float,
 			TextureUsage::TextureUsageRenderTarget,
 			Atmosphere::SCATTERING_TEXTURE_WIDTH,
 			Atmosphere::SCATTERING_TEXTURE_HEIGHT,
 			Atmosphere::SCATTERING_TEXTURE_DEPTH, 1);
 
-        optional_single_mie_scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+        optional_single_mie_scattering_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32Float,
 			TextureUsage::TextureUsageRenderTarget,
 			Atmosphere::SCATTERING_TEXTURE_WIDTH,
 			Atmosphere::SCATTERING_TEXTURE_HEIGHT,
@@ -421,7 +429,7 @@ void MapRenderer::InitAtmo()
 
 		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
 
-		GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+		GraphicsPipelineDesc graphicsPipelineDescriptor;
 		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
         graphicsPipelineDescriptor.renderTargetCount = 4;
 
@@ -440,7 +448,7 @@ void MapRenderer::InitAtmo()
     
     if (!mPipeline4)
     {
-        delta_scattering_density_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32,
+        delta_scattering_density_texture = mRenderdevice->CreateTexture3D(kTexFormatRGBA32Float,
             TextureUsage::TextureUsageRenderTarget,
             Atmosphere::SCATTERING_TEXTURE_WIDTH,
             Atmosphere::SCATTERING_TEXTURE_HEIGHT,
@@ -453,7 +461,7 @@ void MapRenderer::InitAtmo()
 
         GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
 
-        GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+        GraphicsPipelineDesc graphicsPipelineDescriptor;
         graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
 
         mPipeline4 = mRenderdevice->CreateGraphicsPipeline(graphicsPipelineDescriptor);
@@ -469,7 +477,7 @@ void MapRenderer::InitAtmo()
 
         GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
 
-        GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+        GraphicsPipelineDesc graphicsPipelineDescriptor;
         graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
         graphicsPipelineDescriptor.renderTargetCount = 2;
 
@@ -491,7 +499,7 @@ void MapRenderer::InitAtmo()
 
         GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
 
-        GraphicsPipelineDescriptor graphicsPipelineDescriptor;
+        GraphicsPipelineDesc graphicsPipelineDescriptor;
         graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
         
         graphicsPipelineDescriptor.renderTargetCount = 2;
@@ -514,8 +522,7 @@ void MapRenderer::DrawFrame()
     }
     
     uint64_t thisTime = GetTickNanoSeconds();
-    float deltaTime = float(thisTime - mLastTime) * 0.000000001f;
-    LOG_INFO("deltaTime = %f", deltaTime);
+    float deltaTime = mLastTime == 0 ? 0.0f : float(thisTime - mLastTime) * 0.000000001f;
     mLastTime = thisTime;
     
     mSceneManager->Update(deltaTime);
@@ -553,18 +560,25 @@ void MapRenderer::BuildEarthNode()
     earthcore::EarthNode *pEarthNode = new earthcore::EarthNode(wgs84, mCameraPtr);
 
     // 增加数据源
-#if OS_MACOS
+#if GNX_OS_MACOS
     fs::path dataPath = R"(/Users/zhouxuguang/work/data/gis/tile/image)";
     fs::path demPath = R"(/Users/zhouxuguang/work/data/gis/tile/terrain)";
-#elif OS_WINDOWS
+#elif GNX_OS_WINDOWS
     fs::path dataPath = R"(D:/source/gis/data/tile/image)";
     //fs::path demPath = R"(D:/source/gis/data/tile/terrain)";
     fs::path demPath = R"(D:/source/gis/gdal/cesium-terrain-builder/build/Debug/terrain-tiles/test)";
 #endif
 
-    std::string curDir = baselib::EnvironmentUtility::GetInstance().GetCurrentWorkingDir();
-
-    LOG_INFO("%s", curDir.c_str());
+    const QString imageTileOverride = qEnvironmentVariable("GNX_MAP_IMAGE_TILES");
+    const QString terrainTileOverride = qEnvironmentVariable("GNX_MAP_TERRAIN_TILES");
+    if (!imageTileOverride.isEmpty())
+    {
+        dataPath = imageTileOverride.toStdString();
+    }
+    if (!terrainTileOverride.isEmpty())
+    {
+        demPath = terrainTileOverride.toStdString();
+    }
     earthcore::TileDataSourcePtr imageSource = std::make_shared<earthcore::TileDataSource>(dataPath.string(), "jpg");
     earthcore::LayerBasePtr imageLayer = std::make_shared<earthcore::LayerBase>("Image", earthcore::LT_Image);
     imageLayer->SetDataSource(imageSource);
@@ -578,10 +592,9 @@ void MapRenderer::BuildEarthNode()
     pEarthNode->Initialize();
 
     
-    earthcore::EarthRenderer* earthRender = new earthcore::EarthRenderer();
+    earthcore::EarthRenderer* earthRender = pEarthNode->AddComponent<earthcore::EarthRenderer>();
     earthRender->AddMaterial(material);
-    pEarthNode->AddComponent(earthRender);
 
-    mSceneManager->getRootNode()->AddSceneNode(pEarthNode);
+    mSceneManager->GetRootNode()->AddSceneNode(pEarthNode);
     
 }

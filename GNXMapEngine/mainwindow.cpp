@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     baselib::EnvironmentUtility::GetInstance().GetDisplayName();
     
-#if OS_MACOS
+#if GNX_OS_MACOS
     QWidget *wrapper = QWidget::createWindowContainer(new MetalWindow(), this);
 #else
     QWidget *wrapper = QWidget::createWindowContainer(new VulkanWindow(), this);
@@ -26,4 +26,3 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
-

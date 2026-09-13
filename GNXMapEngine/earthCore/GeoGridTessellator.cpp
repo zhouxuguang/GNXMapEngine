@@ -172,16 +172,16 @@ MeshPtr GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
     if (!vecPosition.empty())
     {
         channels[kShaderChannelPosition].offset = offset;
-        channels[kShaderChannelPosition].format = VertexFormatFloat4;
-        vertexSize += 16;
-        offset += vecPosition.size() * sizeof(Vector4f);
+        channels[kShaderChannelPosition].format = VertexFormatFloat3;
+        vertexSize += sizeof(Vector3f);
+        offset += vecPosition.size() * sizeof(Vector3f);
     }
     if (!vecNormal.empty())
     {
         channels[kShaderChannelNormal].offset = offset;
-        channels[kShaderChannelNormal].format = VertexFormatFloat4;
-        vertexSize += 16;
-        offset += vecNormal.size() * sizeof(Vector4f);
+        channels[kShaderChannelNormal].format = VertexFormatFloat3;
+        vertexSize += sizeof(Vector3f);
+        offset += vecNormal.size() * sizeof(Vector3f);
     }
     if (!vecTexturePoint.empty())
     {
@@ -191,8 +191,8 @@ MeshPtr GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
         offset += vecTexturePoint.size() * sizeof(Vector2f);
     }
     
-    channels[kShaderChannelPosition].stride = sizeof(Vector4f);
-    channels[kShaderChannelNormal].stride = sizeof(Vector4f);
+    channels[kShaderChannelPosition].stride = sizeof(Vector3f);
+    channels[kShaderChannelNormal].stride = sizeof(Vector3f);
     channels[kShaderChannelColor].stride = 0;
     channels[kShaderChannelTexCoord0].stride = sizeof(Vector2f);
     channels[kShaderChannelTexCoord1].stride = 0;
@@ -200,21 +200,15 @@ MeshPtr GeoGridTessellator::Compute(const Ellipsoid& ellipsoid,
     
     mesh->GetVertexData().Resize((uint32_t)vecPosition.size(), vertexSize);
     
-    std::vector<Vector4f> tempPos;
+    std::vector<Vector3f> tempPos;
     tempPos.reserve(vecPosition.size());
     for (auto & iter : vecPosition)
     {
-        tempPos.emplace_back(iter.x, iter.y, iter.z, 1.0);
+        tempPos.emplace_back(iter.x, iter.y, iter.z);
     }
     mesh->SetPositions(tempPos.data(), tempPos.size());
     
-    std::vector<Vector4f> tempNormal;
-    tempNormal.reserve(vecNormal.size());
-    for (auto & iter : vecNormal)
-    {
-        tempNormal.emplace_back(iter.x, iter.y, iter.z, 1.0);
-    }
-    mesh->SetNormals(tempNormal.data(), tempNormal.size());
+    mesh->SetNormals(vecNormal.data(), vecNormal.size());
     mesh->SetUv(0, vecTexturePoint.data(), vecTexturePoint.size());
     mesh->SetIndices(vecVertexIndice.data(), vecVertexIndice.size());
     

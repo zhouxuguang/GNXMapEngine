@@ -1,7 +1,6 @@
 #include "TileLoadTask.h"
 #include "Runtime/ImageCodec/include/ColorConverter.h"
 #include "Runtime/RenderSystem/include/ImageTextureUtil.h"
-#include "Runtime/AssetProcess/include/DXTCompressor.h"
 #include "Runtime/BaseLib/include/LogService.h"
 #include "TiledImage.h"
 
@@ -9,36 +8,13 @@ EARTH_CORE_NAMESPACE_BEGIN
 
 static RCTexturePtr TextureFromImage(const imagecodec::VImage& image)
 {
-	VImagePtr dxt1Image = std::make_shared<VImage>();
-	dxt1Image->SetImageInfo(FORMAT_DXT1_RGB, image.GetWidth(), image.GetHeight());
-	dxt1Image->AllocPixels();
-
-	baselib::TimeCost cost;
-	cost.Begin();
-	//for (int i = 0; i < 1000; i ++)
-	{
-		AssetProcess::CompressDXT1(dxt1Image->GetPixels(), image.GetPixels(), image.GetWidth(), image.GetHeight(), image.GetBytesPerRow());
-	}
-	cost.End();
-	uint64_t t1 = cost.GetCostTimeNano();
-	LOG_INFO("CompressDXT1 cost %lf\n", (double)t1);
-
-	cost.Begin();
-	/*for (int i = 0; i < 1000; i++)
-	{
-		AssetProcess::CompressDXT1_ISPC(dxt1Image->GetPixels(), image.GetPixels(), image.GetWidth(), image.GetHeight(), image.GetBytesPerRow());
-	}*/
-	cost.End();
-	t1 = cost.GetCostTimeNano();
-	LOG_INFO("CompressDXT1_ISPC cost %lf\n", (double)t1);
-
-	TextureDescriptor textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(image);
+	TextureDesc textureDescriptor = RenderSystem::ImageTextureUtil::getTextureDescriptor(image);
 
     RCTexture2DPtr texture = GetRenderDevice()->CreateTexture2D(textureDescriptor.format,
                                                               TextureUsage::TextureUsageShaderRead,
                                                               textureDescriptor.width, textureDescriptor.height, 1);
 	Rect2D rect(0, 0, image.GetWidth(), image.GetHeight());
-    texture->ReplaceRegion(rect, 0, image.GetPixels(), image.GetBytesPerRow());
+    texture->ReplaceRegion(rect, 0, image.GetImageData(), image.GetBytesPerRow());
 	return texture;
 }
 

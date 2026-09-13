@@ -6,7 +6,7 @@ EARTH_CORE_NAMESPACE_BEGIN
 
 EarthRenderer::EarthRenderer()
 {
-	SamplerDescriptor samplerDescriptor;
+	SamplerDesc samplerDescriptor;
 	mSampler = GetRenderDevice()->CreateSamplerWithDescriptor(samplerDescriptor);
 }
 
@@ -25,7 +25,6 @@ void EarthRenderer::Render(RenderInfo& renderInfo)
 
 	QuadNode::QuadNodeArray quadNodes;
 	earthNode->GetAllRendererNodes(quadNodes);
-	LOG_INFO("nodes count = %d\n", (int)quadNodes.size());
 
 	RenderEncoderPtr renderEncoder = renderInfo.renderEncoder;
 	assert(renderEncoder);
@@ -48,9 +47,9 @@ void EarthRenderer::Render(RenderInfo& renderInfo)
 		renderEncoder->SetFragmentUniformBuffer("LightInfo", renderInfo.lightUBO);
 
 		renderEncoder->SetVertexBuffer(quadNodes[n]->mVertexBuffer, 0, 0);
-		uint32_t offset = quadNodes[n]->mDemData.GetVertCount() * sizeof(simd_float4);
+		uint32_t offset = quadNodes[n]->mDemData.GetVertCount() * sizeof(Vector3f);
 		renderEncoder->SetVertexBuffer(quadNodes[n]->mVertexBuffer, offset, 1);
-		offset += quadNodes[n]->mDemData.GetVertCount() * sizeof(simd_float4);
+		offset += quadNodes[n]->mDemData.GetVertCount() * sizeof(Vector3f);
 		renderEncoder->SetVertexBuffer(quadNodes[n]->mVertexBuffer, offset, 3);
 		/*renderEncoder->setVertexBuffer(vertexBuffer, channels[kShaderChannelTangent].offset, 2);
 		renderEncoder->setVertexBuffer(vertexBuffer, channels[kShaderChannelTexCoord0].offset, 3);*/

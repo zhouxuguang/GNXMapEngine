@@ -18,8 +18,8 @@ const uint16_t DEM_HEIGHT = 65;
 
 struct Vertex
 {
-	mathutil::simd_float4 position;
-	mathutil::simd_float4 normal;
+	mathutil::Vector3f position;
+	mathutil::Vector3f normal;
 	mathutil::simd_float2 texCoord;
 };
 
@@ -29,8 +29,8 @@ class DemMeshData
 private:
     struct DemVertex
     {
-		mathutil::simd_float4 position[row * col];
-		mathutil::simd_float4 normal[row * col];
+		mathutil::Vector3f position[row * col];
+		mathutil::Vector3f normal[row * col];
 		mathutil::simd_float2 texCoord[row * col];
         float height[row * col];
     };
@@ -90,7 +90,7 @@ public:
 
     int GetVertBytes() const
     {
-        return GetVertCount() * sizeof(Vertex);
+        return GetVertCount() * (sizeof(mathutil::Vector3f) * 2 + sizeof(mathutil::simd_float2));
     }
 
     uint16_t* GetFaceData()
@@ -156,12 +156,9 @@ public:
                 mVertexData.position[idx].x = vWorld.x;
                 mVertexData.position[idx].y = vWorld.y;
                 mVertexData.position[idx].z = vWorld.z;
-                mVertexData.position[idx].w = 1.0;
-
 				mVertexData.normal[idx].x = normal.x;
 				mVertexData.normal[idx].y = normal.y;
 				mVertexData.normal[idx].z = normal.z;
-				mVertexData.normal[idx].w = 1.0;
 			}
 		}
     }

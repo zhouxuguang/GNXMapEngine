@@ -32,4 +32,12 @@ private:
 
 EARTH_CORE_NAMESPACE_END
 
+namespace RenderSystem
+{
+template<> struct ComponentTypeOf<earthcore::EarthRenderer>
+{
+    static constexpr ComponentType Value = ComponentType::MeshRenderer;
+};
+}
+
 #endif
