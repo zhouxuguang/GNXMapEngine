@@ -24,7 +24,7 @@ public:
     Vector2d     start;  //起始点
     Vector2d     end;    //结束点
     //RCTexture2DPtr texture;
-    VertexBufferPtr vertexBuffer;
+    RCBufferPtr vertexBuffer;
 };
 
 typedef std::shared_ptr<TileData> TileDataPtr;

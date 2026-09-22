@@ -88,8 +88,8 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 
 	if (mDemData.IsInited() && !mInited)
 	{
-		mVertexBuffer = GetRenderDevice()->CreateVertexBufferWithBytes(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
-		mIndexBuffer = GetRenderDevice()->CreateIndexBufferWithBytes(mDemData.GetFaceData(), mDemData.GetFaceBytes(), RenderCore::IndexType_UShort);
+		mVertexBuffer = GetRenderDevice()->CreateVertexBuffer(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
+		mIndexBuffer = GetRenderDevice()->CreateIndexBuffer(mDemData.GetFaceData(), mDemData.GetFaceBytes(), RenderCore::StorageModePrivate);
 		mInited = true;
 	}
 	

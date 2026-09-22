@@ -342,10 +342,8 @@ void MapRenderer::InitAtmo()
 	{
 		ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeTransmittance");
 
-		ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
-		ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
-
-		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(
+			*shaderAssetString.vertexShader, *shaderAssetString.fragmentShader);
 
 		GraphicsPipelineDesc graphicsPipelineDescriptor;
 		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
@@ -365,10 +363,8 @@ void MapRenderer::InitAtmo()
 	{
 		ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeDirectIrradiance");
 
-		ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
-		ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
-
-		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(
+			*shaderAssetString.vertexShader, *shaderAssetString.fragmentShader);
 
 		GraphicsPipelineDesc graphicsPipelineDescriptor;
 		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
@@ -413,10 +409,8 @@ void MapRenderer::InitAtmo()
 
 		ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeSingleScattering");
 
-		ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
-		ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
-
-		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+		GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(
+			*shaderAssetString.vertexShader, *shaderAssetString.fragmentShader);
 
 		GraphicsPipelineDesc graphicsPipelineDescriptor;
 		graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
@@ -445,10 +439,8 @@ void MapRenderer::InitAtmo()
         
         ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeScatteringDensity");
 
-        ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
-        ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
-
-        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(
+            *shaderAssetString.vertexShader, *shaderAssetString.fragmentShader);
 
         GraphicsPipelineDesc graphicsPipelineDescriptor;
         graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
@@ -461,10 +453,8 @@ void MapRenderer::InitAtmo()
     {
         ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeIndirectIrradiance");
 
-        ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
-        ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
-
-        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(
+            *shaderAssetString.vertexShader, *shaderAssetString.fragmentShader);
 
         GraphicsPipelineDesc graphicsPipelineDescriptor;
         graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;
@@ -483,10 +473,8 @@ void MapRenderer::InitAtmo()
     {
         ShaderAssetString shaderAssetString = LoadShaderAsset("Atmosphere/ComputeMultipleScattering");
 
-        ShaderCodePtr vertexShader = shaderAssetString.vertexShader->shaderSource;
-        ShaderCodePtr fragmentShader = shaderAssetString.fragmentShader->shaderSource;
-
-        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(*vertexShader, *fragmentShader);
+        GraphicsShaderPtr graphicsShader = mRenderdevice->CreateGraphicsShader(
+            *shaderAssetString.vertexShader, *shaderAssetString.fragmentShader);
 
         GraphicsPipelineDesc graphicsPipelineDescriptor;
         graphicsPipelineDescriptor.vertexDescriptor = shaderAssetString.vertexDescriptor;

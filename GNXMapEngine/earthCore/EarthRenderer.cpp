@@ -70,7 +70,7 @@ void EarthRenderer::Render(RenderInfo& renderInfo)
 
 		renderEncoder->DrawIndexedPrimitives(PrimitiveMode_TRIANGLES, 
 			(int)quadNodes[n]->mDemData.GetFaceCount() * 3, 
-			quadNodes[n]->mIndexBuffer, 0);
+			quadNodes[n]->mIndexBuffer, 0, 0, RenderCore::IndexType_UShort);
 
 	}
 }

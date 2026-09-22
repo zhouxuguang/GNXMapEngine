@@ -80,8 +80,8 @@ public:
 	mathutil::Vector3d mStartPoint;   //左下角地理坐标对应的空间直角坐标
 	RenderCore::UniformBufferPtr mLocalUniform = nullptr;
 	bool mInited = false;
-	RenderCore::VertexBufferPtr mVertexBuffer = nullptr;
-	RenderCore::IndexBufferPtr mIndexBuffer = nullptr;
+	RenderCore::RCBufferPtr mVertexBuffer = nullptr;
+	RenderCore::RCBufferPtr mIndexBuffer = nullptr;
 	RenderCore::RCTexturePtr mTexture = nullptr;
 
 	QuadNode(EarthNode* earthNode, QuadNode* parent
