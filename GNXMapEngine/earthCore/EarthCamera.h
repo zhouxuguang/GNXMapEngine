@@ -55,7 +55,7 @@ private:
     Matrix4x4d mEyeToEllipsoid;  // 视空间到椭球空间的变换矩阵
 
     double mAzimuthAngle = degToRad(0);  //水平视角
-    double mVerticalAngle = degToRad(45); //垂直视角
+    double mVerticalAngle = degToRad(0); //垂直视角
 };
 
 using EarthCameraPtr = std::shared_ptr<EarthCamera>;
