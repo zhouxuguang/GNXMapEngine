@@ -1,10 +1,11 @@
-#ifndef GNX_MAP_ENGINE_QUADTREE_INCLUDE_GJGJDF
+﻿#ifndef GNX_MAP_ENGINE_QUADTREE_INCLUDE_GJGJDF
 #define GNX_MAP_ENGINE_QUADTREE_INCLUDE_GJGJDF
 
 #include "EarthEngineDefine.h"
 #include "EarthCamera.h"
 #include "QuadTileID.h"
 #include "DEMMeshData.h"
+#include "TileLoadState.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -83,6 +84,10 @@ public:
 	RenderCore::RCBufferPtr mVertexBuffer = nullptr;
 	RenderCore::RCBufferPtr mIndexBuffer = nullptr;
 	RenderCore::RCTexturePtr mTexture = nullptr;
+	RenderCore::TextureUploadPtr mTextureUpload;
+
+	// 后台瓦片加载结果（由本节点与加载任务共享持有，后台线程只写 CPU 数据）
+	TileLoadStatePtr mLoadState = std::make_shared<TileLoadState>();
 
 	QuadNode(EarthNode* earthNode, QuadNode* parent
 		, const Vector2d& vStart
@@ -105,6 +110,29 @@ public:
 	void Update(const EarthCameraPtr& camera);
 
 	void GetRenderableNodes(QuadNodeArray& nodes);
+
+	/**
+	 * 渲染线程：把后台线程加载好的瓦片数据转成 GPU 资源。
+	 * 必须在渲染线程调用（创建纹理并提交异步上传）。
+	 */
+	void ApplyLoadedTileData();
+
+	/**
+	 * 渲染线程：确保顶点/索引缓冲已经创建（未到达 DEM 数据时按平地生成）。
+	 */
+	void EnsureGpuBuffers();
+
+	/**
+	 * GPU 资源是否全部就绪。
+	 * 纹理/顶点缓冲/索引缓冲任意一个缺失时提交绘制都是非法操作，
+	 * 在部分驱动上会直接导致 VK_ERROR_DEVICE_LOST，因此必须作为渲染的前置条件。
+	 */
+	bool IsGpuReady() const;
+
+	RenderCore::RCTexturePtr GetTexture() const
+	{
+		return mTexture;
+	}
 
 private:
 	EarthNode* mEarthNode = nullptr;

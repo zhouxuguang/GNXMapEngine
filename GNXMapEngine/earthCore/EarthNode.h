@@ -43,6 +43,10 @@ public:
      */
     void CancelRequest(QuadNode* node);
 
+    // Poll all in-flight uploads, including tiles currently culled from the
+    // camera. The backend ticket releases staging/sync resources on completion.
+    void TrackTextureUpload(const RenderCore::TextureUploadPtr& upload);
+
     void AddLayer(LayerBasePtr layer)
     {
         mLayers.push_back(layer);
@@ -54,6 +58,7 @@ private:
     EarthCameraPtr mCameraPtr = nullptr;
     baselib::ThreadPool mTileLoadPool;    // 瓦片数据加载线程池
     std::vector<LayerBasePtr> mLayers;   //图层列表
+    std::vector<RenderCore::TextureUploadPtr> mPendingTextureUploads;
     bool mInited = false;
 };
 

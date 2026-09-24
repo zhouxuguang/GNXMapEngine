@@ -1,4 +1,4 @@
-//
+﻿//
 //  LayerBase.h
 //  GNXMapEngine
 //
@@ -47,8 +47,11 @@ public:
 
     /**
      * 创建瓦片加载的任务
+     *
+     * @param node 目标节点（只用于计算瓦片ID）
+     * @param loadState 加载结果的共享载体，后台线程写、渲染线程读
      */
-    TaskRunnerPtr CreateTask(QuadNode* node);
+    TaskRunnerPtr CreateTask(QuadNode* node, const TileLoadStatePtr& loadState);
 
     /**
      * 销毁瓦片加载的任务

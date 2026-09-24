@@ -62,6 +62,7 @@ set(PROJECT_SOURCES
     earthCore/TileDataSource.cpp
     earthCore/TileLoadTask.h
     earthCore/TileLoadTask.cpp
+    earthCore/TileLoadState.h
     earthCore/EarthRenderer.h
     earthCore/EarthRenderer.cpp
     earthCore/DEMMeshData.h

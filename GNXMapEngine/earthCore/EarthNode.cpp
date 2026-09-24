@@ -1,4 +1,4 @@
-//
+﻿//
 //  EarthNode.cpp
 //  GNXMapEngine
 //
@@ -6,6 +6,8 @@
 //
 
 #include "EarthNode.h"
+
+#include <algorithm>
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -19,17 +21,33 @@ EarthNode::EarthNode(const Ellipsoid& ellipsoid, EarthCameraPtr cameraPtr) : mEl
 
 EarthNode::~EarthNode()
 {
-    //
+    // 四叉树节点析构时会回调 CancelRequest -> mLayers，必须保证 mLayers 还活着。
+    // 成员析构顺序与声明顺序相反（mLayers 先于 mQuadNodes 被销毁），所以这里
+    // 主动在析构体里先释放四叉树。
+    mQuadNodes.clear();
 }
 
 void EarthNode::Update(float deltaTime)
 {
     SceneNode::Update(deltaTime);
 
+    mPendingTextureUploads.erase(
+        std::remove_if(mPendingTextureUploads.begin(), mPendingTextureUploads.end(),
+            [](const RenderCore::TextureUploadPtr& upload) {
+                return !upload || upload->GetStatus() != RenderCore::TextureUploadStatus::Pending;
+            }),
+        mPendingTextureUploads.end());
+
 	for (size_t i = 0; i < mQuadNodes.size(); i ++)
 	{
 		mQuadNodes[i]->Update(mCameraPtr);
 	}
+}
+
+void EarthNode::TrackTextureUpload(const RenderCore::TextureUploadPtr& upload)
+{
+    if (upload && upload->GetStatus() == RenderCore::TextureUploadStatus::Pending)
+        mPendingTextureUploads.push_back(upload);
 }
 
 void EarthNode::GetAllRendererNodes(QuadNode::QuadNodeArray& quadNodes)
@@ -68,9 +86,14 @@ void EarthNode::Initialize()
 
 void EarthNode::RequestTile(QuadNode* node)
 {
+	if (!node)
+	{
+		return;
+	}
+
 	for (auto& layer : mLayers)
 	{
-		auto task = layer->CreateTask(node);
+		auto task = layer->CreateTask(node, node->mLoadState);
 		if (!task)
 		{
 			continue;

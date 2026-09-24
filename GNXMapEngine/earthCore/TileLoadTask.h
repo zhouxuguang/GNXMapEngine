@@ -1,4 +1,4 @@
-//
+﻿//
 //  TileLoadTask.h
 //  GNXMapEngine
 //
@@ -25,7 +25,12 @@ public:
 
     LayerBasePtr layer = nullptr;
     QuadTileID tileId;
-    QuadNode* nodePtr = nullptr;
+
+    // 只通过共享的加载状态把结果交回渲染线程。
+    // 这里不能保存 QuadNode 裸指针：四叉树可能在加载过程中释放节点
+    // （zoom out 时 mChildNodes[i] = nullptr），后台线程再写节点就是 use-after-free。
+    // 也正因如此，后台线程不能创建任何 GPU 资源。
+    TileLoadStatePtr loadState = nullptr;
 };
 
 using TileLoadTaskPtr = std::shared_ptr<TileLoadTask>;

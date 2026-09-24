@@ -1,4 +1,4 @@
-#include "LayerBase.h"
+﻿#include "LayerBase.h"
 #include "TileLoadTask.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
@@ -16,9 +16,9 @@ LayerBase::~LayerBase()
 }
 
 // 创建瓦片加载的任务
-TaskRunnerPtr LayerBase::CreateTask(QuadNode* node)
+TaskRunnerPtr LayerBase::CreateTask(QuadNode* node, const TileLoadStatePtr& loadState)
 {
-    if (!node)
+    if (!node || !loadState)
     {
         return nullptr;
     }
@@ -33,7 +33,7 @@ TaskRunnerPtr LayerBase::CreateTask(QuadNode* node)
     TileLoadTaskPtr tileLoadTask = std::make_shared<TileLoadTask>();
     tileLoadTask->layer = toPtr<LayerBase>();
     tileLoadTask->tileId = node->mTileID;
-    tileLoadTask->nodePtr = node;
+    tileLoadTask->loadState = loadState;
     mLoadTiles.insert(key);
 
     return tileLoadTask;
@@ -52,14 +52,9 @@ void LayerBase::DestroyTask(const QuadTileID& tileID)
 ObjectBasePtr LayerBase::ReadTile(const QuadTileID& tileID)
 {
     // 用数据源的读取接口读取数据了
-    ObjectBasePtr dataPtr = mDataSourcePtr->ReadTile(tileID);
-
-    {
-		baselib::AutoLock lockGuard(mTileDataLock);
-		mLoadedTileData.push_back(dataPtr);
-    }
-
-    return dataPtr;
+    // 结果由 TileLoadState 直接交给所属节点；不要再放进全局历史数组，
+    // 否则每次 zoom 重新加载都会永久保留一份解码图像/DEM 数据。
+    return mDataSourcePtr ? mDataSourcePtr->ReadTile(tileID) : nullptr;
 }
 
 void LayerBase::SwapLoaedTiles(std::vector<ObjectBasePtr>& loadedTiles)

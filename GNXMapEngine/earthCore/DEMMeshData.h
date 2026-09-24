@@ -1,4 +1,4 @@
-//
+﻿//
 //  DEMMeshData.h
 //  earthEngineCore
 //
@@ -10,6 +10,8 @@
 #define GNX_MAPENGINE_DEMMESH_DATA_INCLUDE_KSFGJSDNGKDFNGN
 
 #include "Ellipsoid.h"
+
+#include <string.h>
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -50,6 +52,10 @@ public:
     {
         mRow = row;
         mCol = col;
+        // 高度默认为 0（平地）。DEM 数据还没到达时也可以先按平地生成网格，
+        // 这样影像瓦片一到就能画出瓦片，不会出现空洞；DEM 到达后再用真实
+        // 高度重建顶点数据。
+        memset(mVertexData.height, 0, sizeof(mVertexData.height));
     }
 
     int GetRows() const
