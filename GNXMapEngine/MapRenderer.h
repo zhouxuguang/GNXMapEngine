@@ -93,10 +93,6 @@ public:
     
     void Pan(float offsetX, float offsetY);
     
-    void TestAtmo();
-
-    void InitAtmo();
-    
 private:
     RenderCore::RenderDevicePtr mRenderdevice = nullptr;
     SceneManager* mSceneManager;
@@ -109,29 +105,6 @@ private:
     earthcore::EarthCameraPtr mCameraPtr = nullptr;
     
     void BuildEarthNode();
-    
-    RenderCore::RCTexturePtr transmittance_texture = nullptr;
-    RenderCore::GraphicsPipelinePtr mPipeline1 = nullptr;   //渲染管线
-
-    RenderCore::RCTexturePtr delta_irradiance_texture = nullptr;
-    RenderCore::GraphicsPipelinePtr mPipeline2 = nullptr;   //渲染管线
-    RenderCore::UniformBufferPtr mUBO = nullptr;
-    RenderCore::TextureSamplerPtr sampler = nullptr;
-
-    RenderCore::RCTexturePtr delta_rayleigh_scattering_texture = nullptr;
-    RenderCore::RCTexturePtr delta_mie_scattering_texture = nullptr;
-    RenderCore::RCTexturePtr scattering_texture = nullptr;
-    RenderCore::RCTexturePtr optional_single_mie_scattering_texture = nullptr;
-	RenderCore::GraphicsPipelinePtr mPipeline3 = nullptr;   //渲染管线
-    std::vector<RenderCore::UniformBufferPtr> mUBOs;
-    
-    RenderCore::RCTexturePtr delta_scattering_density_texture = nullptr;
-    RenderCore::GraphicsPipelinePtr mPipeline4 = nullptr;   //渲染管线
-    
-    RenderCore::RCTexturePtr irradiance_texture = nullptr;
-    RenderCore::GraphicsPipelinePtr mPipeline5 = nullptr;   //渲染管线
-    
-    RenderCore::GraphicsPipelinePtr mPipeline6 = nullptr;   //渲染管线
 };
 
 #endif /* MapRenderer_hpp */
