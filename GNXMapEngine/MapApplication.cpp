@@ -238,8 +238,13 @@ void MapApplication::OnEvent(GNXEngine::Event& event)
         [this](GNXEngine::MouseScrolledEvent& e) { return OnMouseScrolled(e); });
 }
 
-bool MapApplication::OnMouseButtonPressed(GNXEngine::MouseButtonPressedEvent&)
+bool MapApplication::OnMouseButtonPressed(GNXEngine::MouseButtonPressedEvent& event)
 {
+    if (event.GetMouseButton() != GNXEngine::ButtonLeft)
+    {
+        return false;
+    }
+
     const mathutil::Vector2f position = GNXEngine::Input::GetMousePosition();
     mLastMouseX = position.x;
     mLastMouseY = position.y;
@@ -247,8 +252,13 @@ bool MapApplication::OnMouseButtonPressed(GNXEngine::MouseButtonPressedEvent&)
     return true;
 }
 
-bool MapApplication::OnMouseButtonReleased(GNXEngine::MouseButtonReleasedEvent&)
+bool MapApplication::OnMouseButtonReleased(GNXEngine::MouseButtonReleasedEvent& event)
 {
+    if (event.GetMouseButton() != GNXEngine::ButtonLeft)
+    {
+        return false;
+    }
+
     if (mDragging)
     {
         const mathutil::Vector2f position = GNXEngine::Input::GetMousePosition();

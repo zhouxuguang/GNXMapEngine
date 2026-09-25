@@ -26,7 +26,6 @@ public:
     Vector2i key;       //xy方向编号
     Vector2d     start;  //起始点
     Vector2d     end;    //结束点
-    //RCTexture2DPtr texture;
     RCBufferPtr vertexBuffer;
 };
 
