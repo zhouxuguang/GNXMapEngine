@@ -28,6 +28,8 @@
 #include "earthCore/LayerBase.h"
 #include "earthCore/EarthRenderer.h"
 
+#include "ScreenshotUtil.h"
+
 #include <filesystem>
 #include <cstdlib>
 
@@ -239,6 +241,21 @@ void MapRenderer::LogCameraState(const char* tag) const
              eyeLon, eyeLat, eyeHeight,
              targetLon, targetLat, targetHeight,
              viewInEun.x, viewInEun.y, viewInEun.z);
+}
+
+bool MapRenderer::SaveScreenshot(const std::string& filePath)
+{
+    if (!mSceneManager || mWidth <= 0.0 || mHeight <= 0.0)
+    {
+        LOG_ERROR("MapRenderer::SaveScreenshot: 场景或窗口尺寸尚未就绪 (%.0fx%.0f)", mWidth, mHeight);
+        return false;
+    }
+
+    return CaptureFrameToPng(mSceneManager,
+                             mSceneManager->PeekImGuiRenderer(),
+                             static_cast<uint32_t>(mWidth),
+                             static_cast<uint32_t>(mHeight),
+                             filePath);
 }
 
 void MapRenderer::BuildEarthNode()

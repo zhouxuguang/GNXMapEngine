@@ -6,5 +6,6 @@ int main(int argc, char *argv[])
     GNXEngine::WindowProps props("GNXMapEngine", 1280U, 720U);
     MapApplication app(props);
     app.RunLoop();
-    return 0;
+    // 自动化截图失败时返回非 0，便于批处理脚本判断
+    return app.GetExitCode();
 }

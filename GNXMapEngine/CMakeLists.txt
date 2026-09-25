@@ -25,6 +25,8 @@ set(PROJECT_SOURCES
     MapApplication.h
     MapRenderer.cpp
     MapRenderer.h
+    ScreenshotUtil.cpp
+    ScreenshotUtil.h
     WebMercator.cpp
     WebMercator.h
     earthCore/BoundingRegion.h

@@ -212,6 +212,7 @@ void MapApplication::RenderFrame()
 
     mRenderer->DrawFrame();
 
+    UpdateAutomation();
 }
 
 void MapApplication::OnEvent(GNXEngine::Event& event)
@@ -370,3 +371,38 @@ void MapApplication::BuildImGuiPanel()
 }
 
 // ---------------------------------------------------------------------------
+// 自动化：等待瓦片加载完成后截图并退出（可复现的批量出图）
+// ---------------------------------------------------------------------------
+void MapApplication::UpdateAutomation()
+{
+    ++mFrameIndex;
+
+    if (mScreenshotPath.empty() || mScreenshotAttempted)
+    {
+        return;
+    }
+
+    if (mFrameIndex < mScreenshotWaitFrames)
+    {
+        return;
+    }
+
+    mScreenshotAttempted = true;
+    mRenderer->LogCameraState("截图");
+
+    if (mRenderer->SaveScreenshot(mScreenshotPath))
+    {
+        LOG_INFO("自动化截图完成: %s", mScreenshotPath.c_str());
+    }
+    else
+    {
+        mExitCode = 2;
+        LOG_ERROR("自动化截图失败: %s", mScreenshotPath.c_str());
+    }
+
+    // 截图完成即请求退出，主循环会走完引擎的正常资源释放流程
+    if (GNXEngine::RenderWindowPtr window = GNXEngine::GetRenderWindow())
+    {
+        window->RequestClose();
+    }
+}

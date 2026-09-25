@@ -19,6 +19,9 @@ public:
     void RenderFrame() override;
     void OnEvent(GNXEngine::Event& event) override;
 
+    // 进程退出码：自动化截图失败时返回非 0，便于批处理脚本判定
+    int GetExitCode() const { return mExitCode; }
+
 private:
     bool OnMouseButtonPressed(GNXEngine::MouseButtonPressedEvent& event);
     bool OnMouseButtonReleased(GNXEngine::MouseButtonReleasedEvent& event);
