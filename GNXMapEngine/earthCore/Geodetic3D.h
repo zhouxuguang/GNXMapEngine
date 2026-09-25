@@ -35,9 +35,13 @@ public:
       double latitudeDegrees,
       double heightMeters = 0.0)
     {
+        // 注意：MathUtil 里的 degToRad 是 float 版本，直接使用会把 ~1e-6 度
+        // （地表约 0.2m）的误差带进经纬度，并让 CartographicToCartesian /
+        // CartesianToCartographic 的往返凭空出现漂移。这里用 double 常量换算。
+        static const double kDegToRad = 0.01745329251994329576923690768489;
         return Geodetic3D(
-                          degToRad(longitudeDegrees),
-                          degToRad(latitudeDegrees),
+                          longitudeDegrees * kDegToRad,
+                          latitudeDegrees * kDegToRad,
                           heightMeters);
     }
     

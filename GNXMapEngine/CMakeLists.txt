@@ -50,6 +50,8 @@ set(PROJECT_SOURCES
     earthCore/EarthNode.cpp
     earthCore/EarthCamera.h
     earthCore/EarthCamera.cpp
+    earthCore/EarthCameraPose.h
+    earthCore/EarthCameraPose.cpp
     earthCore/IntersectionTests.h
     earthCore/IntersectionTests.cpp
     earthCore/QuadTree.h
@@ -86,3 +88,31 @@ install(TARGETS GNXMapEngine
     BUNDLE DESTINATION .
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib)
+
+# ==================== 测试 ====================
+# 方位角/俯仰角数学的「无窗口」数值验证：
+# 只编译不依赖渲染设备的少量源文件（EarthCamera.cpp 的构造需要渲染设备，故排除），
+# 这样无需窗口/GPU 即可运行断言。
+option(GNX_MAP_BUILD_TESTS "Build GNXMapEngine numerical tests" ON)
+
+if(GNX_MAP_BUILD_TESTS)
+    add_executable(TestEarthCameraAngles
+        test/TestEarthCameraAngles.cpp
+        earthCore/EarthCameraPose.h
+        earthCore/EarthCameraPose.cpp
+        earthCore/Ellipsoid.h
+        earthCore/Ellipsoid.cpp
+        earthCore/Geodetic3D.h
+        earthCore/Geodetic3D.cpp
+        earthCore/GeoTransform.h
+        earthCore/GeoTransform.cpp
+    )
+
+    target_include_directories(TestEarthCameraAngles PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(TestEarthCameraAngles PRIVATE GNXEngine)
+
+    set_property(TARGET TestEarthCameraAngles PROPERTY FOLDER "test")
+
+    enable_testing()
+    add_test(NAME EarthCameraAngles COMMAND TestEarthCameraAngles)
+endif()

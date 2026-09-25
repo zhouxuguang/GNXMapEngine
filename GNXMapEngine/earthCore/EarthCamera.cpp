@@ -6,211 +6,272 @@
 //
 
 #include "EarthCamera.h"
+#include "EarthCameraPose.h"
 #include "IntersectionTests.h"
-#include "GeoTransform.h"
+#include "Runtime/BaseLib/include/LogService.h"
+
+#include <algorithm>
+#include <cmath>
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-const static double MIN_EYE_DISTANCE = 20;
-
-static const void CalAngles(const Geodetic3D& eyeGeodetic, const Geodetic3D& eyeGeodeticTarget, const Vector3d& eyePos, 
-    double &azimuthAngle, double& verticalAngle)
+namespace
 {
-
-}
-
-Vector3d GetDirInEyeSpace(double azimuthAngle, double verticalAngle)
-{
-    Vector3d dir;
-    dir.x = sin(verticalAngle) * sin(azimuthAngle);
-    dir.y = sin(verticalAngle) * cos(azimuthAngle);
-    dir.z = -cos(verticalAngle);
-
-    return dir;
+    // 视点与目标点的最小距离，避免相机穿到地下
+    const double MIN_EYE_DISTANCE = 20.0;
 }
 
 EarthCamera::EarthCamera(const Ellipsoid& ellipsoid, const std::string& name) :
     mEllipsoid(ellipsoid),
     Camera(GetRenderDevice()->GetRenderDeviceType(), name),
-    mEyeGeodetic(degToRad(110), degToRad(23), 6398140),
-    mEyeGeodeticTarget(degToRad(110), degToRad(23), 0)
+    mEyeGeodetic(EarthCameraPose::ToRadians(110.0), EarthCameraPose::ToRadians(23.0), 6398140),
+    mEyeGeodeticTarget(EarthCameraPose::ToRadians(110.0), EarthCameraPose::ToRadians(23.0), 0)
 {
-    mEyePos = ellipsoid.CartographicToCartesian(mEyeGeodetic);
+    mTargetPos = mEllipsoid.CartographicToCartesian(mEyeGeodeticTarget);
+    mEyePos = mEllipsoid.CartographicToCartesian(mEyeGeodetic);
 
-    // 计算水平和垂直视角
-    CalAngles(mEyeGeodetic, mEyeGeodeticTarget, mEyePos, mAzimuthAngle, mVerticalAngle);
+    mEyeDistance = std::max((mEyePos - mTargetPos).Length(), MIN_EYE_DISTANCE);
 
-    // 计算水平角变换的矩阵
-    Matrix4x4d azimuthMatrix = Matrix4x4d::CreateRotation(0, 1, 0, -radToDeg(mAzimuthAngle));
+    // 用「目标点处量测」反算初始角度：ApplyPose() 以目标点为基准重建视点，
+    // 这样初始给定的视点位置能被精确复现，而不会在构造阶段漂移。
+    EarthCameraPose::AnglesFromEyeTarget(mEyePos, mTargetPos, mEllipsoid, false, mAzimuthAngle, mPitchAngle);
 
-    mTargetPos = ellipsoid.CartographicToCartesian(mEyeGeodeticTarget);
+    ApplyPose();
 
-    double eyeDistance = (mTargetPos - mEyePos).Length();
-
-    // 获得视线在眼空间中的方向
-    Vector3d viewDirInEye = GetDirInEyeSpace(mAzimuthAngle, mVerticalAngle);
-    
-    // 用于计算椭球空间到视空间的坐标转换，对应于博士论文中5. 3. 1. 2 椭球空间变换到眼空间
-    mEllipsoidToEye = Matrix4x4d::CreateRotation(1, 0, 0, -90 + radToDeg(mEyeGeodetic.latitude)) *
-                            Matrix4x4d::CreateRotation(0, 0, 1, -90 - radToDeg(mEyeGeodetic.longitude)) *
-                            Matrix4x4d::CreateTranslate(-mEyePos);
-    
-    // 用于计算视空间到椭球空间的坐标转换，对应于博士论文中5. 3. 1. 1 眼空间变换到椭球空间
-    mEyeToEllipsoid = Matrix4x4d::CreateRotation(0, 0, 1, 90 + radToDeg(mEyeGeodetic.longitude)) *
-                        Matrix4x4d::CreateRotation(1, 0, 0, 90 - radToDeg(mEyeGeodetic.latitude)) *
-                        Matrix4x4d::CreateTranslate(mEyePos);
-
-    Vector3d viewDirInWorld = (mEyeToEllipsoid.GetMatrix3() * viewDirInEye).Normalize();
-
-    Vector3d newEyePos = mTargetPos - viewDirInWorld * eyeDistance;
-    mEyePos = newEyePos;
-    
-    // 计算局部的东北天的坐标轴向
-    Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, ellipsoid);
-    Vector4d north = eastNorthUp.col(1);
-    north = azimuthMatrix * north;
-    
-    LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
-           Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
-           Vector3f(north.x, north.y, north.z));
+    LOG_INFO("EarthCamera initialized: eye(lon=%.6f, lat=%.6f, h=%.1f) target(lon=%.6f, lat=%.6f, h=%.1f) "
+             "azimuth=%.4f deg pitch=%.4f deg distance=%.1f m",
+             EarthCameraPose::ToDegrees(mEyeGeodetic.longitude),
+             EarthCameraPose::ToDegrees(mEyeGeodetic.latitude),
+             mEyeGeodetic.height,
+             EarthCameraPose::ToDegrees(mEyeGeodeticTarget.longitude),
+             EarthCameraPose::ToDegrees(mEyeGeodeticTarget.latitude),
+             mEyeGeodeticTarget.height,
+             EarthCameraPose::ToDegrees(mAzimuthAngle),
+             EarthCameraPose::ToDegrees(mPitchAngle),
+             mEyeDistance);
 }
 
-EarthCamera::~EarthCamera()
+EarthCamera::~EarthCamera() = default;
+
+void EarthCamera::SetAzimuthAngle(double azimuthRad)
 {
+    if (!std::isfinite(azimuthRad))
+    {
+        LOG_ERROR("EarthCamera::SetAzimuthAngle ignored non-finite value");
+        return;
+    }
+    mAzimuthAngle = EarthCameraPose::NormalizeAzimuth(azimuthRad);
+    ApplyPose();
 }
 
-////获得相机的世界坐标位置
-//Vector3f EarthCamera::GetPosition() const
-//{
-//    return mPosition;
-//}
-//
-////获得视图矩阵
-//Matrix4x4f EarthCamera::GetViewMatrix() const
-//{
-//    return mView;
-//}
+double EarthCamera::GetAzimuthAngle() const
+{
+    double azimuthRad = 0.0;
+    double pitchRad = 0.0;
+    EarthCameraPose::AnglesFromEyeTarget(mEyePos, mTargetPos, mEllipsoid, true, azimuthRad, pitchRad);
+    return azimuthRad;
+}
+
+double EarthCamera::GetAzimuthAngleAtTarget() const
+{
+    // 返回命令状态而非重新反算。垂直下视时水平投影为零，
+    // 反算只能得到“无定义”；但方位状态仍决定画面朝上方向和后续倾斜方向。
+    return mAzimuthAngle;
+}
+
+double EarthCamera::GetAzimuthAngleDegrees() const
+{
+    return EarthCameraPose::ToDegrees(GetAzimuthAngle());
+}
+
+double EarthCamera::GetAzimuthAngleAtTargetDegrees() const
+{
+    return EarthCameraPose::ToDegrees(GetAzimuthAngleAtTarget());
+}
+
+void EarthCamera::SetPitchAngle(double pitchRad)
+{
+    if (!std::isfinite(pitchRad))
+    {
+        LOG_ERROR("EarthCamera::SetPitchAngle ignored non-finite value");
+        return;
+    }
+    mPitchAngle = EarthCameraPose::ClampPitch(pitchRad);
+    ApplyPose();
+}
+
+double EarthCamera::GetPitchAngle() const
+{
+    double azimuthRad = 0.0;
+    double pitchRad = 0.0;
+    EarthCameraPose::AnglesFromEyeTarget(mEyePos, mTargetPos, mEllipsoid, true, azimuthRad, pitchRad);
+    return pitchRad;
+}
+
+double EarthCamera::GetPitchAngleAtTarget() const
+{
+    return mPitchAngle;
+}
+
+double EarthCamera::GetPitchAngleDegrees() const
+{
+    return EarthCameraPose::ToDegrees(GetPitchAngle());
+}
+
+double EarthCamera::GetPitchAngleAtTargetDegrees() const
+{
+    return EarthCameraPose::ToDegrees(GetPitchAngleAtTarget());
+}
+
+void EarthCamera::SetAzimuthPitch(double azimuthRad, double pitchRad)
+{
+    if (!std::isfinite(azimuthRad) || !std::isfinite(pitchRad))
+    {
+        LOG_ERROR("EarthCamera::SetAzimuthPitch ignored non-finite value(s)");
+        return;
+    }
+    mAzimuthAngle = EarthCameraPose::NormalizeAzimuth(azimuthRad);
+    mPitchAngle = EarthCameraPose::ClampPitch(pitchRad);
+    ApplyPose();
+}
+
+void EarthCamera::SetAzimuthPitchDegrees(double azimuthDegrees, double pitchDegrees)
+{
+    SetAzimuthPitch(EarthCameraPose::ToRadians(azimuthDegrees), EarthCameraPose::ToRadians(pitchDegrees));
+}
+
+void EarthCamera::SetEyeDistance(double distance)
+{
+    if (!std::isfinite(distance))
+    {
+        LOG_ERROR("EarthCamera::SetEyeDistance ignored non-finite value");
+        return;
+    }
+    mEyeDistance = distance;
+    ApplyPose();
+}
+
+void EarthCamera::SetEyeGeodetic(const Geodetic3D& eyeGeodetic)
+{
+    if (!std::isfinite(eyeGeodetic.longitude) || !std::isfinite(eyeGeodetic.latitude) ||
+        !std::isfinite(eyeGeodetic.height))
+    {
+        LOG_ERROR("EarthCamera::SetEyeGeodetic ignored non-finite coordinate");
+        return;
+    }
+    mEyeGeodetic = eyeGeodetic;
+    mEyePos = mEllipsoid.CartographicToCartesian(mEyeGeodetic);
+
+    mEyeDistance = std::max((mEyePos - mTargetPos).Length(), MIN_EYE_DISTANCE);
+
+    // 目标点不变，按新视点反算角度（目标点基准，保证与位置自洽）
+    EarthCameraPose::AnglesFromEyeTarget(mEyePos, mTargetPos, mEllipsoid, false, mAzimuthAngle, mPitchAngle);
+
+    ApplyPose();
+}
+
+void EarthCamera::SetEyeGeodeticTarget(const Geodetic3D& targetGeodetic)
+{
+    if (!std::isfinite(targetGeodetic.longitude) || !std::isfinite(targetGeodetic.latitude) ||
+        !std::isfinite(targetGeodetic.height))
+    {
+        LOG_ERROR("EarthCamera::SetEyeGeodeticTarget ignored non-finite coordinate");
+        return;
+    }
+    mEyeGeodeticTarget = targetGeodetic;
+    mTargetPos = mEllipsoid.CartographicToCartesian(mEyeGeodeticTarget);
+
+    // 目标点变化后，视点按原有角度与距离跟随，保持「绕目标点观察」的语义
+    ApplyPose();
+}
+
+Vector3f EarthCamera::GetViewDirection() const
+{
+    Vector3d direction = mTargetPos - mEyePos;
+    const double length = direction.Length();
+    if (length > Epsilon14)
+    {
+        direction /= length;
+    }
+
+    return Vector3f(direction.x, direction.y, direction.z);
+}
+
+Vector3d EarthCamera::GetViewDirectionInEyeEun() const
+{
+    const EunFrame frame = EarthCameraPose::BuildEunFrame(mEyePos, mEllipsoid);
+
+    Vector3d direction = mTargetPos - mEyePos;
+    const double length = direction.Length();
+    if (length > Epsilon14)
+    {
+        direction /= length;
+    }
+
+    return frame.ToEun(direction);
+}
 
 void EarthCamera::Zoom(double deltaDistance)
 {
-    double dist = (mEyePos - mTargetPos).Length();
-    printf("view point lont = %lf, lat = %lf, height = %lf, dsit = %lf, deltaDistance = %lf\n",
-           radToDeg(mEyeGeodetic.longitude), radToDeg(mEyeGeodetic.latitude), mEyeGeodetic.height, dist, deltaDistance);
-    
-    // 当前距离加上增量小于最小距离，那么就停止缩放了
-    if (dist + deltaDistance <= MIN_EYE_DISTANCE && deltaDistance < 0)
-    {
-        dist = MIN_EYE_DISTANCE;
-    }
-    else
-    {
-        dist += deltaDistance;
-    }
-    
-    //计算视线方向
-    Vector3d viewDir = (mEyePos - mTargetPos).Normalize();
-    mEyePos = mTargetPos + viewDir * dist;
-    
-    // 计算新的视点的地理坐标
-    mEyeGeodetic = mEllipsoid.CartesianToCartographic(mEyePos);
-    
-    // 计算局部的东北天的坐标轴向
-    Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, mEllipsoid);
-    Vector4d north = eastNorthUp.col(1);
-
-	// 计算水平角变换的矩阵
-	Matrix4x4d azimuthMatrix = Matrix4x4d::CreateRotation(0, 1, 0, -radToDeg(mAzimuthAngle));
-    north = azimuthMatrix * north;
-    
-    LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
-           Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
-           Vector3f(north.x, north.y, north.z));
-
-    {
-		// for test
-		Vector3d origin = Vector3d(mEyePos.x, mEyePos.y, mEyePos.z);
-		Vector3d direction = Vector3d(-viewDir.x, -viewDir.y, -viewDir.z);
-		Rayd ray(mEyePos, direction);
-
-		Vector3d intersectPoint;
-		bool isIntersect = IntersectionTests::RayEllipsoid(ray, mEllipsoid, intersectPoint);
-
-		Geodetic3D geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
-
-		double lont = radToDeg(geodeticPoint.longitude);
-		double lat = radToDeg(geodeticPoint.latitude);
-		printf("inter point lont = %lf, lat = %lf\n", lont, lat);
-
-		/*Ray ray1 = GenerateRay(800, 400);
-
-		isIntersect = IntersectionTests::RayEllipsoid(ray1, mEllipsoid, intersectPoint);*/
-
-		geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
-
-		lont = radToDeg(geodeticPoint.longitude);
-		lat = radToDeg(geodeticPoint.latitude);
-		printf("zoom inter point lont = %lf, lat = %lf\n", lont, lat);
-    }
+    SetEyeDistance(mEyeDistance + deltaDistance);
 }
 
 void EarthCamera::Pan(float offsetX, float offsetY)
 {
-    float centerX = mWidth / 2.0;
-    float centerY = mHeight / 2.0;
-    
-    // 添加偏移后的屏幕坐标
-    Rayf ray = GenerateRay(centerX + offsetX, centerY + offsetY);
-    Vector3f origin = ray.GetOrigin();
-    Vector3f direction = ray.GetDirection();
-    Rayd ray1 = Rayd(Vector3d(origin.x, origin.y, origin.z), Vector3d(direction.x, direction.y, direction.z));
-    
-    // 计算当前鼠标点的空间直角坐标
+    const float centerX = static_cast<float>(mWidth) / 2.0f;
+    const float centerY = static_cast<float>(mHeight) / 2.0f;
+
+    // 以屏幕中心加偏移处发出射线，与椭球求交得到新的注视点
+    const Rayf ray = GenerateRay(centerX + offsetX, centerY + offsetY);
+    const Vector3f origin = ray.GetOrigin();
+    const Vector3f direction = ray.GetDirection();
+    const Rayd rayDouble(Vector3d(origin.x, origin.y, origin.z),
+                         Vector3d(direction.x, direction.y, direction.z));
+
     Vector3d intersectPoint;
-    bool isIntersect = IntersectionTests::RayEllipsoid(ray1, mEllipsoid, intersectPoint);
-    if (!isIntersect)
+    if (!IntersectionTests::RayEllipsoid(rayDouble, mEllipsoid, intersectPoint))
     {
         return;
     }
-    
-    double eyeDistance = (mTargetPos - mEyePos).Length();
-    
-    // 计算出新的注视点的坐标
-    Geodetic3D geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
-    mEyeGeodeticTarget = Geodetic3D(geodeticPoint.longitude, geodeticPoint.latitude);
-    mTargetPos = mEllipsoid.CartographicToCartesian(mEyeGeodeticTarget);
-    
-    // 获得视线在眼空间中的方向
-    Vector3d viewDirInEye = GetDirInEyeSpace(mAzimuthAngle, mVerticalAngle);
-    
-    // 用于计算视空间到椭球空间的坐标转换，对应于博士论文中5. 3. 1. 1 眼空间变换到椭球空间
-    mEyeToEllipsoid = Matrix4x4d::CreateRotation(0, 0, 1, 90 + radToDeg(mEyeGeodeticTarget.longitude)) *
-                        Matrix4x4d::CreateRotation(1, 0, 0, 90 - radToDeg(mEyeGeodeticTarget.latitude)) *
-                        Matrix4x4d::CreateTranslate(mEyePos);
 
-    Vector3d viewDirInWorld = (mEyeToEllipsoid.GetMatrix3() * viewDirInEye).Normalize();
+    const Geodetic3D geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
+    SetEyeGeodeticTarget(Geodetic3D(geodeticPoint.longitude, geodeticPoint.latitude));
+}
 
-    // 计算新的视点坐标
-    Vector3d newEyePos = mTargetPos - viewDirInWorld * eyeDistance;
-    mEyePos = newEyePos;
+void EarthCamera::ApplyPose()
+{
+    // 角度与距离统一钳制到合法区间
+    mAzimuthAngle = EarthCameraPose::NormalizeAzimuth(mAzimuthAngle);
+    mPitchAngle = EarthCameraPose::ClampPitch(mPitchAngle);
+    mEyeDistance = std::max(mEyeDistance, MIN_EYE_DISTANCE);
+
+    // 由「目标点 + 方位角 + 俯仰角 + 距离」解析求出视点，恒满足 |eye - target| == 距离
+    mEyePos = EarthCameraPose::EyeFromTargetAndAngles(mTargetPos, mEllipsoid,
+                                                     mAzimuthAngle, mPitchAngle, mEyeDistance);
     mEyeGeodetic = mEllipsoid.CartesianToCartographic(mEyePos);
-    
-    double lont = radToDeg(geodeticPoint.longitude);
-    double lat = radToDeg(geodeticPoint.latitude);
-    printf("pan point lont = %lf, lat = %lf\n", lont, lat);
-    
-    mEyePos = mEllipsoid.CartographicToCartesian(mEyeGeodetic);
-    
-    // 计算局部的东北天的坐标轴向
-    Matrix4x4d eastNorthUp = GeoTransform::eastNorthUpToFixedFrame(mEyePos, mEllipsoid);
-    Vector4d north = eastNorthUp.col(1);
 
-	// 计算水平角变换的矩阵
-	Matrix4x4d azimuthMatrix = Matrix4x4d::CreateRotation(0, 1, 0, -radToDeg(mAzimuthAngle));
-	north = azimuthMatrix * north;
-    
-    LookAt(Vector3f(mEyePos.x, mEyePos.y, mEyePos.z),
-           Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z),
-           Vector3f(north.x, north.y, north.z));
+    // up 取「视点处大地法线在视线垂直面内的投影」，保证地平线水平、画面无滚转；
+    // 垂直下视时退化为按方位角确定的水平方向（正北朝上）。
+    const Vector3d up = EarthCameraPose::LookUpForLookAt(mEyePos, mTargetPos, mEllipsoid, mAzimuthAngle);
+
+    // ECEF 坐标量级约 6.4e6 m，float 在该量级的间距约为 0.5 m。
+    // 若先把 eye/target 转成 float 再让 Camera::LookAt 相减，20 m 近地视角
+    // 会在归一化前已经丢失明显的方向精度。先以 double 完成视图矩阵，
+    // 最后才逐元素降精度供现有渲染管线使用。
+    const Matrix4x4d preciseView = Matrix4x4d::CreateLookAt(mEyePos, mTargetPos, up);
+    for (int row = 0; row < 4; ++row)
+    {
+        for (int column = 0; column < 4; ++column)
+        {
+            mView[row][column] = static_cast<float>(preciseView[row][column]);
+        }
+    }
+
+    // 保持 Camera 基类的公开状态与视图矩阵一致；GenerateRay/渲染仍按原接口工作。
+    mPosition = Vector3f(mEyePos.x, mEyePos.y, mEyePos.z);
+    mLook = Vector3f(mTargetPos.x, mTargetPos.y, mTargetPos.z);
+    mUp = Vector3f(up.x, up.y, up.z);
+    mViewDirty = false;
 }
 
 EARTH_CORE_NAMESPACE_END
