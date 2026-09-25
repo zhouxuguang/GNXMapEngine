@@ -95,6 +95,13 @@ public:
     
     void Pan(float offsetX, float offsetY);
 
+    // 鼠标拖拽改变姿态（目标点不变）：右键 = 横向方位角 + 纵向等比缩放，中键 = 纵向俯仰角。
+    // dxPixels/dyPixels 为屏幕「物理像素」增量（逻辑坐标需先乘窗口 DPIScale）。
+    void OrbitByDrag(double dxPixels, double dyPixels, earthcore::CameraDragMode mode);
+
+    // 拖拽灵敏度（1.0 为默认手感，负值反向，非有限值按 0）
+    void SetDragSensitivity(double azimuthSensitivity, double pitchSensitivity, double zoomSensitivity);
+
     // ==================== 视角控制：方位角 / 俯仰角 ====================
 
     // 同时设定方位角与俯仰角（单位：度）。

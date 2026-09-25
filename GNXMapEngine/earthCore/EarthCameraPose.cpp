@@ -7,6 +7,7 @@
 
 #include "EarthCameraPose.h"
 
+#include <algorithm>
 #include <cmath>
 
 EARTH_CORE_NAMESPACE_BEGIN
@@ -26,6 +27,17 @@ namespace
 
     // 方位角吸附阈值：与 2π 的差小于该值即视为 0（约 5.7e-8 度，不会掩盖任何真实角度）
     const double kAzimuthSnapEpsilon = 1e-9;
+
+    // 拖拽换算用的 FOV 合法区间（度），越界时退回默认视场，避免「拖拽毫无反应」
+    const double kMinFovDegrees = 1.0;
+    const double kMaxFovDegrees = 179.0;
+    const double kDefaultFovDegrees = 60.0;
+
+    // 灵敏度兜底：非有限值按 0（该维度不响应），负值保留以便反向试手感
+    double SanitizeSensitivity(double sensitivity)
+    {
+        return std::isfinite(sensitivity) ? sensitivity : 0.0;
+    }
 }
 
 Vector3d EunFrame::ToWorld(const Vector3d& vectorInEun) const
@@ -203,6 +215,85 @@ double EarthCameraPose::ClampPitch(double pitchRad)
         return 0.0;
     }
     return Clamp(pitchRad, 0.0, kHalfPi);
+}
+
+double EarthCameraPose::AnglePerPixelRadians(double fovYDegrees, double viewportHeightPixels)
+{
+    if (!std::isfinite(viewportHeightPixels) || viewportHeightPixels <= 0.0)
+    {
+        // 视口高度未知（如首帧 Resize 之前）：无法把像素换算成角度
+        return 0.0;
+    }
+
+    double fov = fovYDegrees;
+    if (!std::isfinite(fov) || fov < kMinFovDegrees || fov > kMaxFovDegrees)
+    {
+        fov = kDefaultFovDegrees;
+    }
+
+    const double halfFovRad = ToRadians(fov) * 0.5;
+    const double tanHalfFov = tan(halfFovRad);
+    if (!std::isfinite(tanHalfFov) || tanHalfFov <= 0.0)
+    {
+        return 0.0;
+    }
+
+    return 2.0 * tanHalfFov / viewportHeightPixels;
+}
+
+CameraDragResult EarthCameraPose::ApplyDragToPose(double azimuthRad,
+                                                  double pitchRad,
+                                                  double distance,
+                                                  double dxPixels,
+                                                  double dyPixels,
+                                                  CameraDragMode mode,
+                                                  double fovYDegrees,
+                                                  double viewportHeightPixels,
+                                                  double minDistance,
+                                                  double azimuthSensitivity,
+                                                  double pitchSensitivity,
+                                                  double zoomSensitivity)
+{
+    // 先规约输入姿态：即使增量为 0 或非法，返回值也一定是合法姿态
+    const double minDist = (std::isfinite(minDistance) && minDistance > 0.0) ? minDistance : 0.0;
+    CameraDragResult result;
+    result.azimuthRad = NormalizeAzimuth(azimuthRad);
+    result.pitchRad = ClampPitch(pitchRad);
+    result.distance = std::max(std::isfinite(distance) ? distance : 0.0, minDist);
+
+    if (!std::isfinite(dxPixels) || !std::isfinite(dyPixels))
+    {
+        return result;
+    }
+
+    const double anglePerPixel = AnglePerPixelRadians(fovYDegrees, viewportHeightPixels);
+
+    if (mode == CameraDragMode::RightButton)
+    {
+        // 向右拖 -> 方位角增大（画面内容逆时针）
+        result.azimuthRad = NormalizeAzimuth(result.azimuthRad +
+            dxPixels * anglePerPixel * SanitizeSensitivity(azimuthSensitivity));
+
+        // 向下拖等比放大：每拖满半个视口高度恰好放大/缩小一倍
+        const double halfViewportHeight = viewportHeightPixels * 0.5;
+        if (std::isfinite(halfViewportHeight) && halfViewportHeight > 0.0)
+        {
+            const double scale = pow(2.0, -dyPixels * SanitizeSensitivity(zoomSensitivity) / halfViewportHeight);
+            const double scaledDistance = result.distance * scale;
+            if (std::isfinite(scaledDistance))
+            {
+                result.distance = std::max(scaledDistance, minDist);
+            }
+        }
+    }
+    else
+    {
+        // 中键向下拖 -> 俯仰角增大（向地平线倾斜）；横向忽略
+        result.pitchRad = ClampPitch(result.pitchRad +
+            dyPixels * anglePerPixel * SanitizeSensitivity(pitchSensitivity));
+    }
+
+    return result;
 }
 
 EARTH_CORE_NAMESPACE_END

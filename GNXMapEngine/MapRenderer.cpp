@@ -85,6 +85,26 @@ void MapRenderer::Pan(float offsetX, float offsetY)
     mCameraPtr->Pan(offsetX, offsetY);
 }
 
+void MapRenderer::OrbitByDrag(double dxPixels, double dyPixels, earthcore::CameraDragMode mode)
+{
+    if (!mCameraPtr)
+    {
+        return;
+    }
+
+    mCameraPtr->OrbitByDrag(dxPixels, dyPixels, mode);
+}
+
+void MapRenderer::SetDragSensitivity(double azimuthSensitivity, double pitchSensitivity, double zoomSensitivity)
+{
+    if (!mCameraPtr)
+    {
+        return;
+    }
+
+    mCameraPtr->SetDragSensitivity(azimuthSensitivity, pitchSensitivity, zoomSensitivity);
+}
+
 void MapRenderer::DrawFrame()
 {
     if (!mRenderdevice)

@@ -158,6 +158,12 @@ void MapApplication::ApplyStartupOptions()
         mRenderer->SetAzimuthPitchDegrees(azimuthDegrees, pitchDegrees);
     }
 
+    // 拖拽灵敏度（1.0 为默认，负值反向，0 表示不响应），免重编译微调手感
+    GetEnvDouble("GNX_MAP_AZIMUTH_SENSITIVITY", mAzimuthDragSensitivity);
+    GetEnvDouble("GNX_MAP_PITCH_SENSITIVITY", mPitchDragSensitivity);
+    GetEnvDouble("GNX_MAP_ZOOM_SENSITIVITY", mZoomDragSensitivity);
+    mRenderer->SetDragSensitivity(mAzimuthDragSensitivity, mPitchDragSensitivity, mZoomDragSensitivity);
+
     // 自动化截图
     GetEnvString("GNX_MAP_SCREENSHOT", mScreenshotPath);
     GetEnvInt("GNX_MAP_SCREENSHOT_FRAMES", mScreenshotWaitFrames);
@@ -166,13 +172,15 @@ void MapApplication::ApplyStartupOptions()
         mScreenshotWaitFrames = 1;
     }
 
-    LOG_INFO("启动配置: 面板=%s 方位角=%.6f 度 俯仰角=%.6f 度 距离=%.3f m 截图=%s 等待帧数=%d",
+    LOG_INFO("启动配置: 面板=%s 方位角=%.6f 度 俯仰角=%.6f 度 距离=%.3f m 截图=%s 等待帧数=%d "
+             "拖拽灵敏度(方位角/俯仰角/缩放)=%.3f/%.3f/%.3f",
              mPanelVisible ? "开" : "关",
              mRenderer->GetAzimuthAngleAtTargetDegrees(),
              mRenderer->GetPitchAngleAtTargetDegrees(),
              mRenderer->GetEyeDistance(),
              mScreenshotPath.empty() ? "(无)" : mScreenshotPath.c_str(),
-             mScreenshotWaitFrames);
+             mScreenshotWaitFrames,
+             mAzimuthDragSensitivity, mPitchDragSensitivity, mZoomDragSensitivity);
 
     mRenderer->LogCameraState("启动");
 }
@@ -210,6 +218,9 @@ void MapApplication::RenderFrame()
         }
     }
 
+    // 拖拽增量逐帧轮询，必须在绘制前更新相机姿态
+    UpdateDragInteraction();
+
     mRenderer->DrawFrame();
 
     UpdateAutomation();
@@ -232,49 +243,43 @@ void MapApplication::OnEvent(GNXEngine::Event& event)
         [this](GNXEngine::MouseButtonPressedEvent& e) { return OnMouseButtonPressed(e); });
     dispatcher.Dispatch<GNXEngine::MouseButtonReleasedEvent>(
         [this](GNXEngine::MouseButtonReleasedEvent& e) { return OnMouseButtonReleased(e); });
-    dispatcher.Dispatch<GNXEngine::MouseMovedEvent>(
-        [this](GNXEngine::MouseMovedEvent& e) { return OnMouseMoved(e); });
+    // 拖拽增量不在这里处理，改由 UpdateDragInteraction 每帧轮询（见头文件说明）
     dispatcher.Dispatch<GNXEngine::MouseScrolledEvent>(
         [this](GNXEngine::MouseScrolledEvent& e) { return OnMouseScrolled(e); });
 }
 
 bool MapApplication::OnMouseButtonPressed(GNXEngine::MouseButtonPressedEvent& event)
 {
-    if (event.GetMouseButton() != GNXEngine::ButtonLeft)
+    const DragMode mode = GetDragModeForButton(event.GetMouseButton());
+    if (mode == DragMode::None)
     {
         return false;
     }
 
+    // 记录拖拽起点，后续增量由 UpdateDragInteraction 轮询得到；
+    // 同一时刻只保留一个拖拽模式（后按下的键生效）
     const mathutil::Vector2f position = GNXEngine::Input::GetMousePosition();
     mLastMouseX = position.x;
     mLastMouseY = position.y;
-    mDragging = true;
+
+    if (mDragMode == DragMode::None && mRenderer)
+    {
+        mRenderer->LogCameraState("拖拽开始");
+    }
+    mDragMode = mode;
     return true;
 }
 
 bool MapApplication::OnMouseButtonReleased(GNXEngine::MouseButtonReleasedEvent& event)
 {
-    if (event.GetMouseButton() != GNXEngine::ButtonLeft)
+    if (mDragMode == DragMode::None || GetDragModeForButton(event.GetMouseButton()) != mDragMode)
     {
         return false;
     }
 
-    if (mDragging)
-    {
-        const mathutil::Vector2f position = GNXEngine::Input::GetMousePosition();
-        PanTo(position.x, position.y);
-    }
-    mDragging = false;
+    // 正常路径的即时响应；释放事件被 UI 吞掉时由 UpdateDragInteraction 兜底
+    EndDrag("拖拽结束");
     return true;
-}
-
-bool MapApplication::OnMouseMoved(GNXEngine::MouseMovedEvent& event)
-{
-    if (mDragging)
-    {
-        PanTo(event.GetX(), event.GetY());
-    }
-    return mDragging;
 }
 
 bool MapApplication::OnMouseScrolled(GNXEngine::MouseScrolledEvent& event)
@@ -286,19 +291,101 @@ bool MapApplication::OnMouseScrolled(GNXEngine::MouseScrolledEvent& event)
     return true;
 }
 
-void MapApplication::PanTo(float x, float y)
+MapApplication::DragMode MapApplication::GetDragModeForButton(GNXEngine::MouseCode button)
 {
-    const GNXEngine::RenderWindowPtr window = GNXEngine::GetRenderWindow();
-    const float dpiScale = window ? window->GetDPIScale() : 1.0f;
-
-    if (mRenderer)
+    switch (button)
     {
-        mRenderer->Pan((mLastMouseX - x) * dpiScale,
-                       (mLastMouseY - y) * dpiScale);
+    case GNXEngine::ButtonLeft:
+        return DragMode::Pan;
+    case GNXEngine::ButtonRight:
+        return DragMode::OrbitZoom;
+    case GNXEngine::ButtonMiddle:
+        return DragMode::Pitch;
+    default:
+        return DragMode::None;
+    }
+}
+
+GNXEngine::MouseCode MapApplication::GetMouseButtonForDragMode(DragMode mode)
+{
+    switch (mode)
+    {
+    case DragMode::Pan:
+        return GNXEngine::ButtonLeft;
+    case DragMode::OrbitZoom:
+        return GNXEngine::ButtonRight;
+    case DragMode::Pitch:
+        return GNXEngine::ButtonMiddle;
+    default:
+        return GNXEngine::ButtonLeft;
+    }
+}
+
+void MapApplication::EndDrag(const char* reason)
+{
+    if (mDragMode == DragMode::None)
+    {
+        return;
     }
 
-    mLastMouseX = x;
-    mLastMouseY = y;
+    mDragMode = DragMode::None;
+    if (mRenderer)
+    {
+        mRenderer->LogCameraState(reason);
+    }
+}
+
+void MapApplication::UpdateDragInteraction()
+{
+    if (!mRenderer || mDragMode == DragMode::None)
+    {
+        return;
+    }
+
+    // 「松开立即停止」：松开事件可能被 UI 吞掉或窗口失焦时丢失，以实时按键状态兜底
+    if (!GNXEngine::Input::IsMouseButtonPressed(GetMouseButtonForDragMode(mDragMode)))
+    {
+        EndDrag("拖拽结束(按键已松开)");
+        return;
+    }
+
+    const mathutil::Vector2f position = GNXEngine::Input::GetMousePosition();
+    const float deltaX = position.x - mLastMouseX;
+    const float deltaY = position.y - mLastMouseY;
+    mLastMouseX = position.x;
+    mLastMouseY = position.y;
+
+    if (deltaX == 0.0f && deltaY == 0.0f)
+    {
+        return;
+    }
+
+    // 光标是逻辑坐标（与 ImGui DisplaySize 同空间），乘 DPI 缩放才是 SetLens 用的帧缓冲像素
+    const GNXEngine::RenderWindowPtr window = GNXEngine::GetRenderWindow();
+    const float dpiScale = window ? window->GetDPIScale() : 1.0f;
+    const double dx = static_cast<double>(deltaX * dpiScale);
+    const double dy = static_cast<double>(deltaY * dpiScale);
+
+    switch (mDragMode)
+    {
+    case DragMode::Pan:
+        // 位移取反作为「屏幕中心偏移」发射线，画面与光标同向移动（跟手）
+        mRenderer->Pan(static_cast<float>(-dx), static_cast<float>(-dy));
+        break;
+
+    case DragMode::OrbitZoom:
+        // 右键：横向改方位角（向右拖 -> 内容逆时针），纵向等比缩放（向下拖 -> 放大）
+        mRenderer->OrbitByDrag(dx, dy, earthcore::CameraDragMode::RightButton);
+        break;
+
+    case DragMode::Pitch:
+        // 中键：纵向改俯仰角（向下拖 -> 向地平线倾斜），横向分量被忽略
+        mRenderer->OrbitByDrag(dx, dy, earthcore::CameraDragMode::MiddleButton);
+        break;
+
+    default:
+        break;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -375,7 +462,15 @@ void MapApplication::BuildImGuiPanel()
         ImGui::TextDisabled("滑块为目标点 ENU 轨道角：正北=0、顺时针为正，垂直下视=0");
         ImGui::TextDisabled("视点处实测角使用视点大地法线，受地球曲率影响与轨道角可不同");
         ImGui::TextDisabled("拖拽滑条时目标点与视线距离保持不变，相机绕目标点旋转");
-        ImGui::TextDisabled("鼠标左键拖拽=平移, 滚轮=缩放");
+        ImGui::Separator();
+        ImGui::Text("鼠标操作（按住期间连续变化，松开即停）");
+        ImGui::BulletText("左键拖拽：平移地球");
+        ImGui::BulletText("右键左右拖：方位角（向右拖 = 画面逆时针旋转）");
+        ImGui::BulletText("右键上下拖：缩放（向下拖放大、向上拖缩小）");
+        ImGui::BulletText("中键上下拖：俯仰角（向下拖向地平线倾斜）");
+        ImGui::BulletText("滚轮：缩放");
+        ImGui::TextDisabled("灵敏度(方位角/俯仰角/缩放) = %.3f / %.3f / %.3f",
+                            mAzimuthDragSensitivity, mPitchDragSensitivity, mZoomDragSensitivity);
     }
     ImGui::End();
 }

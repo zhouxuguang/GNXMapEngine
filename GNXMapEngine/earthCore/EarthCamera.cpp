@@ -238,6 +238,43 @@ void EarthCamera::Pan(float offsetX, float offsetY)
     SetEyeGeodeticTarget(Geodetic3D(geodeticPoint.longitude, geodeticPoint.latitude));
 }
 
+void EarthCamera::OrbitByDrag(double dxPixels, double dyPixels, CameraDragMode mode)
+{
+    if (!std::isfinite(dxPixels) || !std::isfinite(dyPixels))
+    {
+        LOG_ERROR("EarthCamera::OrbitByDrag ignored non-finite pixel delta (dx=%f dy=%f)", dxPixels, dyPixels);
+        return;
+    }
+
+    // 手感只取决于相机自身的 FOV 与视口高度（见 EarthCameraPose）
+    const Vector2i viewSize = GetViewSize();
+    const CameraDragResult drag = EarthCameraPose::ApplyDragToPose(mAzimuthAngle,
+                                                                  mPitchAngle,
+                                                                  mEyeDistance,
+                                                                  dxPixels,
+                                                                  dyPixels,
+                                                                  mode,
+                                                                  static_cast<double>(GetFOV()),
+                                                                  static_cast<double>(viewSize.y),
+                                                                  MIN_EYE_DISTANCE,
+                                                                  mAzimuthDragSensitivity,
+                                                                  mPitchDragSensitivity,
+                                                                  mZoomDragSensitivity);
+
+    // 只写回角度与距离（目标点不变），由 ApplyPose 统一重算视点与视图矩阵
+    mAzimuthAngle = drag.azimuthRad;
+    mPitchAngle = drag.pitchRad;
+    mEyeDistance = drag.distance;
+    ApplyPose();
+}
+
+void EarthCamera::SetDragSensitivity(double azimuthSensitivity, double pitchSensitivity, double zoomSensitivity)
+{
+    mAzimuthDragSensitivity = std::isfinite(azimuthSensitivity) ? azimuthSensitivity : 0.0;
+    mPitchDragSensitivity = std::isfinite(pitchSensitivity) ? pitchSensitivity : 0.0;
+    mZoomDragSensitivity = std::isfinite(zoomSensitivity) ? zoomSensitivity : 0.0;
+}
+
 void EarthCamera::ApplyPose()
 {
     // 角度与距离统一钳制到合法区间

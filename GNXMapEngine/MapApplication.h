@@ -23,11 +23,30 @@ public:
     int GetExitCode() const { return mExitCode; }
 
 private:
+    // 鼠标拖拽模式：按键按下时建立，松开或按键状态失联时清除
+    enum class DragMode
+    {
+        None,
+        Pan,        // 左键：平移地球
+        OrbitZoom,  // 右键：横向改方位角、纵向等比缩放
+        Pitch       // 中键：纵向改俯仰角
+    };
+
     bool OnMouseButtonPressed(GNXEngine::MouseButtonPressedEvent& event);
     bool OnMouseButtonReleased(GNXEngine::MouseButtonReleasedEvent& event);
-    bool OnMouseMoved(GNXEngine::MouseMovedEvent& event);
     bool OnMouseScrolled(GNXEngine::MouseScrolledEvent& event);
-    void PanTo(float x, float y);
+
+    static DragMode GetDragModeForButton(GNXEngine::MouseCode button);
+    static GNXEngine::MouseCode GetMouseButtonForDragMode(DragMode mode);
+
+    // 每帧轮询鼠标增量并分发到位移/旋转/缩放；按键已松开则立即结束拖拽
+    //
+    // 不用 MouseMovedEvent 取增量：ImGui 在光标悬停面板时会吞掉移动事件（丢增量造成跳变），
+    // 松开事件被吞还会让拖拽卡死，故状态由事件建立、增量在这里轮询。
+    void UpdateDragInteraction();
+
+    // 结束拖拽并记录一次相机状态
+    void EndDrag(const char* reason);
 
     // 构建 ImGui 数值面板（方位角/俯仰角/距离与实时读数）
     void BuildImGuiPanel();
@@ -41,9 +60,13 @@ private:
     std::unique_ptr<MapRenderer> mRenderer;
     float mLastMouseX = 0.0f;
     float mLastMouseY = 0.0f;
-    bool mDragging = false;
+    DragMode mDragMode = DragMode::None;
 
     // ---- 启动配置 / 自动化 ----
+    // 拖拽灵敏度（1.0 为默认手感；负值反向；0 表示该维度不响应）
+    double mAzimuthDragSensitivity = 1.0;   // GNX_MAP_AZIMUTH_SENSITIVITY
+    double mPitchDragSensitivity = 1.0;     // GNX_MAP_PITCH_SENSITIVITY
+    double mZoomDragSensitivity = 1.0;      // GNX_MAP_ZOOM_SENSITIVITY
     bool mPanelVisible = true;          // 面板是否显示（GNX_MAP_PANEL）
     std::string mScreenshotPath;        // GNX_MAP_SCREENSHOT：非空则开启自动化截图
     int mScreenshotWaitFrames = 120;    // GNX_MAP_SCREENSHOT_FRAMES：截图前等待的帧数

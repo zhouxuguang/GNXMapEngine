@@ -109,6 +109,18 @@ public:
     // 平移地球：offsetX, offsetY 是屏幕坐标增量
     void Pan(float offsetX, float offsetY);
 
+    // 鼠标拖拽改变姿态（目标点不变，相机绕目标点旋转/推拉），映射规则见 EarthCameraPose::ApplyDragToPose。
+    // dxPixels/dyPixels 必须是屏幕「物理像素」增量（逻辑坐标需先乘窗口 DPIScale），
+    // 手感由相机 FOV 与视口高度决定。只触发一次 ApplyPose。
+    void OrbitByDrag(double dxPixels, double dyPixels, CameraDragMode mode);
+
+    // 拖拽灵敏度（1.0 为默认手感，负值反向，非有限值按 0）
+    void SetDragSensitivity(double azimuthSensitivity, double pitchSensitivity, double zoomSensitivity);
+
+    double GetAzimuthDragSensitivity() const { return mAzimuthDragSensitivity; }
+    double GetPitchDragSensitivity() const { return mPitchDragSensitivity; }
+    double GetZoomDragSensitivity() const { return mZoomDragSensitivity; }
+
 private:
     // 唯一的姿态重算入口：把角度/距离钳制到合法区间，由「目标点 + 角度 + 距离」求视点，
     // 刷新视点大地坐标与视图矩阵。所有 setter 最终都汇聚到这里。
@@ -126,6 +138,11 @@ private:
     // 角度状态。约定为「目标点处量测」的值（见文件头说明），保证 set/get 自洽。
     double mAzimuthAngle = 0.0;      // 方位角（弧度）
     double mPitchAngle = 0.0;        // 俯仰角（弧度）
+
+    // 拖拽灵敏度（1.0 为基准手感）
+    double mAzimuthDragSensitivity = 1.0;
+    double mPitchDragSensitivity = 1.0;
+    double mZoomDragSensitivity = 1.0;
 };
 
 using EarthCameraPtr = std::shared_ptr<EarthCamera>;

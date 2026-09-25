@@ -44,6 +44,21 @@ struct EunFrame
     Vector3d ToEun(const Vector3d& vectorInWorld) const;
 };
 
+// 鼠标拖拽模式：右键 = 横向改方位角 + 纵向等比缩放，中键 = 纵向改俯仰角
+enum class CameraDragMode
+{
+    RightButton,
+    MiddleButton
+};
+
+// 拖拽后的相机姿态，三个分量均已规约/钳制到合法区间
+struct CameraDragResult
+{
+    double azimuthRad;   // [0, 2π)
+    double pitchRad;     // [0, π/2]
+    double distance;     // >= minDistance
+};
+
 class EARTH_CORE_EXPORT EarthCameraPose
 {
 public:
@@ -101,6 +116,29 @@ public:
 
     // 俯仰角钳制到 [0, π/2]
     static double ClampPitch(double pitchRad);
+
+    // ==================== 鼠标拖拽 -> 姿态增量 ====================
+
+    // 每像素角度增量（弧度/像素）= 2*tan(fovY/2)/视口高度，只取决于 FOV 与视口高度，
+    // 与视点高度/距离无关（高空低空手感一致）。视口高度非法返回 0，FOV 非法退回 60 度。
+    static double AnglePerPixelRadians(double fovYDegrees, double viewportHeightPixels);
+
+    // 把一帧拖拽增量作用到「方位角/俯仰角/距离」上（目标点不变），纯函数便于无窗口断言。
+    //   RightButton ：dx > 0 向右拖 -> 方位角增大（画面内容逆时针）；dy > 0 向下拖 -> 等比放大
+    //   MiddleButton：dy > 0 向下拖 -> 俯仰角增大（向地平线倾斜）；dx 忽略
+    // 灵敏度 1.0 为基准手感，负值反向，非有限值按 0 处理。
+    static CameraDragResult ApplyDragToPose(double azimuthRad,
+                                            double pitchRad,
+                                            double distance,
+                                            double dxPixels,
+                                            double dyPixels,
+                                            CameraDragMode mode,
+                                            double fovYDegrees,
+                                            double viewportHeightPixels,
+                                            double minDistance,
+                                            double azimuthSensitivity,
+                                            double pitchSensitivity,
+                                            double zoomSensitivity);
 };
 
 EARTH_CORE_NAMESPACE_END
