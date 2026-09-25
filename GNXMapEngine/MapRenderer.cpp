@@ -105,9 +105,140 @@ void MapRenderer::DrawFrame()
     RenderEncoderPtr renderEncoder = commandBuffer->CreateDefaultRenderEncoder();
     
     mSceneManager->Render(renderEncoder);
+
+    // 前向渲染路径下引擎不会自动绘制 UI（只有延迟渲染的 Present Pass 才会），
+    // 这里显式补一次：ImGui 帧由 AppFrameWork 每帧 NewFrame 驱动，面板内容与
+    // ImGui::Render() 由应用层负责。
+    if (RenderSystem::ImGuiRendererPtr imguiRenderer = mSceneManager->PeekImGuiRenderer())
+    {
+        imguiRenderer->Render(renderEncoder);
+    }
     
     renderEncoder->EndEncode();
     commandBuffer->PresentFrameBuffer();
+}
+
+// ==================== 视角控制：方位角 / 俯仰角 ====================
+
+void MapRenderer::SetAzimuthPitchDegrees(double azimuthDegrees, double pitchDegrees)
+{
+    if (!mCameraPtr)
+    {
+        return;
+    }
+
+    mCameraPtr->SetAzimuthPitchDegrees(azimuthDegrees, pitchDegrees);
+}
+
+void MapRenderer::SetEyeDistance(double distance)
+{
+    if (!mCameraPtr)
+    {
+        return;
+    }
+
+    mCameraPtr->SetEyeDistance(distance);
+}
+
+double MapRenderer::GetEyeDistance() const
+{
+    return mCameraPtr ? mCameraPtr->GetEyeDistance() : 0.0;
+}
+
+double MapRenderer::GetAzimuthAngleDegrees() const
+{
+    return mCameraPtr ? mCameraPtr->GetAzimuthAngleDegrees() : 0.0;
+}
+
+double MapRenderer::GetPitchAngleDegrees() const
+{
+    return mCameraPtr ? mCameraPtr->GetPitchAngleDegrees() : 0.0;
+}
+
+double MapRenderer::GetAzimuthAngleAtTargetDegrees() const
+{
+    return mCameraPtr ? mCameraPtr->GetAzimuthAngleAtTargetDegrees() : 0.0;
+}
+
+double MapRenderer::GetPitchAngleAtTargetDegrees() const
+{
+    return mCameraPtr ? mCameraPtr->GetPitchAngleAtTargetDegrees() : 0.0;
+}
+
+void MapRenderer::SetTargetGeodeticDegrees(double longitudeDegrees, double latitudeDegrees, double heightMeters)
+{
+    if (!mCameraPtr)
+    {
+        return;
+    }
+
+    mCameraPtr->SetEyeGeodeticTarget(earthcore::Geodetic3D::FromDegrees(longitudeDegrees, latitudeDegrees, heightMeters));
+}
+
+void MapRenderer::GetEyeGeodeticDegrees(double& longitudeDegrees, double& latitudeDegrees, double& heightMeters) const
+{
+    if (!mCameraPtr)
+    {
+        longitudeDegrees = latitudeDegrees = heightMeters = 0.0;
+        return;
+    }
+
+    const earthcore::Geodetic3D& eye = mCameraPtr->GetEyeGeodetic();
+    longitudeDegrees = earthcore::EarthCameraPose::ToDegrees(eye.Longitude());
+    latitudeDegrees = earthcore::EarthCameraPose::ToDegrees(eye.Latitude());
+    heightMeters = eye.Height();
+}
+
+void MapRenderer::GetTargetGeodeticDegrees(double& longitudeDegrees, double& latitudeDegrees, double& heightMeters) const
+{
+    if (!mCameraPtr)
+    {
+        longitudeDegrees = latitudeDegrees = heightMeters = 0.0;
+        return;
+    }
+
+    const earthcore::Geodetic3D& target = mCameraPtr->GetEyeGeodeticTarget();
+    longitudeDegrees = earthcore::EarthCameraPose::ToDegrees(target.Longitude());
+    latitudeDegrees = earthcore::EarthCameraPose::ToDegrees(target.Latitude());
+    heightMeters = target.Height();
+}
+
+Vector3d MapRenderer::GetViewDirectionInEyeEun() const
+{
+    return mCameraPtr ? mCameraPtr->GetViewDirectionInEyeEun() : Vector3d(0.0, 0.0, -1.0);
+}
+
+Vector3f MapRenderer::GetCameraPosition() const
+{
+    return mCameraPtr ? mCameraPtr->GetPosition() : Vector3f(0.0f, 0.0f, 0.0f);
+}
+
+void MapRenderer::LogCameraState(const char* tag) const
+{
+    if (!mCameraPtr)
+    {
+        return;
+    }
+
+    double eyeLon = 0.0, eyeLat = 0.0, eyeHeight = 0.0;
+    double targetLon = 0.0, targetLat = 0.0, targetHeight = 0.0;
+    GetEyeGeodeticDegrees(eyeLon, eyeLat, eyeHeight);
+    GetTargetGeodeticDegrees(targetLon, targetLat, targetHeight);
+
+    const Vector3d viewInEun = GetViewDirectionInEyeEun();
+
+    LOG_INFO("[%s] 方位角(目标点基准)=%.6f 度 俯仰角(目标点基准)=%.6f 度 | "
+             "方位角(视点基准)=%.6f 度 俯仰角(视点基准)=%.6f 度 | 距离=%.3f m\n"
+             "        视点: 经度=%.6f 纬度=%.6f 高=%.3f\n"
+             "        目标: 经度=%.6f 纬度=%.6f 高=%.3f\n"
+             "        视线(东/北/天)=%.6f / %.6f / %.6f",
+             tag,
+             GetAzimuthAngleAtTargetDegrees(), GetPitchAngleAtTargetDegrees(),
+             GetAzimuthAngleDegrees(), GetPitchAngleDegrees(),
+             GetEyeDistance(),
+             eyeLon, eyeLat, eyeHeight,
+             targetLon, targetLat, targetHeight,
+             viewInEun.x, viewInEun.y, viewInEun.z);
 }
 
 void MapRenderer::BuildEarthNode()

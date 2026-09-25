@@ -75,7 +75,9 @@ add_executable(GNXMapEngine ${PROJECT_SOURCES})
 SETUP_GROUPS("${PROJECT_SOURCES}")
 
 add_subdirectory(../GNXEngine engine)
-target_link_libraries(GNXMapEngine PRIVATE GNXEngine)
+# imgui_headers 只提供头文件；ImGui 符号从 GNXEngine 共享库导入。
+# 不要直接链接 imgui 静态库，否则进程内会出现第二份 GImGui 上下文。
+target_link_libraries(GNXMapEngine PRIVATE GNXEngine imgui_headers)
 
 set_target_properties(GNXMapEngine PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER com.gnxengine.map
