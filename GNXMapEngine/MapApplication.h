@@ -57,10 +57,33 @@ private:
     // 自动化：等待若干帧让瓦片加载完成后截图并退出
     void UpdateAutomation();
 
+    // 读取 GNX_MAP_ANIM_* 配置。
+    void ApplyCameraAnimationOptions();
+
+    // 绘制前按帧号更新相机。
+    void UpdateCameraAnimation();
+
     std::unique_ptr<MapRenderer> mRenderer;
     float mLastMouseX = 0.0f;
     float mLastMouseY = 0.0f;
     DragMode mDragMode = DragMode::None;
+
+    // 环境变量驱动的相机动画与抓图。
+    struct CameraAnimation
+    {
+        std::string outputDir;          // GNX_MAP_ANIM_DIR（非空即启用）
+        int totalFrames = 180;          // GNX_MAP_ANIM_FRAMES
+        int captureEvery = 10;          // GNX_MAP_ANIM_CAPTURE_EVERY
+        double fromDistance = 0.0;      // GNX_MAP_ANIM_FROM_DISTANCE
+        double toDistance = 0.0;        // GNX_MAP_ANIM_TO_DISTANCE
+        double fromAzimuth = 0.0;       // GNX_MAP_ANIM_FROM_AZIMUTH
+        double toAzimuth = 0.0;         // GNX_MAP_ANIM_TO_AZIMUTH
+        double fromPitch = 0.0;         // GNX_MAP_ANIM_FROM_PITCH
+        double toPitch = 0.0;           // GNX_MAP_ANIM_TO_PITCH
+        int capturedCount = 0;
+        bool enabled = false;
+    };
+    CameraAnimation mAnim;
 
     // ---- 启动配置 / 自动化 ----
     // 拖拽灵敏度（1.0 为默认手感；负值反向；0 表示该维度不响应）

@@ -1,5 +1,6 @@
 #include "MapApplication.h"
 #include "MapRenderer.h"
+#include "earthCore/QuadTree.h"
 #include "Runtime/GNXEngine/include/Input.h"
 #include "Runtime/GNXEngine/include/RenderWindow.h"
 #include "Runtime/BaseLib/include/LogService.h"
@@ -8,6 +9,7 @@
 
 #include <cstdlib>
 #include <cmath>
+#include <cstdio>
 #include <string>
 
 namespace
@@ -183,6 +185,92 @@ void MapApplication::ApplyStartupOptions()
              mAzimuthDragSensitivity, mPitchDragSensitivity, mZoomDragSensitivity);
 
     mRenderer->LogCameraState("启动");
+
+    ApplyCameraAnimationOptions();
+}
+
+void MapApplication::ApplyCameraAnimationOptions()
+{
+    if (!mRenderer || !GetEnvString("GNX_MAP_ANIM_DIR", mAnim.outputDir))
+    {
+        return;
+    }
+
+    mAnim.enabled = true;
+
+    GetEnvInt("GNX_MAP_ANIM_FRAMES", mAnim.totalFrames);
+    GetEnvInt("GNX_MAP_ANIM_CAPTURE_EVERY", mAnim.captureEvery);
+    if (mAnim.totalFrames < 1)
+    {
+        mAnim.totalFrames = 1;
+    }
+    if (mAnim.captureEvery < 1)
+    {
+        mAnim.captureEvery = 1;
+    }
+
+    // 未设置的端点沿用当前相机状态。
+    const double currentDistance = mRenderer->GetEyeDistance();
+    const double currentAzimuth = mRenderer->GetAzimuthAngleAtTargetDegrees();
+    const double currentPitch = mRenderer->GetPitchAngleAtTargetDegrees();
+
+    mAnim.fromDistance = currentDistance;
+    mAnim.toDistance = currentDistance;
+    mAnim.fromAzimuth = currentAzimuth;
+    mAnim.toAzimuth = currentAzimuth;
+    mAnim.fromPitch = currentPitch;
+    mAnim.toPitch = currentPitch;
+
+    GetEnvDouble("GNX_MAP_ANIM_FROM_DISTANCE", mAnim.fromDistance);
+    GetEnvDouble("GNX_MAP_ANIM_TO_DISTANCE", mAnim.toDistance);
+    GetEnvDouble("GNX_MAP_ANIM_FROM_AZIMUTH", mAnim.fromAzimuth);
+    GetEnvDouble("GNX_MAP_ANIM_TO_AZIMUTH", mAnim.toAzimuth);
+    GetEnvDouble("GNX_MAP_ANIM_FROM_PITCH", mAnim.fromPitch);
+    GetEnvDouble("GNX_MAP_ANIM_TO_PITCH", mAnim.toPitch);
+
+    if (mAnim.toDistance <= 0.0)
+    {
+        mAnim.toDistance = mAnim.fromDistance;
+    }
+    if (mAnim.fromDistance <= 0.0 || mAnim.toDistance <= 0.0)
+    {
+        LOG_ERROR("相机动画距离非法，已关闭动画自动化");
+        mAnim.enabled = false;
+        return;
+    }
+
+    // 第一帧使用动画起点。
+    mRenderer->SetAzimuthPitchDegrees(mAnim.fromAzimuth, mAnim.fromPitch);
+    mRenderer->SetEyeDistance(mAnim.fromDistance);
+
+    LOG_INFO("相机动画开启: %d 帧, 每 %d 帧抓一张, 输出目录=%s\n"
+             "        距离 %.1f -> %.1f m\n"
+             "        方位角 %.3f -> %.3f 度\n"
+             "        俯仰角 %.3f -> %.3f 度",
+             mAnim.totalFrames, mAnim.captureEvery, mAnim.outputDir.c_str(),
+             mAnim.fromDistance, mAnim.toDistance,
+             mAnim.fromAzimuth, mAnim.toAzimuth,
+             mAnim.fromPitch, mAnim.toPitch);
+}
+
+void MapApplication::UpdateCameraAnimation()
+{
+    if (!mAnim.enabled || !mRenderer)
+    {
+        return;
+    }
+
+    // 按帧号推进，保证抓图可复现。
+    const double t = mAnim.totalFrames == 1 ? 1.0
+        : std::min(1.0, static_cast<double>(mFrameIndex - 1) / static_cast<double>(mAnim.totalFrames - 1));
+
+    // 距离几何插值，角度线性插值。
+    const double distance = mAnim.fromDistance * std::pow(mAnim.toDistance / mAnim.fromDistance, t);
+    const double azimuth = mAnim.fromAzimuth + (mAnim.toAzimuth - mAnim.fromAzimuth) * t;
+    const double pitch = mAnim.fromPitch + (mAnim.toPitch - mAnim.fromPitch) * t;
+
+    mRenderer->SetAzimuthPitchDegrees(azimuth, pitch);
+    mRenderer->SetEyeDistance(distance);
 }
 
 void MapApplication::Resize(uint32_t width, uint32_t height)
@@ -201,6 +289,9 @@ void MapApplication::RenderFrame()
         return;
     }
 
+    // 帧号从 1 开始，在绘制前递增。
+    ++mFrameIndex;
+
     // 框架每帧只调用 ImGui::NewFrame()，面板内容与 ImGui::Render() 由应用负责。
     // 即使不显示面板也必须结束帧，否则下一帧 NewFrame() 会断言失败。
     if (IsImGuiEnabled())
@@ -217,6 +308,9 @@ void MapApplication::RenderFrame()
             }
         }
     }
+
+    // 动画先于拖拽更新。
+    UpdateCameraAnimation();
 
     // 拖拽增量逐帧轮询，必须在绘制前更新相机姿态
     UpdateDragInteraction();
@@ -480,7 +574,42 @@ void MapApplication::BuildImGuiPanel()
 // ---------------------------------------------------------------------------
 void MapApplication::UpdateAutomation()
 {
-    ++mFrameIndex;
+    // 动画期间定期抓图，结束后退出。
+    if (mAnim.enabled)
+    {
+        if (mFrameIndex == 1 || mFrameIndex % mAnim.captureEvery == 0)
+        {
+            char filePath[1024] = {0};
+            snprintf(filePath, sizeof(filePath), "%s/anim_%05d.png",
+                     mAnim.outputDir.c_str(), mFrameIndex);
+            const earthcore::QuadTreeStats& qts = earthcore::GetQuadTreeStats();
+            LOG_INFO("[四叉树] frame=%d splits=%llu merges=%llu created=%llu destroyed=%llu requests=%llu results=%llu empty=%llu",
+                     mFrameIndex, qts.splits, qts.merges, qts.nodesCreated,
+                     qts.nodesDestroyed, qts.requests, qts.results, qts.emptyResults);
+
+            mRenderer->LogCameraState("动画抓图");
+            if (mRenderer->SaveScreenshot(filePath))
+            {
+                ++mAnim.capturedCount;
+            }
+            else
+            {
+                mExitCode = 2;
+                LOG_ERROR("相机动画抓图失败: %s", filePath);
+            }
+        }
+
+        if (mFrameIndex >= mAnim.totalFrames)
+        {
+            LOG_INFO("相机动画完成: 共 %d 帧, 抓图 %d 张 -> %s",
+                     mFrameIndex, mAnim.capturedCount, mAnim.outputDir.c_str());
+            if (GNXEngine::RenderWindowPtr window = GNXEngine::GetRenderWindow())
+            {
+                window->RequestClose();
+            }
+        }
+        return;
+    }
 
     if (mScreenshotPath.empty() || mScreenshotAttempted)
     {
