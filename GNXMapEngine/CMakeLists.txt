@@ -116,6 +116,7 @@ if(GNX_MAP_BUILD_TESTS)
         earthCore/Geodetic3D.cpp
         earthCore/GeoTransform.h
         earthCore/GeoTransform.cpp
+        earthCore/IntersectionTests.cpp
     )
 
     target_include_directories(TestEarthCameraAngles PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

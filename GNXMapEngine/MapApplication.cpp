@@ -227,6 +227,8 @@ void MapApplication::ApplyCameraAnimationOptions()
     GetEnvDouble("GNX_MAP_ANIM_TO_AZIMUTH", mAnim.toAzimuth);
     GetEnvDouble("GNX_MAP_ANIM_FROM_PITCH", mAnim.fromPitch);
     GetEnvDouble("GNX_MAP_ANIM_TO_PITCH", mAnim.toPitch);
+    GetEnvDouble("GNX_MAP_ANIM_PAN_X", mAnim.panXPerFrame);
+    GetEnvDouble("GNX_MAP_ANIM_PAN_Y", mAnim.panYPerFrame);
 
     if (mAnim.toDistance <= 0.0)
     {
@@ -246,11 +248,11 @@ void MapApplication::ApplyCameraAnimationOptions()
     LOG_INFO("相机动画开启: %d 帧, 每 %d 帧抓一张, 输出目录=%s\n"
              "        距离 %.1f -> %.1f m\n"
              "        方位角 %.3f -> %.3f 度\n"
-             "        俯仰角 %.3f -> %.3f 度",
+             "        俯仰角 %.3f -> %.3f 度, 每帧平移 (%.2f, %.2f) px",
              mAnim.totalFrames, mAnim.captureEvery, mAnim.outputDir.c_str(),
              mAnim.fromDistance, mAnim.toDistance,
              mAnim.fromAzimuth, mAnim.toAzimuth,
-             mAnim.fromPitch, mAnim.toPitch);
+             mAnim.fromPitch, mAnim.toPitch, mAnim.panXPerFrame, mAnim.panYPerFrame);
 }
 
 void MapApplication::UpdateCameraAnimation()
@@ -269,8 +271,17 @@ void MapApplication::UpdateCameraAnimation()
     const double azimuth = mAnim.fromAzimuth + (mAnim.toAzimuth - mAnim.fromAzimuth) * t;
     const double pitch = mAnim.fromPitch + (mAnim.toPitch - mAnim.fromPitch) * t;
 
-    mRenderer->SetAzimuthPitchDegrees(azimuth, pitch);
+    const bool panning = mAnim.panXPerFrame != 0.0 || mAnim.panYPerFrame != 0.0;
+    if (!panning)
+    {
+        mRenderer->SetAzimuthPitchDegrees(azimuth, pitch);
+    }
     mRenderer->SetEyeDistance(distance);
+    if (panning && mFrameIndex > 1)
+    {
+        mRenderer->Pan(static_cast<float>(mAnim.panXPerFrame),
+                       static_cast<float>(mAnim.panYPerFrame));
+    }
 }
 
 void MapApplication::Resize(uint32_t width, uint32_t height)

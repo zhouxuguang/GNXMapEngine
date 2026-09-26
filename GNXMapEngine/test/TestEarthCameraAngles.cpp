@@ -543,6 +543,101 @@ namespace
     }
 }
 
+void TestPanAcrossPoles()
+{
+    const Ellipsoid& ellipsoid = Ellipsoid::WGS84;
+    for (int poleSign : {1, -1})
+    {
+        const double startLatitude = poleSign * 89.5;
+        const double startAzimuth = poleSign > 0 ? 0.0 : 180.0;
+        Vector3d target = ellipsoid.CartographicToCartesian(
+            Geodetic3D::FromDegrees(30.0, startLatitude, 0.0));
+        double azimuth = ToRad(startAzimuth);
+        bool crossed = false;
+        Vector3d previousUp;
+        bool hasPreviousUp = false;
+
+        for (int frame = 0; frame < 90; ++frame)
+        {
+            const Vector3d eye = EarthCameraPose::EyeFromTargetAndAngles(
+                target, ellipsoid, azimuth, 0.0, 200000.0);
+            const Vector3d up = EarthCameraPose::LookUpForLookAt(eye, target, ellipsoid, azimuth);
+            if (hasPreviousUp)
+            {
+                CheckTrue("跨极点画面朝向逐帧连续", up.DotProduct(previousUp) > 0.999);
+            }
+            previousUp = up;
+            hasPreviousUp = true;
+
+            Vector3d nextTarget;
+            double nextAzimuth = 0.0;
+            const bool hit = EarthCameraPose::PanOnEllipsoid(eye, target, ellipsoid, azimuth,
+                0.0, -8.0, 60.0, 2560.0, 1440.0, nextTarget, nextAzimuth);
+            CheckTrue("跨极点平移射线命中椭球", hit);
+            if (!hit)
+            {
+                break;
+            }
+            const Geodetic3D nextGeodetic = ellipsoid.CartesianToCartographic(nextTarget);
+            const double nextLatitude = ToDeg(nextGeodetic.latitude);
+            CheckTrue("目标点逐帧平稳移动", (nextTarget - target).Length() < 5000.0);
+            if (poleSign * nextLatitude < poleSign * ToDeg(ellipsoid.CartesianToCartographic(target).latitude))
+            {
+                crossed = true;
+            }
+            target = nextTarget;
+            azimuth = nextAzimuth;
+        }
+
+        const Geodetic3D endGeodetic = ellipsoid.CartesianToCartographic(target);
+        printf("  %s跨极点: 终点经纬度=(%.6f, %.6f), 方位角=%.6f\n",
+               poleSign > 0 ? "北" : "南", ToDeg(endGeodetic.longitude),
+               ToDeg(endGeodetic.latitude), ToDeg(azimuth));
+        CheckTrue("平移越过极点", crossed);
+        CheckNear("跨极点后方位角翻转 180 度", ToDeg(azimuth),
+                  poleSign > 0 ? 180.0 : 0.0, 0.01, "度");
+
+        const Vector3d nearPole = ellipsoid.CartographicToCartesian(
+            Geodetic3D::FromDegrees(30.0, poleSign * 89.99999, 0.0));
+        const double nearAzimuth = ToRad(startAzimuth);
+        const Vector3d nearEye = EarthCameraPose::EyeFromTargetAndAngles(
+            nearPole, ellipsoid, nearAzimuth, 0.0, 200000.0);
+        Vector3d afterPole;
+        double afterAzimuth = 0.0;
+        const bool moved = EarthCameraPose::PanOnEllipsoid(
+            nearEye, nearPole, ellipsoid, nearAzimuth,
+            0.0, -0.1, 60.0, 2560.0, 1440.0, afterPole, afterAzimuth);
+        CheckTrue("极点附近微小拖拽仍能越极点", moved);
+        if (moved)
+        {
+            const Vector3d oldUp = EarthCameraPose::LookUpForLookAt(
+                nearEye, nearPole, ellipsoid, nearAzimuth);
+            const Vector3d newEye = EarthCameraPose::EyeFromTargetAndAngles(
+                afterPole, ellipsoid, afterAzimuth, 0.0, 200000.0);
+            const Vector3d newUp = EarthCameraPose::LookUpForLookAt(
+                newEye, afterPole, ellipsoid, afterAzimuth);
+            CheckTrue("极点附近微小拖拽不旋转画面", oldUp.DotProduct(newUp) > 0.999999);
+            CheckNear("极点附近跨越后方位角", ToDeg(afterAzimuth),
+                      poleSign > 0 ? 180.0 : 0.0, 0.01, "度");
+        }
+
+        const Vector3d oppositeSide = ellipsoid.CartographicToCartesian(
+            Geodetic3D::FromDegrees(-150.0, poleSign * 89.99999, 0.0));
+        const double tiltedPitch = ToRad(45.0);
+        const double tiltedAzimuth = EarthCameraPose::TransportAzimuth(
+            nearPole, oppositeSide, ellipsoid, nearAzimuth);
+        const Vector3d tiltedOldEye = EarthCameraPose::EyeFromTargetAndAngles(
+            nearPole, ellipsoid, nearAzimuth, tiltedPitch, 200000.0);
+        const Vector3d tiltedNewEye = EarthCameraPose::EyeFromTargetAndAngles(
+            oppositeSide, ellipsoid, tiltedAzimuth, tiltedPitch, 200000.0);
+        const Vector3d tiltedOldUp = EarthCameraPose::LookUpForLookAt(
+            tiltedOldEye, nearPole, ellipsoid, nearAzimuth);
+        const Vector3d tiltedNewUp = EarthCameraPose::LookUpForLookAt(
+            tiltedNewEye, oppositeSide, ellipsoid, tiltedAzimuth);
+        CheckTrue("倾斜视角跨极点朝向连续", tiltedOldUp.DotProduct(tiltedNewUp) > 0.999999);
+    }
+}
+
 int main()
 {
     printf("==================== EarthCamera 方位角/俯仰角 数值验证 ====================\n");
@@ -553,6 +648,7 @@ int main()
     TestUserExample();
     TestNormalizeAndClamp();
     TestDragMapping();
+    TestPanAcrossPoles();
 
     printf("\n==================== 结果 ====================\n");
     printf("检查项: %d, 失败: %d\n", gCheckCount, gFailureCount);

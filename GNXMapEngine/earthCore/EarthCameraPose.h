@@ -117,6 +117,25 @@ public:
     // 俯仰角钳制到 [0, π/2]
     static double ClampPitch(double pitchRad);
 
+    // 沿椭球平移目标点时，平行移动屏幕朝向，避免极点处局部北向翻转。
+    static double TransportAzimuth(const Vector3d& oldTargetPos,
+                                   const Vector3d& newTargetPos,
+                                   const Ellipsoid& ellipsoid,
+                                   double azimuthRad);
+
+    // 以屏幕中心偏移处的射线选取新目标点，并同步更新方位角。
+    static bool PanOnEllipsoid(const Vector3d& eyePos,
+                               const Vector3d& targetPos,
+                               const Ellipsoid& ellipsoid,
+                               double azimuthRad,
+                               double offsetX,
+                               double offsetY,
+                               double fovYDegrees,
+                               double viewportWidth,
+                               double viewportHeight,
+                               Vector3d& outTargetPos,
+                               double& outAzimuthRad);
+
     // ==================== 鼠标拖拽 -> 姿态增量 ====================
 
     // 每像素角度增量（弧度/像素）= 2*tan(fovY/2)/视口高度，只取决于 FOV 与视口高度，

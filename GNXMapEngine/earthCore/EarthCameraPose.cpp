@@ -6,6 +6,7 @@
 //
 
 #include "EarthCameraPose.h"
+#include "IntersectionTests.h"
 
 #include <algorithm>
 #include <cmath>
@@ -66,8 +67,8 @@ EunFrame EarthCameraPose::BuildEunFrame(const Vector3d& origin, const Ellipsoid&
     Vector3d east = Vector3d(-origin.y, origin.x, 0.0);
     if (east.LengthSq() < Epsilon14)
     {
-        // 极点附近退化
-        east = Vector3d(1.0, 0.0, 0.0);
+        // 极点处沿用经度定义的东向，避免坐标轴突变。
+        east = Vector3d(-sin(geodetic.longitude), cos(geodetic.longitude), 0.0);
     }
     east.Normalize();
 
@@ -215,6 +216,73 @@ double EarthCameraPose::ClampPitch(double pitchRad)
         return 0.0;
     }
     return Clamp(pitchRad, 0.0, kHalfPi);
+}
+
+double EarthCameraPose::TransportAzimuth(const Vector3d& oldTargetPos,
+                                         const Vector3d& newTargetPos,
+                                         const Ellipsoid& ellipsoid,
+                                         double azimuthRad)
+{
+    const EunFrame oldFrame = BuildEunFrame(oldTargetPos, ellipsoid);
+    const EunFrame newFrame = BuildEunFrame(newTargetPos, ellipsoid);
+    const Vector3d heading = cos(azimuthRad) * oldFrame.north + sin(azimuthRad) * oldFrame.east;
+
+    // 将旧法线最短旋转到新法线，并把朝向带到新切平面。
+    const Vector3d axis = Vector3d::CrossProduct(oldFrame.up, newFrame.up);
+    const double cosine = std::clamp(oldFrame.up.DotProduct(newFrame.up), -1.0, 1.0);
+    if (cosine < -1.0 + 1e-12)
+    {
+        return NormalizeAzimuth(azimuthRad);
+    }
+    const Vector3d rotated = heading + Vector3d::CrossProduct(axis, heading)
+        + Vector3d::CrossProduct(axis, Vector3d::CrossProduct(axis, heading)) / (1.0 + cosine);
+    return NormalizeAzimuth(atan2(rotated.DotProduct(newFrame.east),
+                                   rotated.DotProduct(newFrame.north)));
+}
+
+bool EarthCameraPose::PanOnEllipsoid(const Vector3d& eyePos,
+                                     const Vector3d& targetPos,
+                                     const Ellipsoid& ellipsoid,
+                                     double azimuthRad,
+                                     double offsetX,
+                                     double offsetY,
+                                     double fovYDegrees,
+                                     double viewportWidth,
+                                     double viewportHeight,
+                                     Vector3d& outTargetPos,
+                                     double& outAzimuthRad)
+{
+    if (!std::isfinite(offsetX) || !std::isfinite(offsetY) || viewportWidth <= 0.0 ||
+        viewportHeight <= 0.0 || !std::isfinite(fovYDegrees) ||
+        fovYDegrees <= 0.0 || fovYDegrees >= 180.0)
+    {
+        return false;
+    }
+
+    Vector3d forward = targetPos - eyePos;
+    if (forward.LengthSq() < Epsilon14)
+    {
+        return false;
+    }
+    forward.Normalize();
+    const Vector3d up = LookUpForLookAt(eyePos, targetPos, ellipsoid, azimuthRad);
+    Vector3d right = Vector3d::CrossProduct(forward, up);
+    right.Normalize();
+    const double tanHalfFov = tan(ToRadians(fovYDegrees) * 0.5);
+    Vector3d direction = forward
+        + right * (2.0 * offsetX / viewportHeight * tanHalfFov)
+        - up * (2.0 * offsetY / viewportHeight * tanHalfFov);
+    direction.Normalize();
+
+    Vector3d intersection;
+    if (!IntersectionTests::RayEllipsoid(Rayd(eyePos, direction), ellipsoid, intersection))
+    {
+        return false;
+    }
+
+    outTargetPos = intersection;
+    outAzimuthRad = TransportAzimuth(targetPos, intersection, ellipsoid, azimuthRad);
+    return true;
 }
 
 double EarthCameraPose::AnglePerPixelRadians(double fovYDegrees, double viewportHeightPixels)

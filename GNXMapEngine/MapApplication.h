@@ -80,6 +80,8 @@ private:
         double toAzimuth = 0.0;         // GNX_MAP_ANIM_TO_AZIMUTH
         double fromPitch = 0.0;         // GNX_MAP_ANIM_FROM_PITCH
         double toPitch = 0.0;           // GNX_MAP_ANIM_TO_PITCH
+        double panXPerFrame = 0.0;       // GNX_MAP_ANIM_PAN_X
+        double panYPerFrame = 0.0;       // GNX_MAP_ANIM_PAN_Y
         int capturedCount = 0;
         bool enabled = false;
     };

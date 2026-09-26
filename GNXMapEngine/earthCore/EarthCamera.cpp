@@ -218,24 +218,19 @@ void EarthCamera::Zoom(double deltaDistance)
 
 void EarthCamera::Pan(float offsetX, float offsetY)
 {
-    const float centerX = static_cast<float>(mWidth) / 2.0f;
-    const float centerY = static_cast<float>(mHeight) / 2.0f;
-
-    // 以屏幕中心加偏移处发出射线，与椭球求交得到新的注视点
-    const Rayf ray = GenerateRay(centerX + offsetX, centerY + offsetY);
-    const Vector3f origin = ray.GetOrigin();
-    const Vector3f direction = ray.GetDirection();
-    const Rayd rayDouble(Vector3d(origin.x, origin.y, origin.z),
-                         Vector3d(direction.x, direction.y, direction.z));
-
-    Vector3d intersectPoint;
-    if (!IntersectionTests::RayEllipsoid(rayDouble, mEllipsoid, intersectPoint))
+    Vector3d newTarget;
+    double newAzimuth = mAzimuthAngle;
+    if (!EarthCameraPose::PanOnEllipsoid(mEyePos, mTargetPos, mEllipsoid, mAzimuthAngle,
+                                         offsetX, offsetY, GetFOV(), mWidth, mHeight,
+                                         newTarget, newAzimuth))
     {
         return;
     }
 
-    const Geodetic3D geodeticPoint = mEllipsoid.CartesianToCartographic(intersectPoint);
-    SetEyeGeodeticTarget(Geodetic3D(geodeticPoint.longitude, geodeticPoint.latitude));
+    mEyeGeodeticTarget = mEllipsoid.CartesianToCartographic(newTarget);
+    mTargetPos = mEllipsoid.CartographicToCartesian(mEyeGeodeticTarget);
+    mAzimuthAngle = newAzimuth;
+    ApplyPose();
 }
 
 void EarthCamera::OrbitByDrag(double dxPixels, double dyPixels, CameraDragMode mode)
