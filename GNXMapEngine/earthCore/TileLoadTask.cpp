@@ -25,10 +25,9 @@ void TileLoadTask::Run()
     }
 
     ObjectBasePtr tileData = layer->ReadTile(tileId);
-    if (tileData)
-    {
-        loadState->SetLoadedData(tileData, layer->GetLayerType() == LayerType::LT_Terrain);
-    }
+
+    // 无数据时也回传空结果，供节点结算任务。
+    loadState->SetLoadedData(tileData, layer->GetLayerType() == LayerType::LT_Terrain);
 }
 
 EARTH_CORE_NAMESPACE_END

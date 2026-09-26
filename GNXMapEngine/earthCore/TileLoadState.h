@@ -15,6 +15,8 @@
 //  因此后台线程只往这里写「纯 CPU 数据」，GPU 资源一律由渲染线程在
 //  QuadNode::Update 中创建。
 //
+//  每个图层任务都返回一个结果；无数据时 data 为空。
+//
 
 #ifndef GNX_MAP_ENGINE_TILE_LOAD_STATE_INCLUDE_JHGDKSFG
 #define GNX_MAP_ENGINE_TILE_LOAD_STATE_INCLUDE_JHGDKSFG
@@ -29,26 +31,27 @@ EARTH_CORE_NAMESPACE_BEGIN
 class TileLoadState
 {
 public:
-    // 后台线程调用：标记瓦片数据已经解码完成
+    // 后台线程写入结果，data 可为空。
     void SetLoadedData(const ObjectBasePtr& data, bool isTerrain)
     {
         baselib::AutoLock lockGuard(mLock);
         mResults.push_back({data, isTerrain});
     }
 
-    // 渲染线程调用：取出数据（只取一次，取走后再调用返回空指针）
-    ObjectBasePtr TakeLoadedData(bool& isTerrain)
+    // 渲染线程取出一个结果；false 表示队列为空。
+    bool TakeLoadedData(ObjectBasePtr& data, bool& isTerrain)
     {
         baselib::AutoLock lockGuard(mLock);
         if (mResults.empty())
         {
-            return nullptr;
+            return false;
         }
 
         Result result = std::move(mResults.front());
         mResults.pop_front();
         isTerrain = result.isTerrain;
-        return std::move(result.data);
+        data = std::move(result.data);
+        return true;
     }
 
 private:

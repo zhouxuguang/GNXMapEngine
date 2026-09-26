@@ -41,6 +41,19 @@ inline bool HasNoFlag(uint32_t flag, uint32_t checkFlag)
 
 class EarthNode;
 
+struct QuadTreeStats
+{
+    uint64_t nodesCreated = 0;
+    uint64_t nodesDestroyed = 0;
+    uint64_t splits = 0;
+    uint64_t merges = 0;
+    uint64_t requests = 0;
+    uint64_t results = 0;
+    uint64_t emptyResults = 0;
+};
+
+QuadTreeStats& GetQuadTreeStats();
+
 // 瓦片四叉树的定义
 class QuadNode
 {
@@ -86,8 +99,15 @@ public:
 	RenderCore::RCTexturePtr mTexture = nullptr;
 	RenderCore::TextureUploadPtr mTextureUpload;
 
+	// DEM 更新后需重建顶点缓冲。
+	bool mGeometryDirty = true;
+
 	// 后台瓦片加载结果（由本节点与加载任务共享持有，后台线程只写 CPU 数据）
 	TileLoadStatePtr mLoadState = std::make_shared<TileLoadState>();
+
+	// 已发任务数与已处理结果数，空结果也计数。
+	uint32_t mPendingLayerTasks = 0;
+	uint32_t mSettledLayerTasks = 0;
 
 	QuadNode(EarthNode* earthNode, QuadNode* parent
 		, const Vector2d& vStart
@@ -118,7 +138,7 @@ public:
 	void ApplyLoadedTileData();
 
 	/**
-	 * 渲染线程：确保顶点/索引缓冲已经创建（未到达 DEM 数据时按平地生成）。
+	 * 有纹理时创建网格；DEM 更新后重建顶点缓冲。
 	 */
 	void EnsureGpuBuffers();
 
@@ -129,12 +149,33 @@ public:
 	 */
 	bool IsGpuReady() const;
 
+	// 所有加载任务是否已有结果。
+	bool IsLoadSettled() const;
+
+	// GPU 就绪且未被剔除。
+	bool IsDrawable() const;
+
+	// 四个子节点均可接替父节点绘制。
+	bool AreChildrenFullyReady() const;
+
 	RenderCore::RCTexturePtr GetTexture() const
 	{
 		return mTexture;
 	}
 
 private:
+	// 更新视锥剔除标记。
+	void UpdateCullFlag(const EarthCameraPtr& camera);
+
+	// 相机距离与瓦片半尺寸之比。
+	double ComputeSplitRatio(const EarthCameraPtr& camera) const;
+
+	// 创建四个子节点。
+	void CreateChildNodes();
+
+	// 合并子节点。
+	void FreeChildNodes();
+
 	EarthNode* mEarthNode = nullptr;
 };
 

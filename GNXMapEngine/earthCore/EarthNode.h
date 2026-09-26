@@ -35,8 +35,10 @@ public:
 
     /**
      * 请求瓦片
+     *
+     * @return 实际创建的图层加载任务数。
      */
-    void RequestTile(QuadNode* node);
+    uint32_t RequestTile(QuadNode* node);
 
     /**
      * 取消瓦片请求

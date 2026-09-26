@@ -84,13 +84,14 @@ void EarthNode::Initialize()
 	mInited = true;
 }
 
-void EarthNode::RequestTile(QuadNode* node)
+uint32_t EarthNode::RequestTile(QuadNode* node)
 {
 	if (!node)
 	{
-		return;
+		return 0;
 	}
 
+	uint32_t createdTaskCount = 0;
 	for (auto& layer : mLayers)
 	{
 		auto task = layer->CreateTask(node, node->mLoadState);
@@ -99,7 +100,11 @@ void EarthNode::RequestTile(QuadNode* node)
 			continue;
 		}
 		mTileLoadPool.Execute(task);
+		++createdTaskCount;
 	}
+
+	GetQuadTreeStats().requests += createdTaskCount;
+	return createdTaskCount;
 }
 
 void EarthNode::CancelRequest(QuadNode* node)

@@ -10,6 +10,12 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
+QuadTreeStats& GetQuadTreeStats()
+{
+    static QuadTreeStats stats;
+    return stats;
+}
+
 /**
  把解码好的瓦片图像创建成 GPU 纹理。
 
@@ -91,6 +97,8 @@ static RenderCore::RCTexture2DPtr CreateTileTexture(const imagecodec::VImage& im
 
 QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStart, const Vector2d& vEnd, uint32_t level, ChildRegion region) : mDemData(Ellipsoid::WGS84)
 {
+	++GetQuadTreeStats().nodesCreated;
+
 	mEarthNode = earthNode;
 	mRegion = region;
 	mParent = parent;
@@ -132,16 +140,14 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	mChildNodes[2] = nullptr;
 	mChildNodes[3] = nullptr;
 
-	// 节点创建时就准备好网格缓冲（此时按平地生成），这样影像瓦片一到达就能
-	// 立即渲染，不会出现「父节点因为已经有子节点而不再绘制、子节点又还没
-	// 生成顶点缓冲」导致的空洞。
-	EnsureGpuBuffers();
-
-	mEarthNode->RequestTile(this);
+	// 有纹理时才创建网格；任务数用于判断加载是否结束。
+	mPendingLayerTasks = mEarthNode->RequestTile(this);
 }
 
 QuadNode::~QuadNode()
 {
+	++GetQuadTreeStats().nodesDestroyed;
+
 	mEarthNode->CancelRequest(this);
 
 	for (int i = 0; i < 4; ++i)
@@ -168,6 +174,10 @@ inline Vector2d QuadNode::GetLonLatRange() const
 	return (mLLEnd - mLLStart);
 }
 
+// 分裂与合并之间留迟滞区，避免阈值附近反复切换。
+static constexpr double kSplitRatio = 1.0;
+static constexpr double kMergeRatio = 1.45;
+
 void QuadNode::Update(const EarthCameraPtr& camera)
 {
 	if (!camera)
@@ -175,116 +185,136 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 		return;
 	}
 
-	// 后台线程加载完成的数据在这里（渲染线程）转成 GPU 资源
+	// 在渲染线程应用加载结果。
 	ApplyLoadedTileData();
 
-	// 保证网格缓冲已经建立：先按当前高度（没有 DEM 数据时为 0，即平地）建一份，
-	// 影像瓦片到达后就能立刻渲染，不会因为等待 DEM 而出现空洞。
-	EnsureGpuBuffers();
-	if (IsGpuReady()) mStatusFlag |= FLAG_RENDER;
-	else mStatusFlag &= ~FLAG_RENDER;
+	// 无影像的节点无需 GPU 网格。
+	if (mTexture != nullptr)
+	{
+		EnsureGpuBuffers();
+	}
 
-	// 判断瓦片和视锥体是否相交，相交的话去掉被裁剪的标记，否则加上被裁剪的标记
-	Frustumd frustum;
+	if (IsGpuReady())
+	{
+		mStatusFlag |= FLAG_RENDER;
+	}
+	else
+	{
+		mStatusFlag &= ~FLAG_RENDER;
+	}
+
+	UpdateCullFlag(camera);
+
+	const bool culled = HasFlag(mStatusFlag, FLAG_HAS_CULL);
+	const double ratio = ComputeSplitRatio(camera);
+
+	// 远处节点释放子树，包括已剔除的节点。
+	if (HasChild() && ratio > kMergeRatio)
+	{
+		FreeChildNodes();
+	}
+
+	// 细化不等待本级影像，允许各级并行加载。
+	if (!HasChild() && !culled && ratio < kSplitRatio)
+	{
+		CreateChildNodes();
+	}
+
+	// 迟滞区内也要更新子节点，及时应用加载结果。
+	for (int i = 0; i < 4; ++i)
+	{
+		if (mChildNodes[i])
+		{
+			mChildNodes[i]->Update(camera);
+		}
+	}
+}
+
+void QuadNode::UpdateCullFlag(const EarthCameraPtr& camera)
+{
 	Matrix4x4d coloMatrix;
 	Matrix4x4f viewProjMat = camera->GetProjectionMatrix() * camera->GetViewMatrix();
-	for (uint16_t i = 0; i < 4; i ++)
+	for (uint16_t i = 0; i < 4; i++)
 	{
 		for (uint16_t j = 0; j < 4; j++)
 		{
 			coloMatrix[i][j] = viewProjMat[i][j];
 		}
 	}
+
+	Frustumd frustum;
 	frustum.InitFrustum(coloMatrix);
-    
-    // test
-    Vector3d midPoint = Ellipsoid::WGS84.CartographicToCartesian(Geodetic3D(110, 23, 0));
-    Sphered sphere(midPoint, 20);
-    if (frustum.IsSphereInFrustum(sphere))
-    {
-        printf("");
-    }
 
- 	if (frustum.IsBoxInFrustum(mBoundingBox))
- 	{
- 		mStatusFlag &= ~FLAG_HAS_CULL;
- 	}
- 	else
- 	{
- 		mStatusFlag |= FLAG_HAS_CULL;
- 	}
-
-	// 相机位置
-	Vector3f eyePosition = camera->GetPosition();
-
-	// 瓦片中心点
-	Vector3d vWCenter = mBoundingBox.center;
-	Vector3d min = mBoundingBox.minimum;
-	Vector3d max = mBoundingBox.maximum;
-
-	Vector3d vWSize = max - min;
-
-	double fSize = vWSize.Length() * 0.5;
-	double distance = (vWCenter - Vector3d(eyePosition.x, eyePosition.y, eyePosition.z)).Length();
-
-	if (distance / fSize < 1 && HasNoFlag(mStatusFlag, FLAG_HAS_CULL))
+	if (frustum.IsBoxInFrustum(mBoundingBox))
 	{
-		if (!HasChild() && HasImage(mStatusFlag))
-		{
-			Vector2d vLlCenter = GetLonLatCenter();
-			Vector2d vLLHalf = GetLonLatRange() * 0.5;
-
-			// 开始分裂出新的瓦片
-
-			mChildNodes[CHILD_LT] = std::make_shared<QuadNode>(mEarthNode, this
-				, Vector2d(vLlCenter.x - vLLHalf.x, vLlCenter.y)
-				, Vector2d(vLlCenter.x, vLlCenter.y + vLLHalf.y)
-				, mTileID.level + 1
-				, CHILD_LT
-			);
-
-			mChildNodes[CHILD_RT] = std::make_shared<QuadNode>(mEarthNode, this
-				, Vector2d(vLlCenter.x, vLlCenter.y)
-				, Vector2d(vLlCenter.x + vLLHalf.x, vLlCenter.y + vLLHalf.y)
-				, mTileID.level + 1
-				, CHILD_RT
-			);
-
-			mChildNodes[CHILD_LB] = std::make_shared<QuadNode>(mEarthNode, this
-				, Vector2d(vLlCenter.x - vLLHalf.x, vLlCenter.y - vLLHalf.y)
-				, Vector2d(vLlCenter.x, vLlCenter.y)
-				, mTileID.level + 1
-				, CHILD_LB
-			);
-
-			mChildNodes[CHILD_RB] = std::make_shared<QuadNode>(mEarthNode, this
-				, Vector2d(vLlCenter.x, vLlCenter.y - vLLHalf.y)
-				, Vector2d(vLlCenter.x + vLLHalf.x, vLlCenter.y)
-				, mTileID.level + 1
-				, CHILD_RB
-			);
-		}
-		else
-		{
-			for (int i = 0; i < 4; ++i)
-			{
-				if (mChildNodes[i] && HasNoFlag(mStatusFlag, FLAG_HAS_CULL))
-				{
-					mChildNodes[i]->Update(camera);
-				}
-				else
-				{
-					mStatusFlag &= FLAG_RENDER;
-				}
-			}
-		}
+		mStatusFlag &= ~FLAG_HAS_CULL;
 	}
-	else if (distance / fSize > 1.45)
+	else
 	{
-		for (int i = 0; i < 4; ++i)
-		{
-			mChildNodes[i] = nullptr;
-		}
+		mStatusFlag |= FLAG_HAS_CULL;
+	}
+}
+
+double QuadNode::ComputeSplitRatio(const EarthCameraPtr& camera) const
+{
+	const Vector3d vWSize = mBoundingBox.maximum - mBoundingBox.minimum;
+	const double fSize = vWSize.Length() * 0.5;
+	if (fSize <= 0.0)
+	{
+		return 1.0e30;
+	}
+
+	const Vector3f eyePosition = camera->GetPosition();
+	const double distance = (mBoundingBox.center
+		- Vector3d(eyePosition.x, eyePosition.y, eyePosition.z)).Length();
+
+	return distance / fSize;
+}
+
+void QuadNode::CreateChildNodes()
+{
+	++GetQuadTreeStats().splits;
+
+	const Vector2d vLlCenter = GetLonLatCenter();
+	const Vector2d vLLHalf = GetLonLatRange() * 0.5;
+	const uint32_t childLevel = mTileID.level + 1;
+
+	mChildNodes[CHILD_LT] = std::make_shared<QuadNode>(mEarthNode, this
+		, Vector2d(vLlCenter.x - vLLHalf.x, vLlCenter.y)
+		, Vector2d(vLlCenter.x, vLlCenter.y + vLLHalf.y)
+		, childLevel
+		, CHILD_LT
+	);
+
+	mChildNodes[CHILD_RT] = std::make_shared<QuadNode>(mEarthNode, this
+		, Vector2d(vLlCenter.x, vLlCenter.y)
+		, Vector2d(vLlCenter.x + vLLHalf.x, vLlCenter.y + vLLHalf.y)
+		, childLevel
+		, CHILD_RT
+	);
+
+	mChildNodes[CHILD_LB] = std::make_shared<QuadNode>(mEarthNode, this
+		, Vector2d(vLlCenter.x - vLLHalf.x, vLlCenter.y - vLLHalf.y)
+		, Vector2d(vLlCenter.x, vLlCenter.y)
+		, childLevel
+		, CHILD_LB
+	);
+
+	mChildNodes[CHILD_RB] = std::make_shared<QuadNode>(mEarthNode, this
+		, Vector2d(vLlCenter.x, vLlCenter.y - vLLHalf.y)
+		, Vector2d(vLlCenter.x + vLLHalf.x, vLlCenter.y)
+		, childLevel
+		, CHILD_RB
+	);
+}
+
+void QuadNode::FreeChildNodes()
+{
+	++GetQuadTreeStats().merges;
+
+	for (int i = 0; i < 4; ++i)
+	{
+		mChildNodes[i] = nullptr;
 	}
 }
 
@@ -292,20 +322,21 @@ void QuadNode::GetRenderableNodes(QuadNodeArray& nodes)
 {
 	if (HasChild())
 	{
-		mChildNodes[0]->GetRenderableNodes(nodes);
-		mChildNodes[1]->GetRenderableNodes(nodes);
-		mChildNodes[2]->GetRenderableNodes(nodes);
-		mChildNodes[3]->GetRenderableNodes(nodes);
-	}
-	else
-	{
-		// IsGpuReady 是硬性前置条件：纹理为空时 shader 会采样到未初始化的
-		// push descriptor，顶点缓冲为空时绘制会读未绑定的顶点缓冲，
-		// 两者在驱动侧都可能直接导致 VK_ERROR_DEVICE_LOST。
-		if (HasFlag(mStatusFlag, FLAG_RENDER) && HasNoFlag(mStatusFlag, FLAG_HAS_CULL) && IsGpuReady())
+		if (AreChildrenFullyReady())
 		{
-			nodes.push_back(this);
+			for (int i = 0; i < 4; ++i)
+			{
+				mChildNodes[i]->GetRenderableNodes(nodes);
+			}
+			return;
 		}
+
+		// 四个子节点未全部就绪时绘制父节点，避免空洞和父子重叠。
+	}
+
+	if (IsDrawable())
+	{
+		nodes.push_back(this);
 	}
 }
 
@@ -321,88 +352,102 @@ bool QuadNode::IsGpuReady() const
 		mTextureUpload->GetStatus() == RenderCore::TextureUploadStatus::Complete;
 }
 
+bool QuadNode::IsLoadSettled() const
+{
+	// 无数据的结果也算已完成。
+	return mSettledLayerTasks >= mPendingLayerTasks;
+}
+
+bool QuadNode::IsDrawable() const
+{
+	return HasFlag(mStatusFlag, FLAG_RENDER) && HasNoFlag(mStatusFlag, FLAG_HAS_CULL) && IsGpuReady();
+}
+
+bool QuadNode::AreChildrenFullyReady() const
+{
+	for (int i = 0; i < 4; ++i)
+	{
+		const QuadNode* child = mChildNodes[i].get();
+		if (child == nullptr || !child->IsGpuReady() || !child->IsLoadSettled())
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 void QuadNode::EnsureGpuBuffers()
 {
-	if (mIndexBuffer != nullptr && mVertexBuffer != nullptr)
-	{
-		return;
-	}
-
 	RenderCore::RenderDevicePtr renderDevice = GetRenderDevice();
 	if (!renderDevice)
 	{
 		return;
 	}
 
-	// 用当前高度生成顶点（DEM 尚未到达时高度为 0）
-	mDemData.FillVertex();
+	if (mIndexBuffer == nullptr || mVertexBuffer == nullptr)
+	{
+		// DEM 未到时先生成平地网格。
+		mDemData.FillVertex();
 
-	mIndexBuffer = renderDevice->CreateIndexBuffer(mDemData.GetFaceData(), mDemData.GetFaceBytes(), RenderCore::StorageModePrivate);
-	mVertexBuffer = renderDevice->CreateVertexBuffer(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
-	mInited = (mVertexBuffer != nullptr) && (mIndexBuffer != nullptr);
+		mIndexBuffer = renderDevice->CreateIndexBuffer(mDemData.GetFaceData(), mDemData.GetFaceBytes(), RenderCore::StorageModePrivate);
+		mVertexBuffer = renderDevice->CreateVertexBuffer(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
+		mInited = (mVertexBuffer != nullptr) && (mIndexBuffer != nullptr);
+		mGeometryDirty = false;
+	}
+	else if (mGeometryDirty)
+	{
+		// DEM 到达后只重建顶点缓冲。
+		mDemData.FillVertex();
+		mVertexBuffer = renderDevice->CreateVertexBuffer(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
+		mGeometryDirty = false;
+	}
 }
 
 void QuadNode::ApplyLoadedTileData()
 {
-	bool isTerrain = false;
-	ObjectBasePtr loadedData = mLoadState->TakeLoadedData(isTerrain);
-	if (!loadedData)
-	{
-		return;
-	}
-
-	TiledImagePtr tiledImage = loadedData->toPtr<TiledImage>();
-	if (!tiledImage)
-	{
-		return;
-	}
-
 	RenderCore::RenderDevicePtr renderDevice = GetRenderDevice();
 	if (!renderDevice)
 	{
 		return;
 	}
 
-	if (isTerrain)
+	ObjectBasePtr loadedData;
+	bool isTerrain = false;
+	while (mLoadState->TakeLoadedData(loadedData, isTerrain))
 	{
-		// 高度数据在渲染线程上转成顶点位置/法线：
-		// 后台线程只持有解码后的数据，避免与渲染线程同时读写 mDemData
-		mDemData.FillHeight(tiledImage->heightData);
-		mDemData.FillVertex();
-		mStatusFlag |= FLAG_HAS_DEM;
+		// 空结果同样计入已完成任务。
+		++mSettledLayerTasks;
+		++GetQuadTreeStats().results;
 
-		if (mIndexBuffer == nullptr)
+		TiledImagePtr tiledImage = loadedData ? loadedData->toPtr<TiledImage>() : nullptr;
+		if (!tiledImage)
 		{
-			EnsureGpuBuffers();
+			++GetQuadTreeStats().emptyResults;
+			continue;
+		}
+
+		if (isTerrain)
+		{
+			// DEM 先写 CPU 数据，网格由 EnsureGpuBuffers 更新。
+			mDemData.FillHeight(tiledImage->heightData);
+			mGeometryDirty = true;
+			mStatusFlag |= FLAG_HAS_DEM;
 		}
 		else
 		{
-			// 用真实高度重建顶点缓冲（索引拓扑不变）。
-			// 旧缓冲由垃圾收集器延迟释放，不会与在飞行的帧冲突。
-			mVertexBuffer = renderDevice->CreateVertexBuffer(mDemData.GetVertData(), mDemData.GetVertBytes(), RenderCore::StorageModePrivate);
+			// 纹理提交到上传队列；凭证完成前不允许绘制。
+			mTexture = CreateTileTexture(tiledImage->image, mTextureUpload);
+			if (mTexture)
+			{
+				mEarthNode->TrackTextureUpload(mTextureUpload);
+				mStatusFlag |= FLAG_HAS_IMAGE;
+			}
+			else
+			{
+				LOG_ERROR("QuadNode::ApplyLoadedTileData: 瓦片 %u/%u/%u 纹理创建失败",
+					mTileID.level, mTileID.x, mTileID.y);
+			}
 		}
-	}
-	else
-	{
-		// 纹理提交到上传队列；凭证完成前不允许绘制。
-		mTexture = CreateTileTexture(tiledImage->image, mTextureUpload);
-		if (mTexture)
-		{
-			mEarthNode->TrackTextureUpload(mTextureUpload);
-			mStatusFlag |= FLAG_HAS_IMAGE;
-		}
-	}
-
-	// 只有 GPU 资源全部就绪才允许进入渲染列表。
-	// 之前的实现由「先到的那个图层」直接置 FLAG_RENDER，导致纹理还没加载完
-	// （或 DEM 还没到）就已经提交绘制，这正是启动/缩放时 device lost 的直接原因。
-	if (IsGpuReady())
-	{
-		mStatusFlag |= FLAG_RENDER;
-	}
-	else
-	{
-		mStatusFlag &= ~FLAG_RENDER;
 	}
 }
 
