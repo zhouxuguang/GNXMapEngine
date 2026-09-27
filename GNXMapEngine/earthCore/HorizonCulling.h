@@ -2,15 +2,16 @@
 #define GNX_MAP_ENGINE_HORIZON_CULLING_H
 
 #include "EarthEngineDefine.h"
+#include "Ellipsoid.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-class Ellipsoid;
 class GlobeRectangle;
 
-// WGS84 椭球面瓦片的精确地平线测试。所有坐标均为地心固定坐标系中的 double。
-// 把椭球缩放为单位球后，表面点 P 从相机 C 可见当且仅当 C·P >= 1。
-// 对经纬度矩形求 C·P 的最大值，因此不会仅因瓦片中心被遮挡而误剔除边缘。
+// Earth-fixed, double-precision ellipsoid horizon culling. The height-aware
+// overload uses Cesium's rectangle horizon point and shrinks the occluder for
+// negative terrain. The zero-height overload retains the analytic surface
+// test for callers that know their geometry lies on the reference ellipsoid.
 class HorizonCulling
 {
 public:
@@ -26,16 +27,26 @@ public:
         double southSin = 0.0;
         double northCos = 1.0;
         double northSin = 0.0;
+        Vector3d occludeePoint;
+        double minimumHeight = 0.0;
+        bool hasHeightEnvelope = false;
+        bool hasOccludeePoint = false;
     };
 
     explicit HorizonCulling(const Ellipsoid& ellipsoid);
 
     TileBounds PrepareTile(const GlobeRectangle& rectangle) const;
+    // Cesium-style horizon point for a known height envelope. The envelope must
+    // cover every mesh that can replace this tile, including future children.
+    TileBounds PrepareTile(const GlobeRectangle& rectangle,
+                           double minimumHeight, double maximumHeight) const;
     void SetCameraPosition(const Vector3d& position);
     bool IsOccluded(const TileBounds& tile) const;
 
 private:
+    Ellipsoid mEllipsoid;
     Vector3d mInverseRadii;
+    Vector3d mCameraPosition;
     Vector3d mCameraScaled;
     double mCameraLongitude = 0.0;
     bool mCameraOutside = false;

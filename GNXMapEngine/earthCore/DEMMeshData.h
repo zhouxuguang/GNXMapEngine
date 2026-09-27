@@ -20,6 +20,16 @@ EARTH_CORE_NAMESPACE_BEGIN
 const uint16_t DEM_WIDTH = 65;
 const uint16_t DEM_HEIGHT = 65;
 
+// The current terrain source stores signed 16-bit samples. Keep the decoder,
+// mesh exaggeration and conservative subtree bounds on the same constants.
+constexpr double DEM_SAMPLE_SCALE = 0.2;
+constexpr double DEM_SAMPLE_OFFSET = -1000.0;
+constexpr double DEM_HEIGHT_EXAGGERATION = 3.0;
+constexpr double DEM_MIN_POSSIBLE_HEIGHT =
+    (-32768.0 * DEM_SAMPLE_SCALE + DEM_SAMPLE_OFFSET) * DEM_HEIGHT_EXAGGERATION - 1.0;
+constexpr double DEM_MAX_POSSIBLE_HEIGHT =
+    (32767.0 * DEM_SAMPLE_SCALE + DEM_SAMPLE_OFFSET) * DEM_HEIGHT_EXAGGERATION + 1.0;
+
 struct Vertex
 {
 	mathutil::Vector3f position;
@@ -231,7 +241,7 @@ public:
 	{
 		for (size_t i = 0;i < mRow * mCol; ++i)
 		{
-			mVertexData.height[i] = pHeightData[i] * 3;
+			mVertexData.height[i] = pHeightData[i] * DEM_HEIGHT_EXAGGERATION;
 		}
 
         mInited = true;

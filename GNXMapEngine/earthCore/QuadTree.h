@@ -78,8 +78,8 @@ public:
 
 	// 瓦片的世界坐标的包围盒
 	std::optional<OrientedBoundingBoxd> mOrientedBoundingBox;
+	std::optional<OrientedBoundingBoxd> mTraversalBoundingBox;
 	AxisAlignedBoxd mBoundingBox;
-	double mMaximumMeshHeight = 0.0;
 	HorizonCulling::TileBounds mHorizonBounds;
 
 	/// 位置区域

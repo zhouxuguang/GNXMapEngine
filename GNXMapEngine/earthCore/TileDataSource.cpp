@@ -137,7 +137,7 @@ ObjectBasePtr TileDataSource::ReadTile(const QuadTileID& tileID)
 			int16_t* pDem = (int16_t*)compressedData;
 			for (size_t i = 0; i < 65 * 65; i++)
 			{
-				pDst[i] = (float(pDem[i]) * 0.2 - 1000);
+				pDst[i] = float(pDem[i]) * DEM_SAMPLE_SCALE + DEM_SAMPLE_OFFSET;
 			}
 
 			// 注意高度图是从上往下排列，这里将高度图反转

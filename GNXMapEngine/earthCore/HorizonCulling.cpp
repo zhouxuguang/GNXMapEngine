@@ -27,7 +27,7 @@ void ScaledLatitude(double geodeticLatitude, double polarOverEquatorial,
 } // namespace
 
 HorizonCulling::HorizonCulling(const Ellipsoid& ellipsoid)
-    : mInverseRadii(ellipsoid.GetOneOverRadii())
+    : mEllipsoid(ellipsoid), mInverseRadii(ellipsoid.GetOneOverRadii())
 {
 }
 
@@ -51,8 +51,69 @@ HorizonCulling::TileBounds HorizonCulling::PrepareTile(const GlobeRectangle& rec
     return tile;
 }
 
+HorizonCulling::TileBounds HorizonCulling::PrepareTile(
+    const GlobeRectangle& rectangle, double minimumHeight, double maximumHeight) const
+{
+    TileBounds tile = PrepareTile(rectangle);
+    tile.minimumHeight = minimumHeight;
+    tile.hasHeightEnvelope = true;
+    const Vector3d radii = mEllipsoid.GetAxis();
+    const double shrink = std::min(0.0, minimumHeight);
+    const Vector3d scaledRadii(radii.x + shrink, radii.y + shrink, radii.z + shrink);
+    if (!std::isfinite(minimumHeight) || !std::isfinite(maximumHeight) ||
+        minimumHeight > maximumHeight || scaledRadii.x <= 0.0 ||
+        scaledRadii.y <= 0.0 || scaledRadii.z <= 0.0)
+        return tile;
+
+    const double centerLongitude = (tile.west + tile.east) * 0.5;
+    const double centerLatitude = (rectangle.getSouth() + rectangle.getNorth()) * 0.5;
+    const Vector3d center = mEllipsoid.CartographicToCartesian(
+        Geodetic3D(centerLongitude, centerLatitude, maximumHeight));
+    Vector3d direction(center.x / scaledRadii.x,
+                       center.y / scaledRadii.y,
+                       center.z / scaledRadii.z);
+    const double directionLength = direction.Length();
+    if (!(directionLength > 0.0) || !std::isfinite(directionLength))
+        return tile;
+    direction = direction / directionLength;
+
+    // Same horizon-point construction as Cesium's
+    // computeHorizonCullingPointPossiblyUnderEllipsoid. For a rectangle, Cesium
+    // uses its four corners at maximum height when a mesh point is unavailable.
+    double largestMagnitude = 0.0;
+    for (const double longitude : {tile.west, tile.east})
+    {
+        for (const double latitude : {rectangle.getSouth(), rectangle.getNorth()})
+        {
+            const Vector3d world = mEllipsoid.CartographicToCartesian(
+                Geodetic3D(longitude, latitude, maximumHeight));
+            const Vector3d point(world.x / scaledRadii.x,
+                                 world.y / scaledRadii.y,
+                                 world.z / scaledRadii.z);
+            const double length = point.Length();
+            if (!(length > 0.0) || !std::isfinite(length))
+                return tile;
+            const double cosAlpha = std::clamp(point.DotProduct(direction) / length, -1.0, 1.0);
+            const double sinAlpha = std::sqrt(std::max(0.0, 1.0 - cosAlpha * cosAlpha));
+            const double adjustedLength = std::max(1.0, length);
+            const double denominator = (cosAlpha -
+                sinAlpha * std::sqrt(adjustedLength * adjustedLength - 1.0)) /
+                adjustedLength;
+            if (!(denominator > 0.0) || !std::isfinite(denominator))
+                return tile;
+            largestMagnitude = std::max(largestMagnitude, 1.0 / denominator);
+        }
+    }
+    if (!std::isfinite(largestMagnitude))
+        return tile;
+    tile.occludeePoint = direction * largestMagnitude;
+    tile.hasOccludeePoint = true;
+    return tile;
+}
+
 void HorizonCulling::SetCameraPosition(const Vector3d& position)
 {
+    mCameraPosition = position;
     mCameraScaled = Vector3d(position.x * mInverseRadii.x,
                              position.y * mInverseRadii.y,
                              position.z * mInverseRadii.z);
@@ -63,6 +124,28 @@ void HorizonCulling::SetCameraPosition(const Vector3d& position)
 
 bool HorizonCulling::IsOccluded(const TileBounds& tile) const
 {
+    if (tile.hasHeightEnvelope && !tile.hasOccludeePoint)
+        return false;
+    if (tile.hasOccludeePoint)
+    {
+        const Vector3d radii = mEllipsoid.GetAxis();
+        const double shrink = std::min(0.0, tile.minimumHeight);
+        const Vector3d camera(mCameraPosition.x / (radii.x + shrink),
+                              mCameraPosition.y / (radii.y + shrink),
+                              mCameraPosition.z / (radii.z + shrink));
+        const double limbSquared = camera.DotProduct(camera) - 1.0;
+        if (!(limbSquared > 0.0) || !std::isfinite(limbSquared))
+            return false;
+        const Vector3d toPoint = tile.occludeePoint - camera;
+        const double distanceSquared = toPoint.DotProduct(toPoint);
+        const double towardCenter = -toPoint.DotProduct(camera);
+        // Cesium's plane and cone checks, with a small tangent safety margin.
+        return distanceSquared > 0.0 &&
+            towardCenter > limbSquared + kVisibilityMargin &&
+            towardCenter * towardCenter / distanceSquared >
+                limbSquared + kVisibilityMargin;
+    }
+
     // 在椭球上或内部时没有有效的切线锥，保守地保留所有瓦片。
     if (!mCameraOutside)
         return false;

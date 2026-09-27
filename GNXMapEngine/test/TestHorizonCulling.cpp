@@ -1,5 +1,6 @@
 #include "earthCore/HorizonCulling.h"
 #include "earthCore/BoundingRegion.h"
+#include "earthCore/DEMMeshData.h"
 #include "earthCore/EarthCameraPose.h"
 #include "earthCore/Ellipsoid.h"
 #include "earthCore/Geodetic3D.h"
@@ -47,6 +48,44 @@ bool SampleVisible(const Ellipsoid& ellipsoid, const Vector3d& eye,
     return firstHit >= 1.0 - 1.0e-10 || firstHit <= 0.0;
 }
 
+bool SampleTerrainVisible(const Ellipsoid& ellipsoid, const Vector3d& eye,
+                          double longitude, double latitude, double height,
+                          double minimumHeight)
+{
+    const Vector3d axes = ellipsoid.GetAxis();
+    const double shrink = std::min(0.0, minimumHeight);
+    const Vector3d world = ellipsoid.CartographicToCartesian(
+        Geodetic3D(longitude, latitude, height));
+    const Vector3d c(eye.x / (axes.x + shrink),
+                     eye.y / (axes.y + shrink),
+                     eye.z / (axes.z + shrink));
+    const Vector3d p(world.x / (axes.x + shrink),
+                     world.y / (axes.y + shrink),
+                     world.z / (axes.z + shrink));
+    const Vector3d v = p - c;
+    const double a = v.DotProduct(v);
+    const double b = 2.0 * c.DotProduct(v);
+    const double discriminant = b * b - 4.0 * a * (c.DotProduct(c) - 1.0);
+    if (discriminant <= 0.0)
+        return true;
+    const double firstHit = (-b - std::sqrt(discriminant)) / (2.0 * a);
+    return firstHit <= 0.0 || firstHit >= 1.0 - 1.0e-10;
+}
+
+bool Contains(const OrientedBoundingBoxd& box, const Vector3d& point)
+{
+    const Vector3d offset = point - box.mCenter;
+    for (int axis = 0; axis < 3; ++axis)
+    {
+        const Vector3d halfAxis = box.mHalfAxes.col(axis);
+        const double length = halfAxis.Length();
+        if (!(length > 0.0) ||
+            std::abs(offset.DotProduct(halfAxis) / length) > length + 1.0)
+            return false;
+    }
+    return true;
+}
+
 struct Counts
 {
     int requested = 0;
@@ -88,14 +127,16 @@ void Visit(const Ellipsoid& ellipsoid, const GlobeRectangle& rectangle, int leve
         (rectangle.getSouth() + rectangle.getNorth()) * 0.5);
     counts.imageFiles += HasTileFile(roots.image, tileId, ".jpg") ? 1 : 0;
     counts.terrainFiles += HasTileFile(roots.terrain, tileId, ".terrain") ? 1 : 0;
-    const BoundingRegion region(rectangle, 0.0, 0.0, ellipsoid);
+    const BoundingRegion region(rectangle, DEM_MIN_POSSIBLE_HEIGHT,
+                                DEM_MAX_POSSIBLE_HEIGHT, ellipsoid);
     const AxisAlignedBoxd box = region.getBoundingBox().ToAxisAligned();
     if (!frustum.IsBoxInFrustum(box))
     {
         ++counts.frustumCulled;
         return;
     }
-    if (enabled && horizon.IsOccluded(horizon.PrepareTile(rectangle)))
+    if (enabled && horizon.IsOccluded(horizon.PrepareTile(rectangle,
+            DEM_MIN_POSSIBLE_HEIGHT, DEM_MAX_POSSIBLE_HEIGHT)))
     {
         ++counts.horizonCulled;
         return;
@@ -225,6 +266,87 @@ int main()
           GlobeRectangle(-M_PI, 85.0 * kRad, M_PI, M_PI_2))));
     Check("south polar tile is hidden", horizon.IsOccluded(horizon.PrepareTile(
           GlobeRectangle(-M_PI, -M_PI_2, M_PI, -85.0 * kRad))));
+
+    // A zero-height tile is hidden here, while its raised or depressed terrain
+    // is visible. The min-height case requires Cesium's shrunken occluder.
+    const Vector3d lowEye = ellipsoid.CartographicToCartesian(
+        Geodetic3D(0.0, 0.0, 1000.0));
+    const GlobeRectangle nearLimb(1.45 * kRad, -0.05 * kRad,
+                                  1.55 * kRad, 0.05 * kRad);
+    horizon.SetCameraPosition(lowEye);
+    Check("zero-height tile is behind horizon",
+          horizon.IsOccluded(horizon.PrepareTile(nearLimb)));
+    Check("raised terrain has a clear line of sight",
+          SampleTerrainVisible(ellipsoid, lowEye, 1.5 * kRad, 0.0, 3000.0, 0.0));
+    Check("raised terrain must not be culled",
+          !horizon.IsOccluded(horizon.PrepareTile(nearLimb, 3000.0, 3000.0)));
+    Check("depressed terrain visible against shrunken ellipsoid",
+          SampleTerrainVisible(ellipsoid, lowEye, 1.5 * kRad, 0.0, -3000.0, -3000.0));
+    Check("depressed terrain must not be culled",
+          !horizon.IsOccluded(horizon.PrepareTile(nearLimb, -3000.0, -3000.0)));
+    Check("unknown descendants retain visible terrain",
+          !horizon.IsOccluded(horizon.PrepareTile(nearLimb,
+              DEM_MIN_POSSIBLE_HEIGHT, DEM_MAX_POSSIBLE_HEIGHT)));
+
+    int visibleTerrainInCulledTile = 0;
+    std::uniform_real_distribution<double> terrainHeight(-6000.0, 8000.0);
+    for (int i = 0; i < 2000; ++i)
+    {
+        const Vector3d eye = ellipsoid.CartographicToCartesian(Geodetic3D(
+            longitude(generator), latitude(generator), altitude(generator)));
+        horizon.SetCameraPosition(eye);
+        const double west = longitude(generator);
+        const double south = latitude(generator);
+        const double east = std::min(M_PI, west + tileSpan(generator));
+        const double north = std::min(M_PI_2, south + tileSpan(generator));
+        const double sampledMinimum = terrainHeight(generator);
+        const double minHeight = i % 2 == 0
+            ? DEM_MIN_POSSIBLE_HEIGHT : sampledMinimum;
+        const double maxHeight = i % 2 == 0
+            ? DEM_MAX_POSSIBLE_HEIGHT
+            : std::max(minHeight, terrainHeight(generator));
+        const GlobeRectangle tile(west, south, east, north);
+        if (!horizon.IsOccluded(horizon.PrepareTile(tile, minHeight, maxHeight)))
+            continue;
+        for (int y = 0; y <= 6; ++y)
+            for (int x = 0; x <= 6; ++x)
+                for (const double height : {minHeight, maxHeight})
+                    if (SampleTerrainVisible(ellipsoid, eye,
+                        west + (east - west) * x / 6.0,
+                        south + (north - south) * y / 6.0,
+                        height, minHeight))
+                        ++visibleTerrainInCulledTile;
+    }
+    Check("2000 random height envelopes: no visible sample in culled tile",
+          visibleTerrainInCulledTile == 0);
+
+    int terrainOutsideTraversalBox = 0;
+    for (int level = 0; level <= 9; ++level)
+    {
+        const double width = M_PI / (1 << level);
+        const double height = M_PI / (1 << level);
+        for (int i = 0; i < 100; ++i)
+        {
+            const double west = -M_PI +
+                std::floor((longitude(generator) + M_PI) / width) * width;
+            const double south = -M_PI_2 +
+                std::floor((latitude(generator) + M_PI_2) / height) * height;
+            const GlobeRectangle tile(west, south, west + width, south + height);
+            const OrientedBoundingBoxd box = BoundingRegion(tile,
+                DEM_MIN_POSSIBLE_HEIGHT, DEM_MAX_POSSIBLE_HEIGHT,
+                ellipsoid).getBoundingBox();
+            for (int y = 0; y <= 4; ++y)
+                for (int x = 0; x <= 4; ++x)
+                    for (const double sampleHeight : {DEM_MIN_POSSIBLE_HEIGHT,
+                                                       0.0, DEM_MAX_POSSIBLE_HEIGHT})
+                        if (!Contains(box, ellipsoid.CartographicToCartesian(
+                            Geodetic3D(west + width * x / 4.0,
+                                       south + height * y / 4.0, sampleHeight))))
+                            ++terrainOutsideTraversalBox;
+        }
+    }
+    Check("terrain envelope OBB contains sampled future meshes",
+          terrainOutsideTraversalBox == 0);
 
     struct Scenario { const char* name; double eyeLon, eyeLat, altitude, targetLon, targetLat; };
     const Scenario cases[] = {

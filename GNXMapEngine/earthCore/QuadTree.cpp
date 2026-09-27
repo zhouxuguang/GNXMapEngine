@@ -136,7 +136,13 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	mOrientedBoundingBox = BoundingRegion::ComputeMeshBoundingBox(
 		globeRec, wgs84, DEM_HEIGHT, DEM_WIDTH, mDemData.GetHeights());
 	mBoundingBox = mOrientedBoundingBox->ToAxisAligned();
-	mHorizonBounds = mEarthNode->GetHorizonCulling().PrepareTile(globeRec);
+	// A parent's decoded DEM does not bound independently encoded child tiles.
+	// Use the complete source-format range for subtree culling until the data
+	// format provides hierarchical min/max metadata, as Cesium terrain does.
+	mTraversalBoundingBox = BoundingRegion(globeRec, DEM_MIN_POSSIBLE_HEIGHT,
+		DEM_MAX_POSSIBLE_HEIGHT, wgs84).getBoundingBox();
+	mHorizonBounds = mEarthNode->GetHorizonCulling().PrepareTile(globeRec,
+		DEM_MIN_POSSIBLE_HEIGHT, DEM_MAX_POSSIBLE_HEIGHT);
 
 	mDemData.SetStartEndGeoCoord(vStart, vEnd);
 	mDemData.FillFace();
@@ -261,10 +267,8 @@ void QuadNode::UpdateCullFlag(const EarthCameraPtr& camera, const HorizonCulling
 	Frustumd frustum;
 	frustum.InitFrustum(coloMatrix);
 
-	const bool inFrustum = frustum.IsOBBInFrustum(*mOrientedBoundingBox);
-	// The horizon test models the zero-height ellipsoid. Raised DEM geometry
-	// can remain visible beyond that surface horizon, so keep such tiles.
-	const bool behindHorizon = inFrustum && horizonCulling && mMaximumMeshHeight <= 0.0 &&
+	const bool inFrustum = frustum.IsOBBInFrustum(*mTraversalBoundingBox);
+	const bool behindHorizon = inFrustum && horizonCulling &&
 		horizonCulling->IsOccluded(mHorizonBounds);
 	if (inFrustum && !behindHorizon)
 	{
@@ -472,8 +476,6 @@ void QuadNode::ApplyLoadedTileData()
 		{
 			// DEM 先写 CPU 数据，网格由 EnsureGpuBuffers 更新。
 			mDemData.FillHeight(tiledImage->heightData);
-			mMaximumMeshHeight = *std::max_element(mDemData.GetHeights(),
-				mDemData.GetHeights() + DEM_WIDTH * DEM_HEIGHT);
 			const GlobeRectangle rectangle(mLLStart.x, mLLStart.y, mLLEnd.x, mLLEnd.y);
 			mOrientedBoundingBox = BoundingRegion::ComputeMeshBoundingBox(
 				rectangle, Ellipsoid::WGS84, DEM_HEIGHT, DEM_WIDTH, mDemData.GetHeights());
