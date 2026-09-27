@@ -48,7 +48,7 @@ private:
     // 结束拖拽并记录一次相机状态
     void EndDrag(const char* reason);
 
-    // 构建 ImGui 数值面板（方位角/俯仰角/距离与实时读数）
+    // 构建 ImGui 信息面板（目标点经纬度与相机距离）
     void BuildImGuiPanel();
 
     // 解析启动配置（环境变量）并应用到相机

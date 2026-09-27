@@ -494,7 +494,7 @@ void MapApplication::UpdateDragInteraction()
 }
 
 // ---------------------------------------------------------------------------
-// ImGui 数值面板：方位角 / 俯仰角 / 距离 的设定与实时读数
+// ImGui 面板：目标点经纬度与相机距离
 // ---------------------------------------------------------------------------
 void MapApplication::BuildImGuiPanel()
 {
@@ -503,79 +503,16 @@ void MapApplication::BuildImGuiPanel()
         return;
     }
 
-    ImGui::SetNextWindowPos(ImVec2(12.0f, 12.0f), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(430.0f, 430.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(12.0f, 12.0f), ImGuiCond_Always);
 
-    if (ImGui::Begin("地球相机：方位角 / 俯仰角", &mPanelVisible))
+    if (ImGui::Begin("相机信息", &mPanelVisible, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("FPS %.1f", ImGui::GetIO().Framerate);
-        ImGui::Separator();
-
-        // ---- 目标点处轨道方位角（0~360，正北为 0、顺时针为正）----
-        float azimuthDegrees = static_cast<float>(mRenderer->GetAzimuthAngleAtTargetDegrees());
-        if (ImGui::SliderFloat("轨道方位角 (度)", &azimuthDegrees, 0.0f, 360.0f, "%.3f"))
-        {
-            mRenderer->SetAzimuthPitchDegrees(azimuthDegrees,
-                                              mRenderer->GetPitchAngleAtTargetDegrees());
-        }
-
-        // ---- 目标点处轨道俯仰角（0~90，垂直下视为 0）----
-        float pitchDegrees = static_cast<float>(mRenderer->GetPitchAngleAtTargetDegrees());
-        if (ImGui::SliderFloat("轨道俯仰角 (度)", &pitchDegrees, 0.0f, 90.0f, "%.3f"))
-        {
-            mRenderer->SetAzimuthPitchDegrees(mRenderer->GetAzimuthAngleAtTargetDegrees(),
-                                              pitchDegrees);
-        }
-
-        // ---- 视线距离 ----
-        float eyeDistance = static_cast<float>(mRenderer->GetEyeDistance());
-        if (ImGui::DragFloat("视线距离 (m)", &eyeDistance, 1000.0f, 20.0f, 1.0e8f, "%.1f",
-                             ImGuiSliderFlags_Logarithmic))
-        {
-            mRenderer->SetEyeDistance(static_cast<double>(eyeDistance));
-        }
-
-        ImGui::Separator();
-        ImGui::Text("实测角度（两套基准）");
-        ImGui::Text("轨道命令值: 方位角 %.6f 度 / 俯仰角 %.6f 度",
-                    mRenderer->GetAzimuthAngleAtTargetDegrees(),
-                    mRenderer->GetPitchAngleAtTargetDegrees());
-        ImGui::Text("视点处  : 方位角 %.6f 度 / 俯仰角 %.6f 度",
-                    mRenderer->GetAzimuthAngleDegrees(),
-                    mRenderer->GetPitchAngleDegrees());
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("视点处量测严格按需求定义（用视点的大地法线）；\n"
-                              "轨道命令值以目标点 ENU 为基准，与上面的滑条一致。\n"
-                              "椭球曲率导致两者存在系统性差异（高空尤为明显）。");
-        }
-
-        ImGui::Separator();
-        double eyeLongitude = 0.0, eyeLatitude = 0.0, eyeHeight = 0.0;
         double targetLongitude = 0.0, targetLatitude = 0.0, targetHeight = 0.0;
-        mRenderer->GetEyeGeodeticDegrees(eyeLongitude, eyeLatitude, eyeHeight);
         mRenderer->GetTargetGeodeticDegrees(targetLongitude, targetLatitude, targetHeight);
 
-        ImGui::Text("视点  : 经 %.6f 度 纬 %.6f 度 高 %.1f m", eyeLongitude, eyeLatitude, eyeHeight);
-        ImGui::Text("目标点: 经 %.6f 度 纬 %.6f 度 高 %.1f m",
-                    targetLongitude, targetLatitude, targetHeight);
-
-        const Vector3d viewInEun = mRenderer->GetViewDirectionInEyeEun();
-        ImGui::Text("视线(东/北/天): %.6f / %.6f / %.6f", viewInEun.x, viewInEun.y, viewInEun.z);
-
-        ImGui::Separator();
-        ImGui::TextDisabled("滑块为目标点 ENU 轨道角：正北=0、顺时针为正，垂直下视=0");
-        ImGui::TextDisabled("视点处实测角使用视点大地法线，受地球曲率影响与轨道角可不同");
-        ImGui::TextDisabled("拖拽滑条时目标点与视线距离保持不变，相机绕目标点旋转");
-        ImGui::Separator();
-        ImGui::Text("鼠标操作（按住期间连续变化，松开即停）");
-        ImGui::BulletText("左键拖拽：平移地球");
-        ImGui::BulletText("右键左右拖：方位角（向右拖 = 画面逆时针旋转）");
-        ImGui::BulletText("右键上下拖：缩放（向下拖放大、向上拖缩小）");
-        ImGui::BulletText("中键上下拖：俯仰角（向下拖向地平线倾斜）");
-        ImGui::BulletText("滚轮：缩放");
-        ImGui::TextDisabled("灵敏度(方位角/俯仰角/缩放) = %.3f / %.3f / %.3f",
-                            mAzimuthDragSensitivity, mPitchDragSensitivity, mZoomDragSensitivity);
+        ImGui::Text("目标点经度: %.6f 度", targetLongitude);
+        ImGui::Text("目标点纬度: %.6f 度", targetLatitude);
+        ImGui::Text("相机距离: %.1f m", mRenderer->GetEyeDistance());
     }
     ImGui::End();
 }
