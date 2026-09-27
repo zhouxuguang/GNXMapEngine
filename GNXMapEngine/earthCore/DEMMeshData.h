@@ -11,6 +11,8 @@
 
 #include "Ellipsoid.h"
 
+#include <algorithm>
+#include <cmath>
 #include <string.h>
 
 EARTH_CORE_NAMESPACE_BEGIN
@@ -71,6 +73,42 @@ public:
     bool IsInited() const
     {
         return mInited;
+    }
+
+    bool SampleHeight(double longitude, double latitude, double& height) const
+    {
+        if (!mInited || !std::isfinite(longitude) || !std::isfinite(latitude) ||
+            longitude < mLLStart.x || longitude > mLLEnd.x ||
+            latitude < mLLStart.y || latitude > mLLEnd.y)
+        {
+            return false;
+        }
+
+        const double x = std::clamp((longitude - mLLStart.x) / (mLLEnd.x - mLLStart.x) * (mCol - 1),
+                                    0.0, double(mCol - 1));
+        const double y = std::clamp((latitude - mLLStart.y) / (mLLEnd.y - mLLStart.y) * (mRow - 1),
+                                    0.0, double(mRow - 1));
+        const int left = int(x);
+        const int bottom = int(y);
+        const int right = std::min(left + 1, int(mCol - 1));
+        const int top = std::min(bottom + 1, int(mRow - 1));
+        const double fx = x - left;
+        const double fy = y - bottom;
+        const float* values = mVertexData.height;
+        const double lowerLeft = values[bottom * mCol + left];
+        const double lowerRight = values[bottom * mCol + right];
+        const double upperLeft = values[top * mCol + left];
+        const double upperRight = values[top * mCol + right];
+        if (fx + fy <= 1.0)
+        {
+            height = lowerLeft * (1.0 - fx - fy) + lowerRight * fx + upperLeft * fy;
+        }
+        else
+        {
+            height = lowerRight * (1.0 - fy) + upperLeft * (1.0 - fx) +
+                     upperRight * (fx + fy - 1.0);
+        }
+        return true;
     }
 
     void SetStartEndGeoCoord(const mathutil::Vector2d& vStart, const mathutil::Vector2d& vEnd)

@@ -131,6 +131,8 @@ public:
 
 	void GetRenderableNodes(QuadNodeArray& nodes);
 
+	bool SampleTerrainHeight(double longitude, double latitude, double& height) const;
+
 	/**
 	 * 渲染线程：把后台线程加载好的瓦片数据转成 GPU 资源。
 	 * 必须在渲染线程调用（创建纹理并提交异步上传）。

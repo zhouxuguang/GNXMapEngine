@@ -340,6 +340,25 @@ void QuadNode::GetRenderableNodes(QuadNodeArray& nodes)
 	}
 }
 
+bool QuadNode::SampleTerrainHeight(double longitude, double latitude, double& height) const
+{
+	if (longitude < mLLStart.x || longitude > mLLEnd.x ||
+		latitude < mLLStart.y || latitude > mLLEnd.y)
+	{
+		return false;
+	}
+
+	for (const auto& child : mChildNodes)
+	{
+		if (child && child->SampleTerrainHeight(longitude, latitude, height))
+		{
+			return true;
+		}
+	}
+
+	return mDemData.SampleHeight(longitude, latitude, height);
+}
+
 bool QuadNode::IsGpuReady() const
 {
 	// 绘制需要同时满足：

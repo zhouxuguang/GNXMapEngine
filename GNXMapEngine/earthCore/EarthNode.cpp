@@ -8,6 +8,7 @@
 #include "EarthNode.h"
 
 #include <algorithm>
+#include <cmath>
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -38,10 +39,65 @@ void EarthNode::Update(float deltaTime)
             }),
         mPendingTextureUploads.end());
 
+	KeepCameraAboveTerrain();
 	for (size_t i = 0; i < mQuadNodes.size(); i ++)
 	{
 		mQuadNodes[i]->Update(mCameraPtr);
 	}
+
+	if (KeepCameraAboveTerrain())
+	{
+		for (const auto& root : mQuadNodes)
+		{
+			root->Update(mCameraPtr);
+		}
+	}
+}
+
+bool EarthNode::SampleTerrainHeight(double longitude, double latitude, double& height) const
+{
+	for (const auto& root : mQuadNodes)
+	{
+		if (root->SampleTerrainHeight(longitude, latitude, height))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool EarthNode::KeepCameraAboveTerrain()
+{
+	if (!mCameraPtr)
+	{
+		return false;
+	}
+
+	constexpr double clearance = 20.0;
+	bool moved = false;
+	for (int attempt = 0; attempt < 32; ++attempt)
+	{
+		const Geodetic3D& eye = mCameraPtr->GetEyeGeodetic();
+		double terrainHeight = 0.0;
+		if (!SampleTerrainHeight(eye.longitude, eye.latitude, terrainHeight) ||
+			!std::isfinite(terrainHeight) || eye.height + 0.001 >= terrainHeight + clearance)
+		{
+			break;
+		}
+
+		const double distance = mCameraPtr->GetEyeDistance();
+		const double deficit = terrainHeight + clearance - eye.height;
+		const double vertical = std::max(0.05, std::cos(mCameraPtr->GetPitchAngleAtTarget()));
+		const double step = std::max(deficit / vertical, distance * 0.05);
+		const double nextDistance = std::min(distance + step, 20000000.0);
+		if (nextDistance <= distance)
+		{
+			break;
+		}
+		mCameraPtr->SetEyeDistance(nextDistance);
+		moved = true;
+	}
+	return moved;
 }
 
 void EarthNode::TrackTextureUpload(const RenderCore::TextureUploadPtr& upload)

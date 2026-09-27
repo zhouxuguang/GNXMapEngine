@@ -31,6 +31,8 @@ public:
 
     void GetAllRendererNodes(QuadNode::QuadNodeArray& quadNodes);
 
+    bool SampleTerrainHeight(double longitude, double latitude, double& height) const;
+
     void Initialize();
 
     /**
@@ -55,6 +57,8 @@ public:
     }
     
 private:
+    bool KeepCameraAboveTerrain();
+
     const Ellipsoid& mEllipsoid;
     std::vector<QuadTreePtr> mQuadNodes;   //四叉树根节点，wgs84的话就有两个
     EarthCameraPtr mCameraPtr = nullptr;
