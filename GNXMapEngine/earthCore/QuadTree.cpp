@@ -121,6 +121,7 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	GlobeRectangle globeRec(mLLStart.x, mLLStart.y, mLLEnd.x, mLLEnd.y);
 	BoundingRegion geoBound(globeRec, 0, 0, wgs84);
 	mBoundingBox = geoBound.getBoundingBox().ToAxisAligned();
+	mHorizonBounds = mEarthNode->GetHorizonCulling().PrepareTile(globeRec);
 
 	mDemData.SetStartEndGeoCoord(vStart, vEnd);
 	mDemData.FillFace();
@@ -178,7 +179,7 @@ inline Vector2d QuadNode::GetLonLatRange() const
 static constexpr double kSplitRatio = 1.0;
 static constexpr double kMergeRatio = 1.45;
 
-void QuadNode::Update(const EarthCameraPtr& camera)
+void QuadNode::Update(const EarthCameraPtr& camera, const HorizonCulling* horizonCulling)
 {
 	if (!camera)
 	{
@@ -203,7 +204,7 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 		mStatusFlag &= ~FLAG_RENDER;
 	}
 
-	UpdateCullFlag(camera);
+	UpdateCullFlag(camera, horizonCulling);
 
 	const bool culled = HasFlag(mStatusFlag, FLAG_HAS_CULL);
 	const double ratio = ComputeSplitRatio(camera);
@@ -225,12 +226,12 @@ void QuadNode::Update(const EarthCameraPtr& camera)
 	{
 		if (mChildNodes[i])
 		{
-			mChildNodes[i]->Update(camera);
+			mChildNodes[i]->Update(camera, horizonCulling);
 		}
 	}
 }
 
-void QuadNode::UpdateCullFlag(const EarthCameraPtr& camera)
+void QuadNode::UpdateCullFlag(const EarthCameraPtr& camera, const HorizonCulling* horizonCulling)
 {
 	Matrix4x4d coloMatrix;
 	Matrix4x4f viewProjMat = camera->GetProjectionMatrix() * camera->GetViewMatrix();
@@ -245,13 +246,18 @@ void QuadNode::UpdateCullFlag(const EarthCameraPtr& camera)
 	Frustumd frustum;
 	frustum.InitFrustum(coloMatrix);
 
-	if (frustum.IsBoxInFrustum(mBoundingBox))
+	const bool inFrustum = frustum.IsBoxInFrustum(mBoundingBox);
+	const bool behindHorizon = inFrustum && horizonCulling &&
+		horizonCulling->IsOccluded(mHorizonBounds);
+	if (inFrustum && !behindHorizon)
 	{
 		mStatusFlag &= ~FLAG_HAS_CULL;
 	}
 	else
 	{
 		mStatusFlag |= FLAG_HAS_CULL;
+		if (behindHorizon)
+			++GetQuadTreeStats().horizonCulled;
 	}
 }
 

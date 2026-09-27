@@ -11,6 +11,7 @@
 #include "Ellipsoid.h"
 #include "QuadTree.h"
 #include "LayerBase.h"
+#include "HorizonCulling.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -34,6 +35,9 @@ public:
     bool SampleTerrainHeight(double longitude, double latitude, double& height) const;
 
     void Initialize();
+
+    const HorizonCulling& GetHorizonCulling() const { return mHorizonCulling; }
+    void SetHorizonCullingEnabled(bool enabled) { mHorizonCullingEnabled = enabled; }
 
     /**
      * 请求瓦片
@@ -60,6 +64,8 @@ private:
     bool KeepCameraAboveTerrain();
 
     const Ellipsoid& mEllipsoid;
+    HorizonCulling mHorizonCulling;
+    bool mHorizonCullingEnabled = true;
     std::vector<QuadTreePtr> mQuadNodes;   //四叉树根节点，wgs84的话就有两个
     EarthCameraPtr mCameraPtr = nullptr;
     baselib::ThreadPool mTileLoadPool;    // 瓦片数据加载线程池

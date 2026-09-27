@@ -12,7 +12,7 @@
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-EarthNode::EarthNode(const Ellipsoid& ellipsoid, EarthCameraPtr cameraPtr) : mEllipsoid(ellipsoid), mTileLoadPool(4)
+EarthNode::EarthNode(const Ellipsoid& ellipsoid, EarthCameraPtr cameraPtr) : mEllipsoid(ellipsoid), mHorizonCulling(ellipsoid), mTileLoadPool(4)
 {
 	mCameraPtr = cameraPtr;
 
@@ -40,16 +40,20 @@ void EarthNode::Update(float deltaTime)
         mPendingTextureUploads.end());
 
 	KeepCameraAboveTerrain();
+	if (mCameraPtr)
+		mHorizonCulling.SetCameraPosition(mCameraPtr->GetEyeCartesian());
+	const HorizonCulling* culling = mCameraPtr && mHorizonCullingEnabled ? &mHorizonCulling : nullptr;
 	for (size_t i = 0; i < mQuadNodes.size(); i ++)
 	{
-		mQuadNodes[i]->Update(mCameraPtr);
+		mQuadNodes[i]->Update(mCameraPtr, culling);
 	}
 
 	if (KeepCameraAboveTerrain())
 	{
+		mHorizonCulling.SetCameraPosition(mCameraPtr->GetEyeCartesian());
 		for (const auto& root : mQuadNodes)
 		{
-			root->Update(mCameraPtr);
+			root->Update(mCameraPtr, culling);
 		}
 	}
 }

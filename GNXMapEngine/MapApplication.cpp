@@ -594,9 +594,9 @@ void MapApplication::UpdateAutomation()
             snprintf(filePath, sizeof(filePath), "%s/anim_%05d.png",
                      mAnim.outputDir.c_str(), mFrameIndex);
             const earthcore::QuadTreeStats& qts = earthcore::GetQuadTreeStats();
-            LOG_INFO("[四叉树] frame=%d splits=%llu merges=%llu created=%llu destroyed=%llu requests=%llu results=%llu empty=%llu",
+            LOG_INFO("[四叉树] frame=%d splits=%llu merges=%llu created=%llu destroyed=%llu requests=%llu results=%llu empty=%llu horizonCulled=%llu",
                      mFrameIndex, qts.splits, qts.merges, qts.nodesCreated,
-                     qts.nodesDestroyed, qts.requests, qts.results, qts.emptyResults);
+                     qts.nodesDestroyed, qts.requests, qts.results, qts.emptyResults, qts.horizonCulled);
 
             mRenderer->LogCameraState("动画抓图");
             if (mRenderer->SaveScreenshot(filePath))

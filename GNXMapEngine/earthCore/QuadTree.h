@@ -6,6 +6,7 @@
 #include "QuadTileID.h"
 #include "DEMMeshData.h"
 #include "TileLoadState.h"
+#include "HorizonCulling.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -50,6 +51,7 @@ struct QuadTreeStats
     uint64_t requests = 0;
     uint64_t results = 0;
     uint64_t emptyResults = 0;
+    uint64_t horizonCulled = 0;
 };
 
 QuadTreeStats& GetQuadTreeStats();
@@ -75,6 +77,7 @@ public:
 
 	// 瓦片的世界坐标的包围盒
 	AxisAlignedBoxd mBoundingBox;
+	HorizonCulling::TileBounds mHorizonBounds;
 
 	/// 位置区域
 	ChildRegion  mRegion;
@@ -127,7 +130,7 @@ public:
 	Vector2d GetLonLatRange() const;
 	
 	// 四叉树节点更新
-	void Update(const EarthCameraPtr& camera);
+	void Update(const EarthCameraPtr& camera, const HorizonCulling* horizonCulling);
 
 	void GetRenderableNodes(QuadNodeArray& nodes);
 
@@ -167,7 +170,7 @@ public:
 
 private:
 	// 更新视锥剔除标记。
-	void UpdateCullFlag(const EarthCameraPtr& camera);
+	void UpdateCullFlag(const EarthCameraPtr& camera, const HorizonCulling* horizonCulling);
 
 	// 相机距离与瓦片半尺寸之比。
 	double ComputeSplitRatio(const EarthCameraPtr& camera) const;

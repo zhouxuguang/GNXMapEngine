@@ -39,6 +39,8 @@ set(PROJECT_SOURCES
     earthCore/BoundingRegion.cpp
     earthCore/GlobeRectangle.h
     earthCore/GlobeRectangle.cpp
+    earthCore/HorizonCulling.h
+    earthCore/HorizonCulling.cpp
     earthCore/EarthEngineDefine.h
     earthCore/Ellipsoid.h
     earthCore/Ellipsoid.cpp
@@ -126,4 +128,22 @@ if(GNX_MAP_BUILD_TESTS)
 
     enable_testing()
     add_test(NAME EarthCameraAngles COMMAND TestEarthCameraAngles)
+
+    add_executable(TestHorizonCulling
+        test/TestHorizonCulling.cpp
+        earthCore/HorizonCulling.cpp
+        earthCore/EarthCameraPose.cpp
+        earthCore/BoundingRegion.cpp
+        earthCore/GlobeRectangle.cpp
+        earthCore/QuadTileID.cpp
+        earthCore/Ellipsoid.cpp
+        earthCore/EllipsoidTangentPlane.cpp
+        earthCore/Geodetic3D.cpp
+        earthCore/GeoTransform.cpp
+        earthCore/IntersectionTests.cpp
+    )
+    target_include_directories(TestHorizonCulling PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(TestHorizonCulling PRIVATE GNXEngine)
+    set_property(TARGET TestHorizonCulling PROPERTY FOLDER "test")
+    add_test(NAME HorizonCulling COMMAND TestHorizonCulling)
 endif()
