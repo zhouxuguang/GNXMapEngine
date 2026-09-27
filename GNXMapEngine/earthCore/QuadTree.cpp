@@ -3,7 +3,7 @@
 #include "EarthNode.h"
 #include "TiledImage.h"
 #include "Runtime/RenderSystem/include/RenderParameter.h"
-#include "Runtime/RenderSystem/include/ImageTextureUtil.h"
+#include "Runtime/AssetProcess/include/DXTCompressor.h"
 #include "Runtime/BaseLib/include/LogService.h"
 
 #include <vector>
@@ -27,48 +27,61 @@ static RenderCore::RCTexture2DPtr CreateTileTexture(const imagecodec::VImage& im
 {
 	const uint32_t width = image.GetWidth();
 	const uint32_t height = image.GetHeight();
-	const uint8_t* data = image.GetImageData();
-	uint32_t bytesPerRow = image.GetBytesPerRow();
-
-	// Vulkan 后端不支持 24 位 RGB 采样格式（kTexFormatRGB24 无对应 VkFormat，
-	// 创建纹理会得到 VK_FORMAT_UNDEFINED 并导致失败）。这里先转成 32 位格式。
-	std::vector<uint8_t> converted;
-	RenderCore::TextureFormat textureFormat = RenderCore::kTexFormatInvalid;
+	const uint8_t* source = image.GetImageData();
+	const uint32_t sourceBytesPerRow = image.GetBytesPerRow();
 	const imagecodec::ImagePixelFormat format = image.GetFormat();
 	const bool isSRGB = (format == imagecodec::FORMAT_SRGB8 || format == imagecodec::FORMAT_SRGB8_ALPHA8);
-
-	if (format == imagecodec::FORMAT_RGB8 || format == imagecodec::FORMAT_SRGB8)
-	{
-		const uint32_t dstBytesPerRow = width * 4;
-		converted.resize((size_t)dstBytesPerRow * height);
-
-		for (uint32_t y = 0; y < height; ++y)
-		{
-			const uint8_t* srcRow = data + (size_t)y * bytesPerRow;
-			uint8_t* dstRow = converted.data() + (size_t)y * dstBytesPerRow;
-			for (uint32_t x = 0; x < width; ++x)
-			{
-				dstRow[x * 4 + 0] = srcRow[x * 3 + 0];
-				dstRow[x * 4 + 1] = srcRow[x * 3 + 1];
-				dstRow[x * 4 + 2] = srcRow[x * 3 + 2];
-				dstRow[x * 4 + 3] = 255;
-			}
-		}
-
-		data = converted.data();
-		bytesPerRow = dstBytesPerRow;
-		textureFormat = isSRGB ? RenderCore::kTexFormatSRGB8_ALPHA8 : RenderCore::kTexFormatRGBA8;
-	}
-	else
-	{
-		textureFormat = RenderSystem::ImageTextureUtil::getTextureDescriptor(image).format;
-	}
-
-	if (width == 0 || height == 0 || data == nullptr || textureFormat == RenderCore::kTexFormatInvalid)
+	if (width == 0 || height == 0 || source == nullptr)
 	{
 		LOG_ERROR("CreateTileTexture: invalid image (size=%ux%u, format=%d)", width, height, (int)format);
 		return nullptr;
 	}
+
+	// The DXT1 encoder accepts RGBA8 pixels. Alpha is discarded by the RGB
+	// BC1 format; every successfully loaded tile uses DXT1 on every platform.
+	std::vector<uint8_t> rgba;
+	const uint8_t* rgbaData = source;
+	uint32_t rgbaBytesPerRow = sourceBytesPerRow;
+	if (format != imagecodec::FORMAT_RGBA8 && format != imagecodec::FORMAT_SRGB8_ALPHA8)
+	{
+		if (format != imagecodec::FORMAT_RGB8 && format != imagecodec::FORMAT_SRGB8 &&
+			format != imagecodec::FORMAT_GRAY8 && format != imagecodec::FORMAT_GRAY8_ALPHA8)
+		{
+			LOG_ERROR("CreateTileTexture: unsupported source format for DXT1 (format=%d)", (int)format);
+			return nullptr;
+		}
+		rgbaBytesPerRow = width * 4;
+		rgba.resize((size_t)rgbaBytesPerRow * height);
+		for (uint32_t y = 0; y < height; ++y)
+		{
+			const uint8_t* srcRow = source + (size_t)y * sourceBytesPerRow;
+			uint8_t* dstRow = rgba.data() + (size_t)y * rgbaBytesPerRow;
+			for (uint32_t x = 0; x < width; ++x)
+			{
+				uint8_t* dst = dstRow + (size_t)x * 4;
+				if (format == imagecodec::FORMAT_RGB8 || format == imagecodec::FORMAT_SRGB8)
+				{
+					const uint8_t* src = srcRow + (size_t)x * 3;
+					dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2];
+				}
+				else
+				{
+					const uint8_t gray = srcRow[(size_t)x * (format == imagecodec::FORMAT_GRAY8 ? 1 : 2)];
+					dst[0] = gray; dst[1] = gray; dst[2] = gray;
+				}
+				dst[3] = 255;
+			}
+		}
+		rgbaData = rgba.data();
+	}
+
+	const uint32_t blockWidth = (width + 3) / 4;
+	const uint32_t blockHeight = (height + 3) / 4;
+	const uint32_t bytesPerRow = blockWidth * 8;
+	std::vector<uint8_t> compressed((size_t)bytesPerRow * blockHeight);
+	AssetProcess::CompressDXT1(compressed.data(), rgbaData, width, height, rgbaBytesPerRow);
+	const RenderCore::TextureFormat textureFormat = isSRGB
+		? RenderCore::kTexFormatDXT1_SRGB : RenderCore::kTexFormatDXT1_RGB;
 
 	RenderCore::RenderDevicePtr renderDevice = GetRenderDevice();
 	if (!renderDevice)
@@ -79,14 +92,14 @@ static RenderCore::RCTexture2DPtr CreateTileTexture(const imagecodec::VImage& im
 	RenderCore::RCTexture2DPtr texture = renderDevice->CreateTexture2D(textureFormat,
 																	  RenderCore::TextureUsage::TextureUsageShaderRead,
 																	  width, height, 1);
-	if (!texture)
+	if (!texture || !texture->IsValid())
 	{
 		LOG_ERROR("CreateTileTexture: create texture failed (size=%ux%u, format=%u)", width, height, textureFormat);
 		return nullptr;
 	}
 
 	RenderCore::Rect2D rect(0, 0, width, height);
-	upload = texture->ReplaceRegionAsync(rect, 0, data, bytesPerRow);
+	upload = texture->ReplaceRegionAsync(rect, 0, compressed.data(), bytesPerRow);
 	if (!upload || upload->GetStatus() == RenderCore::TextureUploadStatus::Failed)
 	{
 		LOG_ERROR("CreateTileTexture: asynchronous upload failed");
