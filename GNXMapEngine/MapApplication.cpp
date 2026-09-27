@@ -159,6 +159,8 @@ void MapApplication::ApplyStartupOptions()
         }
         mRenderer->SetAzimuthPitchDegrees(azimuthDegrees, pitchDegrees);
     }
+    mDefaultAzimuthDegrees = mRenderer->GetAzimuthAngleAtTargetDegrees();
+    mDefaultPitchDegrees = mRenderer->GetPitchAngleAtTargetDegrees();
 
     // 拖拽灵敏度（1.0 为默认，负值反向，0 表示不响应），免重编译微调手感
     GetEnvDouble("GNX_MAP_AZIMUTH_SENSITIVITY", mAzimuthDragSensitivity);
@@ -494,7 +496,7 @@ void MapApplication::UpdateDragInteraction()
 }
 
 // ---------------------------------------------------------------------------
-// ImGui 面板：目标点经纬度与相机距离
+// ImGui 面板：目标点信息与视角控制
 // ---------------------------------------------------------------------------
 void MapApplication::BuildImGuiPanel()
 {
@@ -505,7 +507,7 @@ void MapApplication::BuildImGuiPanel()
 
     ImGui::SetNextWindowPos(ImVec2(12.0f, 12.0f), ImGuiCond_Always);
 
-    if (ImGui::Begin("相机信息", &mPanelVisible, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::Begin("相机信息", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         double targetLongitude = 0.0, targetLatitude = 0.0, targetHeight = 0.0;
         mRenderer->GetTargetGeodeticDegrees(targetLongitude, targetLatitude, targetHeight);
@@ -513,6 +515,48 @@ void MapApplication::BuildImGuiPanel()
         ImGui::Text("目标点经度: %.6f 度", targetLongitude);
         ImGui::Text("目标点纬度: %.6f 度", targetLatitude);
         ImGui::Text("相机距离: %.1f m", mRenderer->GetEyeDistance());
+    }
+    ImGui::End();
+
+    const ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(displaySize.x - 12.0f, displaySize.y - 12.0f),
+                            ImGuiCond_Always, ImVec2(1.0f, 1.0f));
+    const ImGuiWindowFlags controlFlags = ImGuiWindowFlags_NoTitleBar |
+                                          ImGuiWindowFlags_NoResize |
+                                          ImGuiWindowFlags_NoMove |
+                                          ImGuiWindowFlags_NoSavedSettings |
+                                          ImGuiWindowFlags_AlwaysAutoResize;
+    if (ImGui::Begin("视角控制", nullptr, controlFlags))
+    {
+        if (ImGui::Button(mAngleControlsOpen ? "收起视角设置" : "视角设置"))
+        {
+            mAngleControlsOpen = !mAngleControlsOpen;
+        }
+
+        if (mAngleControlsOpen)
+        {
+            float pitchDegrees = static_cast<float>(mRenderer->GetPitchAngleAtTargetDegrees());
+            float azimuthDegrees = static_cast<float>(mRenderer->GetAzimuthAngleAtTargetDegrees());
+
+            ImGui::Text("当前俯视角: %.3f 度", pitchDegrees);
+            ImGui::SetNextItemWidth(220.0f);
+            if (ImGui::SliderFloat("俯视角", &pitchDegrees, 0.0f, 90.0f, "%.3f 度"))
+            {
+                mRenderer->SetAzimuthPitchDegrees(azimuthDegrees, pitchDegrees);
+            }
+
+            ImGui::Text("当前方位角: %.3f 度", azimuthDegrees);
+            ImGui::SetNextItemWidth(220.0f);
+            if (ImGui::SliderFloat("方位角", &azimuthDegrees, 0.0f, 360.0f, "%.3f 度"))
+            {
+                mRenderer->SetAzimuthPitchDegrees(azimuthDegrees, pitchDegrees);
+            }
+
+            if (ImGui::Button("重置"))
+            {
+                mRenderer->SetAzimuthPitchDegrees(mDefaultAzimuthDegrees, mDefaultPitchDegrees);
+            }
+        }
     }
     ImGui::End();
 }

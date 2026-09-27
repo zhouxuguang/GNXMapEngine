@@ -48,7 +48,7 @@ private:
     // 结束拖拽并记录一次相机状态
     void EndDrag(const char* reason);
 
-    // 构建 ImGui 信息面板（目标点经纬度与相机距离）
+    // 构建 ImGui 信息面板与右下角视角控制
     void BuildImGuiPanel();
 
     // 解析启动配置（环境变量）并应用到相机
@@ -93,6 +93,9 @@ private:
     double mPitchDragSensitivity = 1.0;     // GNX_MAP_PITCH_SENSITIVITY
     double mZoomDragSensitivity = 1.0;      // GNX_MAP_ZOOM_SENSITIVITY
     bool mPanelVisible = true;          // 面板是否显示（GNX_MAP_PANEL）
+    bool mAngleControlsOpen = false;
+    double mDefaultAzimuthDegrees = 0.0;
+    double mDefaultPitchDegrees = 0.0;
     std::string mScreenshotPath;        // GNX_MAP_SCREENSHOT：非空则开启自动化截图
     int mScreenshotWaitFrames = 120;    // GNX_MAP_SCREENSHOT_FRAMES：截图前等待的帧数
     int mFrameIndex = 0;
