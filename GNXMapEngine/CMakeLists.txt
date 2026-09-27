@@ -146,4 +146,20 @@ if(GNX_MAP_BUILD_TESTS)
     target_link_libraries(TestHorizonCulling PRIVATE GNXEngine)
     set_property(TARGET TestHorizonCulling PROPERTY FOLDER "test")
     add_test(NAME HorizonCulling COMMAND TestHorizonCulling)
+
+    add_executable(TestOBBCulling
+        test/TestOBBCulling.cpp
+        earthCore/BoundingRegion.cpp
+        earthCore/EarthCameraPose.cpp
+        earthCore/Ellipsoid.cpp
+        earthCore/EllipsoidTangentPlane.cpp
+        earthCore/Geodetic3D.cpp
+        earthCore/GeoTransform.cpp
+        earthCore/GlobeRectangle.cpp
+        earthCore/IntersectionTests.cpp
+    )
+    target_include_directories(TestOBBCulling PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(TestOBBCulling PRIVATE GNXEngine)
+    set_property(TARGET TestOBBCulling PROPERTY FOLDER "test")
+    add_test(NAME OBBCulling COMMAND TestOBBCulling)
 endif()

@@ -70,6 +70,11 @@ public:
         return mCol;
     }
 
+    const float* GetHeights() const
+    {
+        return mVertexData.height;
+    }
+
     bool IsInited() const
     {
         return mInited;

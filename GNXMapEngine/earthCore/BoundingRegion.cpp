@@ -2,6 +2,8 @@
 #include "BoundingRegion.h"
 #include "Geodetic3D.h"
 #include "EllipsoidTangentPlane.h"
+#include "GeoTransform.h"
+#include <limits>
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -53,6 +55,51 @@ namespace
 			scaledHalfAxes);
 	}
 } // namespace
+
+OrientedBoundingBoxd BoundingRegion::ComputeMeshBoundingBox(
+	const GlobeRectangle& rectangle, const Ellipsoid& ellipsoid,
+	uint32_t rows, uint32_t columns, const float* heights)
+{
+	const Matrix4x4d frame = GeoTransform::eastNorthUpToFixedFrame(
+		rectangle.computeCenter(), ellipsoid);
+	const Vector3d origin = frame.col(3).xyz();
+	const Vector3d east = frame.col(0).xyz();
+	const Vector3d north = frame.col(1).xyz();
+	const Vector3d up = frame.col(2).xyz();
+	const double infinity = std::numeric_limits<double>::infinity();
+	Vector3d minimum(infinity, infinity, infinity);
+	Vector3d maximum(-infinity, -infinity, -infinity);
+	const double west = rectangle.getWest();
+	const double eastLongitude = rectangle.getEast() < west
+		? rectangle.getEast() + 2.0 * M_PI : rectangle.getEast();
+	for (uint32_t row = 0; row < rows; ++row)
+	{
+		const double latitude = rectangle.getSouth() +
+			(rectangle.getNorth() - rectangle.getSouth()) * row / (rows - 1);
+		for (uint32_t column = 0; column < columns; ++column)
+		{
+			const double longitude = west + (eastLongitude - west) * column / (columns - 1);
+			const double height = heights ? heights[(size_t)row * columns + column] : 0.0;
+			const Vector3d offset = ellipsoid.CartographicToCartesian(
+				Geodetic3D(longitude, latitude, height)) - origin;
+			const Vector3d local(offset.DotProduct(east),
+				offset.DotProduct(north), offset.DotProduct(up));
+			minimum.x = std::min(minimum.x, local.x);
+			minimum.y = std::min(minimum.y, local.y);
+			minimum.z = std::min(minimum.z, local.z);
+			maximum.x = std::max(maximum.x, local.x);
+			maximum.y = std::max(maximum.y, local.y);
+			maximum.z = std::max(maximum.z, local.z);
+		}
+	}
+	// Vertices are stored relative to the tile origin as floats. Leave room
+	// for conversion and camera matrix rounding at large world coordinates.
+	constexpr double margin = 4.0;
+	return fromPlaneExtents(origin, east, north, up,
+		minimum.x - margin, maximum.x + margin,
+		minimum.y - margin, maximum.y + margin,
+		minimum.z - margin, maximum.z + margin);
+}
 
 OrientedBoundingBoxd BoundingRegion::computeBoundingBox(const GlobeRectangle& rectangle, double minimumHeight, double maximumHeight, const Ellipsoid& ellipsoid)
 {

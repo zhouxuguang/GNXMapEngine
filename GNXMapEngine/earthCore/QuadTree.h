@@ -7,6 +7,7 @@
 #include "DEMMeshData.h"
 #include "TileLoadState.h"
 #include "HorizonCulling.h"
+#include <optional>
 
 EARTH_CORE_NAMESPACE_BEGIN
 
@@ -76,7 +77,9 @@ public:
 	Vector2d  mLLEnd;
 
 	// 瓦片的世界坐标的包围盒
+	std::optional<OrientedBoundingBoxd> mOrientedBoundingBox;
 	AxisAlignedBoxd mBoundingBox;
+	double mMaximumMeshHeight = 0.0;
 	HorizonCulling::TileBounds mHorizonBounds;
 
 	/// 位置区域

@@ -6,6 +6,7 @@
 #include "Runtime/AssetProcess/include/DXTCompressor.h"
 #include "Runtime/BaseLib/include/LogService.h"
 
+#include <algorithm>
 #include <vector>
 
 EARTH_CORE_NAMESPACE_BEGIN
@@ -132,8 +133,9 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	Vector3d point2 = wgs84.CartographicToCartesian(llPoint2);
 
 	GlobeRectangle globeRec(mLLStart.x, mLLStart.y, mLLEnd.x, mLLEnd.y);
-	BoundingRegion geoBound(globeRec, 0, 0, wgs84);
-	mBoundingBox = geoBound.getBoundingBox().ToAxisAligned();
+	mOrientedBoundingBox = BoundingRegion::ComputeMeshBoundingBox(
+		globeRec, wgs84, DEM_HEIGHT, DEM_WIDTH, mDemData.GetHeights());
+	mBoundingBox = mOrientedBoundingBox->ToAxisAligned();
 	mHorizonBounds = mEarthNode->GetHorizonCulling().PrepareTile(globeRec);
 
 	mDemData.SetStartEndGeoCoord(vStart, vEnd);
@@ -259,8 +261,10 @@ void QuadNode::UpdateCullFlag(const EarthCameraPtr& camera, const HorizonCulling
 	Frustumd frustum;
 	frustum.InitFrustum(coloMatrix);
 
-	const bool inFrustum = frustum.IsBoxInFrustum(mBoundingBox);
-	const bool behindHorizon = inFrustum && horizonCulling &&
+	const bool inFrustum = frustum.IsOBBInFrustum(*mOrientedBoundingBox);
+	// The horizon test models the zero-height ellipsoid. Raised DEM geometry
+	// can remain visible beyond that surface horizon, so keep such tiles.
+	const bool behindHorizon = inFrustum && horizonCulling && mMaximumMeshHeight <= 0.0 &&
 		horizonCulling->IsOccluded(mHorizonBounds);
 	if (inFrustum && !behindHorizon)
 	{
@@ -468,6 +472,12 @@ void QuadNode::ApplyLoadedTileData()
 		{
 			// DEM 先写 CPU 数据，网格由 EnsureGpuBuffers 更新。
 			mDemData.FillHeight(tiledImage->heightData);
+			mMaximumMeshHeight = *std::max_element(mDemData.GetHeights(),
+				mDemData.GetHeights() + DEM_WIDTH * DEM_HEIGHT);
+			const GlobeRectangle rectangle(mLLStart.x, mLLStart.y, mLLEnd.x, mLLEnd.y);
+			mOrientedBoundingBox = BoundingRegion::ComputeMeshBoundingBox(
+				rectangle, Ellipsoid::WGS84, DEM_HEIGHT, DEM_WIDTH, mDemData.GetHeights());
+			mBoundingBox = mOrientedBoundingBox->ToAxisAligned();
 			mGeometryDirty = true;
 			mStatusFlag |= FLAG_HAS_DEM;
 		}
