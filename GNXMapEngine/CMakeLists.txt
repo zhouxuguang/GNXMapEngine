@@ -77,6 +77,8 @@ set(PROJECT_SOURCES
     earthCore/TileLoadState.h
     earthCore/EarthRenderer.h
     earthCore/EarthRenderer.cpp
+    EarthAtmospherePreset.cpp
+    EarthAtmospherePreset.h
     earthCore/DEMMeshData.h
     earthCore/DEMMeshData.cpp
 )

@@ -26,6 +26,8 @@
 #include "earthCore/QuadTree.h"
 #include "earthCore/LayerBase.h"
 #include "earthCore/EarthRenderer.h"
+#include "EarthAtmospherePreset.h"
+#include "Runtime/RenderSystem/include/Atmosphere/AtmosphereComponent.h"
 
 #include "ScreenshotUtil.h"
 
@@ -111,6 +113,13 @@ void MapRenderer::DrawFrame()
     mLastTime = thisTime;
     
     mSceneManager->Update(deltaTime);
+    if (mAtmosphere && mCameraPtr)
+    {
+        mAtmosphere->SetCameraWorldPosition(mCameraPtr->GetEyeCartesian());
+        const auto& eye = mCameraPtr->GetEyeGeodetic();
+        mAtmosphere->SetCameraSurfaceFrame(
+            earthcore::Ellipsoid::WGS84.GeodeticSurfaceNormal(eye), eye.Height());
+    }
     
     mSceneManager->Render(nullptr);
 }
@@ -124,6 +133,16 @@ void MapRenderer::SetEarthLightingEnabled(bool enabled)
 bool MapRenderer::IsEarthLightingEnabled() const
 {
     return mEarthRenderer && mEarthRenderer->IsLightingEnabled();
+}
+
+void MapRenderer::SetAtmosphereEnabled(bool enabled)
+{
+    if (mAtmosphere) mAtmosphere->SetEnabled(enabled);
+}
+
+bool MapRenderer::IsAtmosphereEnabled() const
+{
+    return mAtmosphere && mAtmosphere->IsEnabled();
 }
 
 // ==================== 视角控制：方位角 / 俯仰角 ====================
@@ -317,5 +336,12 @@ void MapRenderer::BuildEarthNode()
     mEarthRenderer = earthRender;
 
     mSceneManager->GetRootNode()->AddSceneNode(pEarthNode);
+
+    SceneNode* atmosphereNode = mSceneManager->GetRootNode()->CreateChildSceneNode("EarthAtmosphere");
+    mAtmosphere = atmosphereNode->AddComponent<AtmosphereComponent>();
+    mAtmosphere->SetPlanetCenter(Vector3d(0.0, 0.0, 0.0));
+    mAtmosphere->SetPlanetEllipsoidRadii(wgs84.GetAxis());
+    mAtmosphere->SetExposure(5.0f);
+    mAtmosphere->Initialize(CreateMapAtmosphereParameters(), 5);
     
 }

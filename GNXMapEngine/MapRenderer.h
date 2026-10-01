@@ -61,6 +61,7 @@ typedef std::vector<TileDataPtr> TileDataArray;
 
 class MapRenderer;
 namespace earthcore { class EarthRenderer; }
+namespace RenderSystem { class AtmosphereComponent; }
 
 class TileLoadTask : public baselib::TaskRunner
 {
@@ -92,6 +93,8 @@ public:
 
     void SetEarthLightingEnabled(bool enabled);
     bool IsEarthLightingEnabled() const;
+    void SetAtmosphereEnabled(bool enabled);
+    bool IsAtmosphereEnabled() const;
     
     void SetWindowSize(uint32_t width, uint32_t height);
     
@@ -162,6 +165,7 @@ private:
     
     earthcore::EarthCameraPtr mCameraPtr = nullptr;
     earthcore::EarthRenderer* mEarthRenderer = nullptr;
+    RenderSystem::AtmosphereComponent* mAtmosphere = nullptr;
     
     void BuildEarthNode();
 };

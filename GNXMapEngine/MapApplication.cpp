@@ -119,6 +119,8 @@ void MapApplication::ApplyStartupOptions()
         return;
     }
 
+    mRenderer->SetAtmosphereEnabled(GetEnvBool("GNX_MAP_ATMOSPHERE", true));
+
     // 顺序很重要：先定目标点，再定距离，最后定角度
     double targetLongitude = 0.0;
     double targetLatitude = 0.0;
@@ -518,6 +520,9 @@ void MapApplication::BuildImGuiPanel()
         bool lightingEnabled = mRenderer->IsEarthLightingEnabled();
         if (ImGui::Checkbox("地球光照", &lightingEnabled))
             mRenderer->SetEarthLightingEnabled(lightingEnabled);
+        bool atmosphereEnabled = mRenderer->IsAtmosphereEnabled();
+        if (ImGui::Checkbox("地球大气", &atmosphereEnabled))
+            mRenderer->SetAtmosphereEnabled(atmosphereEnabled);
     }
     ImGui::End();
 
