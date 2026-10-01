@@ -16,7 +16,6 @@
 #include "Runtime/BaseLib/include/DateTime.h"
 #include "Runtime/BaseLib/include/LogService.h"
 #include "Runtime/ImageCodec/include/ColorConverter.h"
-#include "Runtime/RenderCore/include/CommandQueue.h"
 
 #include "WebMercator.h"
 //#include "httplib.h"
@@ -42,7 +41,8 @@ MapRenderer::MapRenderer()
 {
     mRenderdevice = GetRenderDevice();
     mSceneManager = SceneManager::GetInstance();
-    mSceneManager->SetRenderPath(RenderPath::Forward);
+    mSceneManager->SetRenderPath(RenderPath::Deferred);
+    mSceneManager->SetDeferredOptionalPassesEnabled(false);
     
     BuildEarthNode();
 }
@@ -58,21 +58,15 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     }
     mCameraPtr->SetLens(60, width, height, 10, 6378137.0 * 4);
     
-//    cameraPtr->LookAt(Vector3f(2, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 1));
-//    cameraPtr->SetLens(60, float(width) / height, 0.1f, 100);
-    
     //初始化灯光信息
-    Light * pointLight = mSceneManager->GetLight("mainLight");
-    if (!pointLight)
+    Light* sunLight = mSceneManager->GetLight("mainLight");
+    if (!sunLight)
     {
-        pointLight = mSceneManager->CreateLight("mainLight", Light::LightType::PointLight);
+        sunLight = mSceneManager->CreateLight("mainLight", Light::LightType::DirectionLight);
     }
-    pointLight->setColor(Vector3f(1.0, 1.0, 1.0));
-    //pointLight->setPosition(Vector3f(5.0, 8.0, 0.0));
-    pointLight->setPosition(Vector3f(-1.0, -1.0, -1.0));
-    pointLight->setFalloffStart(5);
-    pointLight->setFalloffEnd(300);
-    pointLight->setStrength(Vector3f(8.0, 8.0, 8.0));
+    sunLight->setColor(Vector3f(1.0f, 1.0f, 1.0f));
+    static_cast<DirectionLight*>(sunLight)->setDirection(Vector3f(0.5f, 0.3f, 0.8f));
+    sunLight->setStrength(Vector3f(1.5f, 1.5f, 1.5f));
 }
 
 void MapRenderer::Zoom(double deltaDistance)
@@ -118,26 +112,18 @@ void MapRenderer::DrawFrame()
     
     mSceneManager->Update(deltaTime);
     
-    CommandQueuePtr commandQueue = mRenderdevice->GetCommandQueue(QueueType::Graphics);
-    CommandBufferPtr commandBuffer = commandQueue->CreateCommandBuffer();
-    if (!commandBuffer)
-    {
-        return;
-    }
-    RenderEncoderPtr renderEncoder = commandBuffer->CreateDefaultRenderEncoder();
-    
-    mSceneManager->Render(renderEncoder);
+    mSceneManager->Render(nullptr);
+}
 
-    // 前向渲染路径下引擎不会自动绘制 UI（只有延迟渲染的 Present Pass 才会），
-    // 这里显式补一次：ImGui 帧由 AppFrameWork 每帧 NewFrame 驱动，面板内容与
-    // ImGui::Render() 由应用层负责。
-    if (RenderSystem::ImGuiRendererPtr imguiRenderer = mSceneManager->PeekImGuiRenderer())
-    {
-        imguiRenderer->Render(renderEncoder);
-    }
-    
-    renderEncoder->EndEncode();
-    commandBuffer->PresentFrameBuffer();
+void MapRenderer::SetEarthLightingEnabled(bool enabled)
+{
+    if (mEarthRenderer)
+        mEarthRenderer->SetLightingEnabled(enabled);
+}
+
+bool MapRenderer::IsEarthLightingEnabled() const
+{
+    return mEarthRenderer && mEarthRenderer->IsLightingEnabled();
 }
 
 // ==================== 视角控制：方位角 / 俯仰角 ====================
@@ -328,6 +314,7 @@ void MapRenderer::BuildEarthNode()
     
     earthcore::EarthRenderer* earthRender = pEarthNode->AddComponent<earthcore::EarthRenderer>();
     earthRender->AddMaterial(material);
+    mEarthRenderer = earthRender;
 
     mSceneManager->GetRootNode()->AddSceneNode(pEarthNode);
     

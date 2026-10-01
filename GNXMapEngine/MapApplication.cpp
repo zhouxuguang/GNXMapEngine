@@ -515,6 +515,9 @@ void MapApplication::BuildImGuiPanel()
         ImGui::Text("目标点经度: %.6f 度", targetLongitude);
         ImGui::Text("目标点纬度: %.6f 度", targetLatitude);
         ImGui::Text("相机距离: %.1f m", mRenderer->GetEyeDistance());
+        bool lightingEnabled = mRenderer->IsEarthLightingEnabled();
+        if (ImGui::Checkbox("地球光照", &lightingEnabled))
+            mRenderer->SetEarthLightingEnabled(lightingEnabled);
     }
     ImGui::End();
 

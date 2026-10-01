@@ -209,15 +209,37 @@ public:
 
                 vWorld -= startPoint;
 
-                mathutil::Vector3d normal = mEllipsoid.GeodeticSurfaceNormal(
-                    Geodetic3D(mLLStart.x + c * vGrid.x, mLLStart.y + r * vGrid.y, mVertexData.height[idx]));
-				
-                mVertexData.position[idx].x = vWorld.x;
-                mVertexData.position[idx].y = vWorld.y;
-                mVertexData.position[idx].z = vWorld.z;
-				mVertexData.normal[idx].x = normal.x;
-				mVertexData.normal[idx].y = normal.y;
-				mVertexData.normal[idx].z = normal.z;
+				mVertexData.position[idx].x = vWorld.x;
+				mVertexData.position[idx].y = vWorld.y;
+				mVertexData.position[idx].z = vWorld.z;
+			}
+		}
+
+		// 用实际 DEM 顶点的经纬方向差分求坡面法线。边界用单侧差分，
+		// 并用椭球外法线校验朝向，避免极区或退化网格翻面。
+		for (uint16_t r = 0; r < mRow; ++r)
+		{
+			for (uint16_t c = 0; c < mCol; ++c)
+			{
+				const int idx = r * mCol + c;
+				const auto& left = mVertexData.position[r * mCol + (c ? c - 1 : c)];
+				const auto& right = mVertexData.position[r * mCol + std::min<int>(c + 1, mCol - 1)];
+				const auto& down = mVertexData.position[(r ? r - 1 : r) * mCol + c];
+				const auto& up = mVertexData.position[std::min<int>(r + 1, mRow - 1) * mCol + c];
+				mathutil::Vector3d east(right.x - left.x, right.y - left.y, right.z - left.z);
+				mathutil::Vector3d north(up.x - down.x, up.y - down.y, up.z - down.z);
+				mathutil::Vector3d normal = mathutil::Vector3d::CrossProduct(east, north);
+				mathutil::Vector3d outward = mEllipsoid.GeodeticSurfaceNormal(
+					Geodetic3D(mLLStart.x + c * vGrid.x, mLLStart.y + r * vGrid.y, mVertexData.height[idx]));
+				if (normal.LengthSq() < 1e-12)
+					normal = outward;
+				else
+				{
+                    if (normal.DotProduct(outward) < 0.0)
+                        normal = -normal;
+                        normal.Normalize();
+				}
+				mVertexData.normal[idx] = mathutil::Vector3f(normal.x, normal.y, normal.z);
 			}
 		}
     }

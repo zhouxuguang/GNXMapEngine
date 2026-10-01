@@ -19,6 +19,32 @@ void EarthRenderer::SetRendererNodes(const QuadNode::QuadNodeArray& nodes)
 	//mNodes = nodes;
 }
 
+void EarthRenderer::CollectDeferredGeometry(std::vector<RenderSystem::DeferredGeometryDraw>& draws)
+{
+	EarthNode* earthNode = static_cast<EarthNode*>(mSceneNode);
+	if (!earthNode || !mSampler)
+		return;
+
+	QuadNode::QuadNodeArray quadNodes;
+	earthNode->GetAllRendererNodes(quadNodes);
+	for (const QuadNode* tile : quadNodes)
+	{
+		if (!tile || !tile->IsGpuReady() || !tile->mTexture || !tile->mVertexBuffer ||
+			!tile->mIndexBuffer || !tile->mLocalUniform)
+			continue;
+		RenderSystem::DeferredGeometryDraw draw;
+		draw.vertexBuffer = tile->mVertexBuffer;
+		draw.indexBuffer = tile->mIndexBuffer;
+		draw.baseColor = tile->mTexture;
+		draw.sampler = mSampler;
+		draw.objectUBO = tile->mLocalUniform;
+		draw.vertexCount = tile->mDemData.GetVertCount();
+		draw.indexCount = tile->mDemData.GetFaceCount() * 3;
+		draw.unlit = !mLightingEnabled;
+		draws.push_back(std::move(draw));
+	}
+}
+
 void EarthRenderer::Render(RenderInfo& renderInfo)
 {
 	EarthNode* earthNode = (EarthNode*)mSceneNode;

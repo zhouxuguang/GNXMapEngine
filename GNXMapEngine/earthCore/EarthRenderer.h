@@ -10,10 +10,11 @@
 
 #include "QuadTree.h"
 #include "Runtime/RenderSystem/include/mesh/MeshRenderer.h"
+#include "Runtime/RenderSystem/include/DeferredGeometry.h"
 
 EARTH_CORE_NAMESPACE_BEGIN
 
-class EarthRenderer : public MeshRenderer
+class EarthRenderer : public MeshRenderer, public RenderSystem::DeferredGeometryProvider
 {
 public:
 	EarthRenderer();
@@ -22,12 +23,17 @@ public:
 
 	void SetRendererNodes(const QuadNode::QuadNodeArray& nodes);
 
-	virtual void Render(RenderInfo& renderInfo);
+	void Render(RenderInfo& renderInfo) override;
+	void CollectDeferredGeometry(std::vector<RenderSystem::DeferredGeometryDraw>& draws) override;
+
+	void SetLightingEnabled(bool enabled) { mLightingEnabled = enabled; }
+	bool IsLightingEnabled() const { return mLightingEnabled; }
 
 private:
 	//QuadNode::QuadNodeArray mNodes;
 
 	TextureSamplerPtr mSampler = nullptr;
+	bool mLightingEnabled = false;
 };
 
 EARTH_CORE_NAMESPACE_END

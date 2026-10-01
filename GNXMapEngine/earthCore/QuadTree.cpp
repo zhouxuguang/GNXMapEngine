@@ -31,7 +31,9 @@ static RenderCore::RCTexture2DPtr CreateTileTexture(const imagecodec::VImage& im
 	const uint8_t* source = image.GetImageData();
 	const uint32_t sourceBytesPerRow = image.GetBytesPerRow();
 	const imagecodec::ImagePixelFormat format = image.GetFormat();
-	const bool isSRGB = (format == imagecodec::FORMAT_SRGB8 || format == imagecodec::FORMAT_SRGB8_ALPHA8);
+	// Imagery tiles contain display color. JPEG decodes to FORMAT_RGB8, but its
+	// encoded bytes are still sRGB; sampling them as linear makes the subsequent
+	// tone map and gamma conversion wash out the map.
 	if (width == 0 || height == 0 || source == nullptr)
 	{
 		LOG_ERROR("CreateTileTexture: invalid image (size=%ux%u, format=%d)", width, height, (int)format);
@@ -81,8 +83,7 @@ static RenderCore::RCTexture2DPtr CreateTileTexture(const imagecodec::VImage& im
 	const uint32_t bytesPerRow = blockWidth * 8;
 	std::vector<uint8_t> compressed((size_t)bytesPerRow * blockHeight);
 	AssetProcess::CompressDXT1(compressed.data(), rgbaData, width, height, rgbaBytesPerRow);
-	const RenderCore::TextureFormat textureFormat = isSRGB
-		? RenderCore::kTexFormatDXT1_SRGB : RenderCore::kTexFormatDXT1_RGB;
+	const RenderCore::TextureFormat textureFormat = RenderCore::kTexFormatDXT1_SRGB;
 
 	RenderCore::RenderDevicePtr renderDevice = GetRenderDevice();
 	if (!renderDevice)
@@ -154,6 +155,7 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	cbPerObject modelMatrix;
 	modelMatrix.MATRIX_M = mathutil::Matrix4x4f::CreateTranslate(mStartPoint.x, mStartPoint.y, mStartPoint.z);
 	modelMatrix.MATRIX_M_INV = modelMatrix.MATRIX_M.Inverse();
+	modelMatrix.MATRIX_Normal = mathutil::Matrix4x4f::IDENTITY;
 	mLocalUniform = GetRenderDevice()->CreateUniformBufferWithSize(sizeof(cbPerObject));
 	mLocalUniform->SetData(&modelMatrix, 0, sizeof(cbPerObject));
 

@@ -60,6 +60,7 @@ namespace std
 typedef std::vector<TileDataPtr> TileDataArray;
 
 class MapRenderer;
+namespace earthcore { class EarthRenderer; }
 
 class TileLoadTask : public baselib::TaskRunner
 {
@@ -88,6 +89,9 @@ public:
     }
     
     void DrawFrame();
+
+    void SetEarthLightingEnabled(bool enabled);
+    bool IsEarthLightingEnabled() const;
     
     void SetWindowSize(uint32_t width, uint32_t height);
     
@@ -157,6 +161,7 @@ private:
     uint64_t mLastTime = 0;
     
     earthcore::EarthCameraPtr mCameraPtr = nullptr;
+    earthcore::EarthRenderer* mEarthRenderer = nullptr;
     
     void BuildEarthNode();
 };
