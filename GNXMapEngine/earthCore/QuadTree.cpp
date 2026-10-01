@@ -155,7 +155,7 @@ QuadNode::QuadNode(EarthNode* earthNode, QuadNode* parent, const Vector2d& vStar
 	cbPerObject modelMatrix;
 	modelMatrix.MATRIX_M = mathutil::Matrix4x4f::CreateTranslate(mStartPoint.x, mStartPoint.y, mStartPoint.z);
 	modelMatrix.MATRIX_M_INV = modelMatrix.MATRIX_M.Inverse();
-	modelMatrix.MATRIX_Normal = mathutil::Matrix4x4f::IDENTITY;
+	modelMatrix.MATRIX_Normal.MakeIdentity();
 	mLocalUniform = GetRenderDevice()->CreateUniformBufferWithSize(sizeof(cbPerObject));
 	mLocalUniform->SetData(&modelMatrix, 0, sizeof(cbPerObject));
 
