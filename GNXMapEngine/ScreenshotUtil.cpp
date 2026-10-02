@@ -106,7 +106,18 @@ bool CaptureFrameToPng(RenderSystem::SceneManager* sceneManager,
         return false;
     }
 
-    // ---- 2) 渲染场景到离屏纹理 ----
+    const bool deferred = sceneManager->GetRenderPath() == RenderSystem::RenderPath::Deferred;
+    if (deferred)
+    {
+        // Deferred rendering owns its FrameGraph and PresentPass. The present
+        // pass tone-maps into the capture texture; SceneManager::Render
+        // ignores the external encoder on this path.
+        sceneManager->SetFrameCaptureTarget(colorTexture);
+        sceneManager->Render(nullptr);
+        sceneManager->SetFrameCaptureTarget(nullptr);
+    }
+    // ---- 2) 渲染场景到离屏纹理（仅前向路径） ----
+    else
     {
         RenderPass renderPass;
         // 必须显式设置：Metal 后端用 renderRegion 设置视口，
@@ -156,6 +167,7 @@ bool CaptureFrameToPng(RenderSystem::SceneManager* sceneManager,
     }
 
     // ---- 3) 回读到 CPU ----
+    commandBuffer->ResourceBarrier(colorTexture, ResourceAccessType::TransferSrc);
     {
         BlitEncoderPtr blitEncoder = commandBuffer->CreateBlitEncoder();
         if (!blitEncoder)

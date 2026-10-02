@@ -61,7 +61,10 @@ typedef std::vector<TileDataPtr> TileDataArray;
 
 class MapRenderer;
 namespace earthcore { class EarthRenderer; }
-namespace RenderSystem { class AtmosphereComponent; }
+namespace RenderSystem {
+class AtmosphereComponent;
+enum class AtmosphereAlgorithm;
+}
 
 class TileLoadTask : public baselib::TaskRunner
 {
@@ -95,6 +98,8 @@ public:
     bool IsEarthLightingEnabled() const;
     void SetAtmosphereEnabled(bool enabled);
     bool IsAtmosphereEnabled() const;
+    void SetAtmosphereAlgorithm(RenderSystem::AtmosphereAlgorithm algorithm);
+    RenderSystem::AtmosphereAlgorithm GetAtmosphereAlgorithm() const;
     
     void SetWindowSize(uint32_t width, uint32_t height);
     

@@ -4,6 +4,7 @@
 #include "Runtime/GNXEngine/include/Input.h"
 #include "Runtime/GNXEngine/include/RenderWindow.h"
 #include "Runtime/BaseLib/include/LogService.h"
+#include "Runtime/RenderSystem/include/Atmosphere/AtmosphereComponent.h"
 
 #include <imgui.h>
 
@@ -120,6 +121,16 @@ void MapApplication::ApplyStartupOptions()
     }
 
     mRenderer->SetAtmosphereEnabled(GetEnvBool("GNX_MAP_ATMOSPHERE", true));
+    std::string atmosphereAlgorithm;
+    if (GetEnvString("GNX_MAP_ATMOSPHERE_ALGORITHM", atmosphereAlgorithm))
+    {
+        if (atmosphereAlgorithm == "legacy")
+            mRenderer->SetAtmosphereAlgorithm(RenderSystem::AtmosphereAlgorithm::LegacyPrecomputed);
+        else if (atmosphereAlgorithm == "sky")
+            mRenderer->SetAtmosphereAlgorithm(RenderSystem::AtmosphereAlgorithm::SkyAtmosphere);
+        else
+            LOG_ERROR("GNX_MAP_ATMOSPHERE_ALGORITHM 仅支持 legacy 或 sky，已保持旧算法");
+    }
 
     // 顺序很重要：先定目标点，再定距离，最后定角度
     double targetLongitude = 0.0;
@@ -523,6 +534,14 @@ void MapApplication::BuildImGuiPanel()
         bool atmosphereEnabled = mRenderer->IsAtmosphereEnabled();
         if (ImGui::Checkbox("地球大气", &atmosphereEnabled))
             mRenderer->SetAtmosphereEnabled(atmosphereEnabled);
+        int atmosphereAlgorithm = mRenderer->GetAtmosphereAlgorithm() ==
+            RenderSystem::AtmosphereAlgorithm::SkyAtmosphere ? 1 : 0;
+        if (ImGui::Combo("大气算法", &atmosphereAlgorithm, "旧版预计算\0新版天空大气\0"))
+        {
+            mRenderer->SetAtmosphereAlgorithm(atmosphereAlgorithm == 1
+                ? RenderSystem::AtmosphereAlgorithm::SkyAtmosphere
+                : RenderSystem::AtmosphereAlgorithm::LegacyPrecomputed);
+        }
     }
     ImGui::End();
 

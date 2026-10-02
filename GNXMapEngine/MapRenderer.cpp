@@ -145,6 +145,16 @@ bool MapRenderer::IsAtmosphereEnabled() const
     return mAtmosphere && mAtmosphere->IsEnabled();
 }
 
+void MapRenderer::SetAtmosphereAlgorithm(AtmosphereAlgorithm algorithm)
+{
+    if (mAtmosphere) mAtmosphere->SetAlgorithm(algorithm);
+}
+
+AtmosphereAlgorithm MapRenderer::GetAtmosphereAlgorithm() const
+{
+    return mAtmosphere ? mAtmosphere->GetAlgorithm() : AtmosphereAlgorithm::LegacyPrecomputed;
+}
+
 // ==================== 视角控制：方位角 / 俯仰角 ====================
 
 void MapRenderer::SetAzimuthPitchDegrees(double azimuthDegrees, double pitchDegrees)
