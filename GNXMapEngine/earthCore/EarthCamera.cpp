@@ -211,9 +211,17 @@ Vector3d EarthCamera::GetViewDirectionInEyeEun() const
     return frame.ToEun(direction);
 }
 
-void EarthCamera::Zoom(double deltaDistance)
+void EarthCamera::Zoom(double scrollSteps)
 {
-    SetEyeDistance(mEyeDistance + deltaDistance);
+    if (!std::isfinite(scrollSteps) || scrollSteps == 0.0)
+    {
+        return;
+    }
+
+    // 每单位滚轮输入对应右键拖动 10% 视口高度，复用等比缩放、
+    // 缩放灵敏度和最小视距限制。保留正滚动拉远的方向，小数输入也连续生效。
+    const double dyPixels = -scrollSteps * static_cast<double>(GetViewSize().y) * 0.10;
+    OrbitByDrag(0.0, dyPixels, CameraDragMode::RightButton);
 }
 
 void EarthCamera::Pan(float offsetX, float offsetY)

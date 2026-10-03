@@ -103,7 +103,8 @@ public:
     
     void SetWindowSize(uint32_t width, uint32_t height);
     
-    void Zoom(double deltaDistance);
+    // 滚轮等比缩放：默认灵敏度下，每单位滚动使视距乘以 2^0.2，正值拉远，支持小数增量。
+    void Zoom(double scrollSteps);
     
     void Pan(float offsetX, float offsetY);
 

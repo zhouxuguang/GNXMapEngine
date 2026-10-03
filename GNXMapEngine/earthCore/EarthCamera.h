@@ -104,7 +104,8 @@ public:
     // ==================== 交互 ====================
 
     // 缩放地球：沿视线方向推拉，保持目标点与角度不变
-    void Zoom(double deltaDistance);
+    // 滚轮等比缩放：默认灵敏度下，每单位滚动使视距乘以 2^0.2，正值拉远，支持小数增量。
+    void Zoom(double scrollSteps);
 
     // 平移地球：offsetX, offsetY 是屏幕坐标增量
     void Pan(float offsetX, float offsetY);

@@ -71,9 +71,9 @@ void MapRenderer::SetWindowSize(uint32_t width, uint32_t height)
     sunLight->setStrength(Vector3f(1.5f, 1.5f, 1.5f));
 }
 
-void MapRenderer::Zoom(double deltaDistance)
+void MapRenderer::Zoom(double scrollSteps)
 {
-    mCameraPtr->Zoom(deltaDistance);
+    if (mCameraPtr) mCameraPtr->Zoom(scrollSteps);
 }
 
 void MapRenderer::Pan(float offsetX, float offsetY)
