@@ -348,11 +348,10 @@ void MapApplication::RenderFrame()
             static_cast<float>(mScrollTestSteps * 120.0));
         OnEvent(testEvent);
     }
-    UpdateScrollZoom();
     if (mScrollTestFrame > 0 && mFrameIndex >= mScrollTestFrame)
     {
-        LOG_INFO("[ScrollTest] frame=%d distance=%.6f pending=%.6f",
-                 mFrameIndex, mRenderer->GetEyeDistance(), mPendingScrollSteps);
+        LOG_INFO("[ScrollTest] frame=%d distance=%.6f",
+                 mFrameIndex, mRenderer->GetEyeDistance());
     }
 
     // 拖拽增量逐帧轮询，必须在绘制前更新相机姿态
@@ -393,9 +392,6 @@ bool MapApplication::OnMouseButtonPressed(GNXEngine::MouseButtonPressedEvent& ev
         return false;
     }
 
-    // Direct dragging takes over from any unfinished wheel easing.
-    mPendingScrollSteps = 0.0;
-
     // 记录拖拽起点，后续增量由 UpdateDragInteraction 轮询得到；
     // 同一时刻只保留一个拖拽模式（后按下的键生效）
     const mathutil::Vector2f position = GNXEngine::Input::GetMousePosition();
@@ -425,46 +421,16 @@ bool MapApplication::OnMouseButtonReleased(GNXEngine::MouseButtonReleasedEvent& 
 bool MapApplication::OnMouseScrolled(GNXEngine::MouseScrolledEvent& event)
 {
     // The window event uses 120 units per wheel tick, not 120 zoom steps.
-    QueueScrollSteps(static_cast<double>(event.GetYOffset()) / 120.0);
-    return true;
-}
-
-void MapApplication::QueueScrollSteps(double steps)
-{
+    const double steps = static_cast<double>(event.GetYOffset()) / 120.0;
     if (!mRenderer || !std::isfinite(steps) || steps == 0.0)
     {
-        return;
+        return true;
     }
 
+    // 实时等比缩放：滚轮输入多少就立即等比缩放多少，不累积、不做逐帧缓动。
     mAnim.enabled = false;
-    // Limit accumulated wheel requests; render frames consume them gradually.
-    if (mPendingScrollSteps * steps < 0.0)
-        mPendingScrollSteps = 0.0;
-    mPendingScrollSteps = std::clamp(mPendingScrollSteps + std::clamp(steps, -8.0, 8.0),
-                                     -16.0, 16.0);
-}
-
-void MapApplication::UpdateScrollZoom()
-{
-    const auto now = std::chrono::steady_clock::now();
-    const double elapsed = mLastScrollUpdate == std::chrono::steady_clock::time_point{}
-        ? 1.0 / 60.0 : std::chrono::duration<double>(now - mLastScrollUpdate).count();
-    mLastScrollUpdate = now;
-    if (!mRenderer || std::abs(mPendingScrollSteps) < 1e-9)
-    {
-        return;
-    }
-
-    // Exponential decay in scroll space preserves the exact final zoom while
-    // spreading one wheel tick over several frames. Cap long frame stalls so a
-    // shader compile or tile load cannot turn the entire motion into one jump.
-    const double dt = std::clamp(elapsed, 1.0 / 240.0, 1.0 / 30.0);
-    const double portion = 1.0 - std::exp(-dt / 0.10);
-    // With the stronger default zoom ratio, keep each frame near a 1% change.
-    const double step = std::abs(mPendingScrollSteps) < 0.0001
-        ? mPendingScrollSteps : std::clamp(mPendingScrollSteps * portion, -0.075, 0.075);
-    mPendingScrollSteps -= step;
-    mRenderer->Zoom(step);
+    mRenderer->Zoom(steps);
+    return true;
 }
 
 MapApplication::DragMode MapApplication::GetDragModeForButton(GNXEngine::MouseCode button)

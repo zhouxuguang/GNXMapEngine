@@ -36,8 +36,6 @@ private:
     bool OnMouseButtonPressed(GNXEngine::MouseButtonPressedEvent& event);
     bool OnMouseButtonReleased(GNXEngine::MouseButtonReleasedEvent& event);
     bool OnMouseScrolled(GNXEngine::MouseScrolledEvent& event);
-    void QueueScrollSteps(double steps);
-    void UpdateScrollZoom();
 
     static DragMode GetDragModeForButton(GNXEngine::MouseCode button);
     static GNXEngine::MouseCode GetMouseButtonForDragMode(DragMode mode);
@@ -102,8 +100,6 @@ private:
     std::string mScreenshotPath;        // GNX_MAP_SCREENSHOT：非空则开启自动化截图
     int mScreenshotWaitFrames = 120;    // GNX_MAP_SCREENSHOT_FRAMES：截图前等待的帧数
     int mFrameIndex = 0;
-    double mPendingScrollSteps = 0.0;
-    std::chrono::steady_clock::time_point mLastScrollUpdate{};
     // Optional, deterministic scroll replay for numerical and screenshot regression.
     int mScrollTestFrame = 0;
     double mScrollTestSteps = 0.0;
